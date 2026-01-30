@@ -1,0 +1,7 @@
+{
+    "project_name": "My Flask Project",
+    "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+    "description": "A Flask application",
+    "author": "Your Name",
+    "python_version": "3.12"
+}

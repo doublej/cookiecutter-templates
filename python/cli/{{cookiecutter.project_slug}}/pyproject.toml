@@ -1,0 +1,21 @@
+[project]
+name = "{{ cookiecutter.project_slug }}"
+version = "0.1.0"
+description = "{{ cookiecutter.description }}"
+authors = [{ name = "{{ cookiecutter.author }}" }]
+requires-python = ">={{ cookiecutter.python_version }}"
+dependencies = [
+    "click>=8.1.0",
+]
+
+[project.scripts]
+{{ cookiecutter.project_slug }} = "{{ cookiecutter.project_slug.replace('-', '_') }}.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

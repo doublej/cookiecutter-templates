@@ -1,0 +1,7 @@
+{
+    "project_name": "My SvelteKit Project",
+    "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+    "description": "A SvelteKit application",
+    "author": "Your Name",
+    "include_tracking": ["n", "y"]
+}

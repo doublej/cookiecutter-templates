@@ -1,0 +1,65 @@
+{
+  "name": "{{ cookiecutter.project_slug }}",
+  "version": "0.1.0",
+  "description": "{{ cookiecutter.description }}",
+  "type": "module",
+{% if cookiecutter.project_type == 'library' %}
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+{% elif cookiecutter.project_type == 'cli' %}
+  "bin": {
+    "{{ cookiecutter.project_slug }}": "./dist/cli.js"
+  },
+{% endif %}
+  "scripts": {
+    "build": "tsc",
+{% if cookiecutter.project_type == 'cli' %}
+    "dev": "tsx watch src/cli.ts",
+    "start": "node dist/cli.js",
+{% elif cookiecutter.project_type == 'api' %}
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+{% elif cookiecutter.project_type == 'worker' %}
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+{% else %}
+    "dev": "tsx watch src/index.ts",
+{% endif %}
+    "test": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
+    "@t3-oss/env-core": "^0.11.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^2.0.0",
+    "zod": "^3.23.0"
+  },
+  "dependencies": {
+{% if cookiecutter.project_type == 'cli' %}
+    "chalk": "^5.3.0",
+    "@clack/prompts": "^0.8.0",
+    "commander": "^13.0.0",
+    "ora": "^8.0.0"
+{% elif cookiecutter.project_type == 'api' %}
+    "@elysiajs/cors": "^1.1.0",
+    "@elysiajs/swagger": "^1.1.0",
+    "elysia": "^1.1.0",
+    "pino": "^9.0.0",
+    "pino-pretty": "^13.0.0"
+{% elif cookiecutter.project_type == 'worker' %}
+    "pino": "^9.0.0",
+    "pino-pretty": "^13.0.0"
+{% endif %}
+  }
+}

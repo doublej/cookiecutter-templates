@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    container_name: {{ cookiecutter.project_slug }}
+{% if cookiecutter.project_type == 'api' %}
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+{% else %}
+    environment:
+      - NODE_ENV=production
+{% endif %}
+    restart: unless-stopped
