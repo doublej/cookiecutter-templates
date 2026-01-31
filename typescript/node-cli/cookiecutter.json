@@ -1,0 +1,6 @@
+{
+    "project_name": "My CLI",
+    "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+    "description": "A command-line tool",
+    "author": "Your Name"
+}

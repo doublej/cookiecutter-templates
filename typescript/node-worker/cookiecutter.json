@@ -1,9 +1,8 @@
 {
-    "project_name": "My Node Project",
+    "project_name": "My Worker",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
-    "description": "A Node.js application",
+    "description": "A background worker",
     "author": "Your Name",
-    "project_type": ["cli", "api", "library", "worker"],
     "worker_type": ["simple", "cron", "long-running"],
-    "include_docker": false
+    "include_docker": ["y", "n"]
 }

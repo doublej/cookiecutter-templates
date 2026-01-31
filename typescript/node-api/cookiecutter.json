@@ -1,0 +1,7 @@
+{
+    "project_name": "My API",
+    "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+    "description": "A Node.js API",
+    "author": "Your Name",
+    "include_docker": ["y", "n"]
+}

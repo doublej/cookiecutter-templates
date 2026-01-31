@@ -8,10 +8,8 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-{% if cookiecutter.project_type == 'library' %}
     "declaration": true,
     "declarationMap": true,
-{% endif %}
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src"]

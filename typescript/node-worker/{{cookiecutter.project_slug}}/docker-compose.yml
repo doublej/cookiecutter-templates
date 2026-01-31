@@ -1,0 +1,7 @@
+services:
+  app:
+    build: .
+    container_name: {{ cookiecutter.project_slug }}
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped

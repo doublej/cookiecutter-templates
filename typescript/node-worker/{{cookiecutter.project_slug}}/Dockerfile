@@ -15,14 +15,5 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY package.json ./
 
-{% if cookiecutter.project_type == 'api' %}
-ENV NODE_ENV=production
-ENV PORT=3000
-EXPOSE 3000
-CMD ["bun", "run", "start"]
-{% elif cookiecutter.project_type == 'worker' %}
 ENV NODE_ENV=production
 CMD ["bun", "run", "start"]
-{% else %}
-CMD ["bun", "run", "start"]
-{% endif %}

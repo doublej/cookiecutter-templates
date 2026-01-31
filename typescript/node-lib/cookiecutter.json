@@ -1,0 +1,6 @@
+{
+    "project_name": "My Library",
+    "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+    "description": "A Node.js library",
+    "author": "Your Name"
+}
