@@ -1,7 +1,6 @@
 {
     "project_name": "My macOS App",
     "project_slug": "{{ cookiecutter.project_name.replace(' ', '') }}",
-    "bundle_identifier": "com.example.{{ cookiecutter.project_slug.lower() }}",
     "description": "A macOS application",
     "author": "Your Name",
     "deployment_target": "14.0"

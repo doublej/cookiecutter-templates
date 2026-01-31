@@ -1,7 +1,7 @@
 [project]
 name = "{{cookiecutter.project_name}}"
 version = "0.0.1"
-description = "{{cookiecutter.project_description}}"
+description = "{{cookiecutter.description}}"
 authors = [{ name = "{{cookiecutter.author}}", email = "{{cookiecutter.email}}" }]
 readme = "README.md"
 keywords = ['python']
