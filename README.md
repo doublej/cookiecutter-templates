@@ -6,32 +6,35 @@ Project templates organized by language and framework.
 
 ### Python
 
-| Template | Description | Features |
-|----------|-------------|----------|
-| `python/fastapi` | FastAPI web API | uvicorn, async, health endpoint |
-| `python/flask` | Flask web application | jsonify, debug mode |
-| `python/cli` | Command-line tool | Click, subcommands, entry point |
+| Template | Description | Options |
+|----------|-------------|---------|
+| `python/fastapi` | FastAPI web API | `python_version` |
+| `python/flask` | Flask web application | `python_version` |
+| `python/cli` | Command-line tool (Click) | `python_version` |
 
 ### TypeScript
 
-| Template | Description | Features |
-|----------|-------------|----------|
-| `typescript/node` | Node.js application | ESM, tsx watch, vitest |
-| `typescript/sveltekit` | SvelteKit web app | Svelte 5, Vite, SSR |
-| `typescript/react` | React SPA | React 18, Vite, strict mode |
+| Template | Description | Options |
+|----------|-------------|---------|
+| `typescript/node-api` | Elysia API server | `include_docker` |
+| `typescript/node-cli` | Commander CLI | -- |
+| `typescript/node-lib` | Library with declarations | -- |
+| `typescript/node-worker` | Background worker | `worker_type`, `include_docker` |
+| `typescript/sveltekit` | SvelteKit web app | `include_tracking` |
+| `typescript/react` | React SPA (Vite) | `include_tracking` |
 
 ### Swift
 
-| Template | Description | Features |
-|----------|-------------|----------|
-| `swift/macos` | macOS application | SwiftUI, SPM, macOS 14+ |
-| `swift/ios` | iOS application | SwiftUI, SPM, iOS 17+ |
+| Template | Description | Options |
+|----------|-------------|---------|
+| `swift/macos` | macOS SwiftUI app | `deployment_target` |
+| `swift/ios` | iOS SwiftUI app | `deployment_target` |
 
 ### Legacy
 
-| Template | Description | Features |
-|----------|-------------|----------|
-| `legacy/cookiecutter-uv` | Full Python project | GitHub Actions, pytest, mkdocs, codecov, Docker, devcontainer, multiple licenses, flat/src layout |
+| Template | Description | Options |
+|----------|-------------|---------|
+| `legacy/cookiecutter-uv` | Full Python project | `layout`, `include_github_actions`, `publish_to_pypi`, `mkdocs`, `codecov`, `dockerfile`, `devcontainer`, `open_source_license` |
 
 ## Usage
 
@@ -41,7 +44,7 @@ uv tool install cookiecutter
 
 # Generate a project
 cookiecutter python/fastapi
-cookiecutter typescript/sveltekit
+cookiecutter typescript/node-api
 cookiecutter swift/macos
 cookiecutter legacy/cookiecutter-uv
 ```
@@ -54,7 +57,7 @@ cookiecutter legacy/cookiecutter-uv
 cd my-project
 uv sync
 uv run uvicorn my_project.main:app --reload  # FastAPI
-uv run flask run                              # Flask
+uv run flask --app my_project.app run        # Flask
 uv run my-project hello                       # CLI
 ```
 
@@ -73,3 +76,34 @@ cd MyProject
 swift build
 swift run
 ```
+
+## Common Variables
+
+All templates share these variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `project_name` | Human-readable project name | varies |
+| `project_slug` | Directory/package name (auto-derived) | from `project_name` |
+| `description` | Short project description | varies |
+| `author` | Author name | "Your Name" |
+
+## Template Standards
+
+- Hooks are safe: no `git init`, no dependency installs, no commits
+- Pre-generation validation on `project_name` and `project_slug`
+- Unified `.gitignore` baseline across all templates
+- Every template includes a `README.md` with getting started instructions
+
+## Tools
+
+| Script | Description |
+|--------|-------------|
+| `tools/render_test.py` | Render and smoke-test all templates |
+| `tools/inject_tracking.py` | Inject Umami tracking into rendered projects |
+
+## Contributing
+
+1. Make changes to template files
+2. Run `python tools/render_test.py` to verify all templates render correctly
+3. Test the rendered output manually for your specific changes

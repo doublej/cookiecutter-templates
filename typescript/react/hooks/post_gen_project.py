@@ -1,11 +1,21 @@
 #!/usr/bin/env python3
-"""Post-generation hook: clean up tracking placeholder."""
+"""Post-generation hook: clean up tracking placeholder, write meta."""
+import json
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 PROJECT_DIR = Path(os.path.realpath(os.path.curdir))
 PROJECT_SLUG = "{{ cookiecutter.project_slug }}"
 INCLUDE_TRACKING = "{{ cookiecutter.include_tracking }}"
+
+CONTEXT = {
+    "project_name": "{{ cookiecutter.project_name }}",
+    "project_slug": PROJECT_SLUG,
+    "description": "{{ cookiecutter.description }}",
+    "author": "{{ cookiecutter.author }}",
+    "include_tracking": INCLUDE_TRACKING,
+}
 
 
 def cleanup_tracking():
@@ -19,22 +29,28 @@ def cleanup_tracking():
         html_file.write_text(content)
         return
 
-    # Leave placeholder for manual setup via tools/inject_tracking.py
     print("  Note: tracking placeholder left in index.html")
     print("  Run tools/inject_tracking.py to inject Umami tracking")
 
 
-def print_getting_started():
+def write_meta():
+    meta = {
+        "template": "typescript/react",
+        "rendered_at": datetime.now(timezone.utc).isoformat(),
+        "context": CONTEXT,
+    }
+    with open(".template-meta.json", "w") as f:
+        json.dump(meta, f, indent=2)
+
+
+def main():
+    cleanup_tracking()
+    write_meta()
     print(f"\n  Project created: {PROJECT_SLUG}\n")
     print("  Getting started:")
     print(f"    cd {PROJECT_SLUG}")
     print("    bun install")
     print("    bun run dev\n")
-
-
-def main():
-    cleanup_tracking()
-    print_getting_started()
 
 
 if __name__ == "__main__":

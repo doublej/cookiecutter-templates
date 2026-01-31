@@ -2,8 +2,10 @@
 """Post-generation hook: clean up conditional files and directories."""
 from __future__ import annotations
 
+import json
 import os
 import shutil
+from datetime import datetime, timezone
 
 PROJECT_DIRECTORY = os.path.realpath(os.path.curdir)
 
@@ -92,11 +94,28 @@ def handle_layout():
         move_dir("{{cookiecutter.project_slug}}", os.path.join("src", "{{cookiecutter.project_slug}}"))
 
 
+def write_meta():
+    meta = {
+        "template": "legacy/cookiecutter-uv",
+        "rendered_at": datetime.now(timezone.utc).isoformat(),
+        "context": {
+            "project_name": "{{cookiecutter.project_name}}",
+            "project_slug": "{{cookiecutter.project_slug}}",
+            "description": "{{cookiecutter.description}}",
+            "author": "{{cookiecutter.author}}",
+            "layout": "{{cookiecutter.layout}}",
+        },
+    }
+    meta_path = os.path.join(PROJECT_DIRECTORY, ".template-meta.json")
+    with open(meta_path, "w") as f:
+        json.dump(meta, f, indent=2)
+
+
 def print_getting_started():
     slug = "{{cookiecutter.project_slug}}"
-    print(f"\n  Project created: {slug}\n")
+    print(f"\n  Project created: {{cookiecutter.project_name}}\n")
     print("  Getting started:")
-    print(f"    cd {slug}")
+    print(f"    cd {{cookiecutter.project_name}}")
     print("    uv sync")
     print("    uv run pytest\n")
 
@@ -106,4 +125,5 @@ if __name__ == "__main__":
     cleanup_optional_features()
     handle_license()
     handle_layout()
+    write_meta()
     print_getting_started()
