@@ -1,3 +1,8 @@
+.DS_Store
+Thumbs.db
+.env.local
+.env.*.local
+
 docs/source
 
 # From https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore
