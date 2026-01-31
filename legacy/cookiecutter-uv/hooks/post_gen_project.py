@@ -112,7 +112,6 @@ def write_meta():
 
 
 def print_getting_started():
-    slug = "{{cookiecutter.project_slug}}"
     print(f"\n  Project created: {{cookiecutter.project_name}}\n")
     print("  Getting started:")
     print(f"    cd {{cookiecutter.project_name}}")
