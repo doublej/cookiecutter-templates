@@ -4,5 +4,7 @@
     "description": "A background worker",
     "author": "Your Name",
     "worker_type": ["simple", "cron", "long-running"],
-    "include_docker": ["y", "n"]
+    "include_docker": ["y", "n"],
+    "mcp_servers": ["none", "minimal", "standard", "interactive"],
+    "mcp_scope": ["project", "local"]
 }

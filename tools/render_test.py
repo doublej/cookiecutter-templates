@@ -11,32 +11,60 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 TEMPLATES: dict[str, list[dict]] = {
-    "python/fastapi": [{}],
-    "python/flask": [{}],
-    "python/cli": [{}],
-    "typescript/node-api": [{}],
-    "typescript/node-cli": [{}],
-    "typescript/node-lib": [{}],
+    "python/fastapi": [
+        {},
+        {"mcp_servers": "standard", "mcp_scope": "project"},
+    ],
+    "python/flask": [
+        {},
+        {"mcp_servers": "minimal", "mcp_scope": "project"},
+    ],
+    "python/cli": [
+        {},
+        {"mcp_servers": "standard", "mcp_scope": "project"},
+    ],
+    "typescript/node-api": [
+        {},
+        {"mcp_servers": "standard", "mcp_scope": "project"},
+    ],
+    "typescript/node-cli": [
+        {},
+        {"mcp_servers": "minimal", "mcp_scope": "project"},
+    ],
+    "typescript/node-lib": [
+        {},
+        {"mcp_servers": "standard", "mcp_scope": "project"},
+    ],
     "typescript/node-worker": [
         {"worker_type": "simple"},
         {"worker_type": "cron"},
         {"worker_type": "long-running"},
+        {"worker_type": "simple", "mcp_servers": "standard", "mcp_scope": "project"},
     ],
     "typescript/sveltekit": [
         {"include_tracking": "n"},
         {"include_tracking": "y"},
+        {"include_tracking": "n", "mcp_servers": "standard", "mcp_scope": "project"},
     ],
     "typescript/react": [
         {"include_tracking": "n"},
         {"include_tracking": "y"},
+        {"include_tracking": "n", "mcp_servers": "standard", "mcp_scope": "project"},
     ],
-    "swift/ios": [{}],
-    "swift/macos": [{}],
+    "swift/ios": [
+        {},
+        {"mcp_servers": "standard", "mcp_scope": "project"},
+    ],
+    "swift/macos": [
+        {},
+        {"mcp_servers": "minimal", "mcp_scope": "project"},
+    ],
     "legacy/cookiecutter-uv": [
         {"layout": "flat"},
         {"layout": "src"},
         {"layout": "flat", "dockerfile": "y"},
         {"layout": "flat", "mkdocs": "y"},
+        {"layout": "flat", "mcp_servers": "standard", "mcp_scope": "project"},
     ],
 }
 

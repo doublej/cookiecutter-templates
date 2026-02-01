@@ -2,5 +2,7 @@
     "project_name": "My CLI",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "description": "A command-line tool",
-    "author": "Your Name"
+    "author": "Your Name",
+    "mcp_servers": ["none", "minimal", "standard", "interactive"],
+    "mcp_scope": ["project", "local"]
 }

@@ -37,6 +37,16 @@
     "y",
     "n"
   ],
+  "mcp_servers": [
+    "none",
+    "minimal",
+    "standard",
+    "interactive"
+  ],
+  "mcp_scope": [
+    "project",
+    "local"
+  ],
   "open_source_license": [
     "MIT license",
     "BSD license",

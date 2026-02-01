@@ -3,5 +3,7 @@
     "project_slug": "{{ cookiecutter.project_name.replace(' ', '') }}",
     "description": "An iOS application",
     "author": "Your Name",
-    "deployment_target": "17.0"
+    "deployment_target": "17.0",
+    "mcp_servers": ["none", "minimal", "standard", "interactive"],
+    "mcp_scope": ["project", "local"]
 }
