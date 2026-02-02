@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct {{ cookiecutter.project_slug }}App: App {
+struct {{ cookiecutter.module_name }}App: App {
     var body: some Scene {
         WindowGroup {
             ContentView()

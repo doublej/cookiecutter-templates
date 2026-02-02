@@ -13,7 +13,7 @@ Author: {{ cookiecutter.author }}
 
 ```bash
 swift build
-swift run {{ cookiecutter.project_slug }}
+swift run {{ cookiecutter.module_name }}
 ```
 
 Or open in Xcode:

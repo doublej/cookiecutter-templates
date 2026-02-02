@@ -5,8 +5,10 @@ import sys
 
 PROJECT_NAME = "{{ cookiecutter.project_name }}"
 PROJECT_SLUG = "{{ cookiecutter.project_slug }}"
+MODULE_NAME = "{{ cookiecutter.module_name }}"
 
-SLUG_RE = re.compile(r"^[A-Z][a-zA-Z0-9]*$")
+SLUG_RE = re.compile(r"^[a-z][a-z0-9-]*[a-z0-9]$")
+MODULE_RE = re.compile(r"^[A-Z][a-zA-Z0-9]*$")
 
 
 def validate():
@@ -21,7 +23,11 @@ def validate():
         sys.exit(1)
 
     if not SLUG_RE.match(PROJECT_SLUG):
-        print(f"ERROR: project_slug must be PascalCase (e.g. 'MyApp'), got: '{PROJECT_SLUG}'")
+        print(f"ERROR: project_slug must be kebab-case (e.g. 'my-app'), got: '{PROJECT_SLUG}'")
+        sys.exit(1)
+
+    if not MODULE_RE.match(MODULE_NAME):
+        print(f"ERROR: module_name must be PascalCase (e.g. 'MyApp'), got: '{MODULE_NAME}'")
         sys.exit(1)
 
 

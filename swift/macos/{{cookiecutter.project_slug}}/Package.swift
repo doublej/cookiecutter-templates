@@ -2,13 +2,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "{{ cookiecutter.project_slug }}",
+    name: "{{ cookiecutter.module_name }}",
     platforms: [
         .macOS(.v{{ cookiecutter.deployment_target.split('.')[0] }})
     ],
     targets: [
         .executableTarget(
-            name: "{{ cookiecutter.project_slug }}",
+            name: "{{ cookiecutter.module_name }}",
             path: "{{ cookiecutter.project_slug }}"
         )
     ]

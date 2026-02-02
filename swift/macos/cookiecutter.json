@@ -1,6 +1,7 @@
 {
     "project_name": "My macOS App",
-    "project_slug": "{{ cookiecutter.project_name.replace(' ', '') }}",
+    "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+    "module_name": "{{ cookiecutter.project_name.replace(' ', '').replace('-', '').replace('_', '') }}",
     "description": "A macOS application",
     "author": "Your Name",
     "deployment_target": "14.0",

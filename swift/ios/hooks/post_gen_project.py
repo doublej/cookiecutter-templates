@@ -6,12 +6,14 @@ import subprocess
 from datetime import datetime, timezone
 
 PROJECT_SLUG = "{{ cookiecutter.project_slug }}"
+MODULE_NAME = "{{ cookiecutter.module_name }}"
 MCP_SERVERS = "{{ cookiecutter.mcp_servers }}"
 MCP_SCOPE = "{{ cookiecutter.mcp_scope }}"
 
 CONTEXT = {
     "project_name": "{{ cookiecutter.project_name }}",
     "project_slug": PROJECT_SLUG,
+    "module_name": MODULE_NAME,
     "description": "{{ cookiecutter.description }}",
     "author": "{{ cookiecutter.author }}",
     "deployment_target": "{{ cookiecutter.deployment_target }}",
