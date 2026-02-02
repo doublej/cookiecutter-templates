@@ -32,6 +32,9 @@ jobs:
         if: runner.os == 'Linux'
         uses: swift-actions/setup-swift@v2
 
+      - name: Check template sync
+        run: uv run tools/sync_check.py
+
       - name: Run render tests
         run: uv run tools/render_test.py
 

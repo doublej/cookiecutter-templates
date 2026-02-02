@@ -1,0 +1,45 @@
+{
+  "families": {
+    "python": {
+      "templates": ["python/cli", "python/fastapi", "python/flask"],
+      "identical_files": [
+        "hooks/pre_gen_project.py",
+        "{{cookiecutter.project_slug}}/.gitignore"
+      ],
+      "justfile_shared_recipes": [
+        "default", "install", "lint", "lint-fix", "format", "format-check",
+        "typecheck", "test", "loc-check", "check", "clean"
+      ]
+    },
+    "typescript": {
+      "templates": [
+        "typescript/node-api", "typescript/node-cli", "typescript/node-lib",
+        "typescript/node-worker", "typescript/react", "typescript/sveltekit"
+      ],
+      "identical_files": ["hooks/pre_gen_project.py"],
+      "justfile_shared_recipes": [
+        "default", "install", "lint", "lint-fix", "test",
+        "loc-check", "check", "build", "clean"
+      ],
+      "justfile_exceptions": {
+        "typescript/react": {
+          "skip_recipes": ["loc-check"]
+        },
+        "typescript/sveltekit": {
+          "skip_recipes": ["typecheck", "loc-check", "clean"]
+        }
+      }
+    },
+    "swift": {
+      "templates": ["swift/ios", "swift/macos"],
+      "identical_files": [
+        "hooks/pre_gen_project.py",
+        "{{cookiecutter.project_slug}}/.gitignore"
+      ],
+      "justfile_shared_recipes": [
+        "default", "install", "xcode", "test", "loc-check", "check",
+        "build", "build-release", "clean"
+      ]
+    }
+  }
+}
