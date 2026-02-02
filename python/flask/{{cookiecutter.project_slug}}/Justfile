@@ -1,0 +1,68 @@
+set shell := ["zsh", "-euo", "pipefail"]
+
+default:
+    @just --list
+    @echo ''
+    @echo "branch: $(git branch --show-current 2>/dev/null || echo 'n/a')"
+
+[group('setup')]
+install:
+    uv sync
+
+[group('develop')]
+dev:
+    uv run flask --app {{ cookiecutter.project_slug.replace('-', '_') }}.app run --debug
+
+[group('quality')]
+lint:
+    uv run ruff check .
+
+[group('quality')]
+lint-fix:
+    uv run ruff check --fix .
+
+[group('quality')]
+format:
+    uv run ruff format .
+
+[group('quality')]
+format-check:
+    uv run ruff format --check .
+
+[group('quality')]
+typecheck:
+    uv run mypy src/
+
+[group('quality')]
+test:
+    uv run pytest
+
+[group('quality')]
+loc-check:
+    #!/usr/bin/env zsh
+    setopt null_glob
+    err=0
+    for f in src/**/*.py tests/**/*.py; do
+        lines=$(wc -l < "$f")
+        if (( lines > 400 )); then echo "error: $f ($lines lines, max 400)"; err=1
+        elif (( lines > 300 )); then echo "warn: $f ($lines lines, target ≤300)"; fi
+    done
+    exit $err
+
+[group('quality')]
+check:
+    @echo '→ Checking file lengths...'
+    just loc-check
+    @echo '→ Running lint...'
+    just lint
+    @echo '→ Running format check...'
+    just format-check
+    @echo '→ Running typecheck...'
+    just typecheck
+    @echo '→ Running tests...'
+    just test
+
+[group('cleanup')]
+clean:
+    rm -rf dist/ .mypy_cache/ .pytest_cache/ .ruff_cache/
+    find . -type d -name __pycache__ -exec rm -rf {} +

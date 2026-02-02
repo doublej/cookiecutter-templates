@@ -1,0 +1,52 @@
+set shell := ["zsh", "-euo", "pipefail"]
+
+default:
+    @just --list
+    @echo ''
+    @echo "branch: $(git branch --show-current 2>/dev/null || echo 'n/a')"
+
+[group('setup')]
+install:
+    swift package resolve
+
+[group('develop')]
+xcode:
+    open Package.swift
+
+[group('quality')]
+test:
+    swift test
+
+[group('quality')]
+loc-check:
+    #!/usr/bin/env zsh
+    setopt null_glob
+    err=0
+    for f in {{ cookiecutter.project_slug }}/**/*.swift Tests/**/*.swift; do
+        lines=$(wc -l < "$f")
+        if (( lines > 400 )); then echo "error: $f ($lines lines, max 400)"; err=1
+        elif (( lines > 300 )); then echo "warn: $f ($lines lines, target ≤300)"; fi
+    done
+    exit $err
+
+[group('quality')]
+check:
+    @echo '→ Checking file lengths...'
+    just loc-check
+    @echo '→ Running build...'
+    just build
+    @echo '→ Running tests...'
+    just test
+
+[group('build')]
+build:
+    swift build
+
+[group('build')]
+build-release:
+    swift build -c release
+
+[group('cleanup')]
+clean:
+    swift package clean
+    rm -rf .build/
