@@ -3,8 +3,8 @@
 
 Reads .template-meta.json in the project root, compares its template_version
 against the upstream cookiecutter.json _version, and prints a single line to
-stderr so Claude Code surfaces it as session context. Any failure is silent
-(exit 0) so the hook never blocks a session.
+stdout so Claude Code surfaces it as additional session context. Any failure
+is silent (exit 0) so the hook never blocks a session.
 
 Opt-out:
   - env NO_TEMPLATE_UPDATE_CHECK=1
@@ -57,8 +57,7 @@ def main() -> None:
         print(
             f"[template-update] {template} {local} -> {upstream} available. "
             f"Ask the user if they want to run: "
-            f"uv run {src_path}/tools/update_scaffold.py --apply .",
-            file=sys.stderr,
+            f"uv run {src_path}/tools/update_scaffold.py --apply ."
         )
     except Exception:
         return

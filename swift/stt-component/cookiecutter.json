@@ -1,5 +1,5 @@
 {
-    "_version": "1.0.0",
+    "_version": "1.0.1",
     "component_name": "My Component",
     "component_slug": "{{ cookiecutter.component_name.lower().replace(' ', '-').replace('_', '-') }}",
     "module_name": "{{ cookiecutter.component_name.replace(' ', '').replace('-', '').replace('_', '') }}",

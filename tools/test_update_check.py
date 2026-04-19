@@ -64,8 +64,8 @@ def main() -> None:
 
         # 1. Upstream > local -> notice.
         r = _run(project)
-        if "[template-update]" not in r.stderr:
-            failures.append(f"expected [template-update] in stderr, got: {r.stderr!r}")
+        if "[template-update]" not in r.stdout:
+            failures.append(f"expected [template-update] in stdout, got: {r.stdout!r}")
         if r.returncode != 0:
             failures.append(f"expected exit 0, got {r.returncode}")
 
@@ -75,28 +75,28 @@ def main() -> None:
         meta["template_version"] = "1.1.0"
         meta_path.write_text(json.dumps(meta) + "\n")
         r = _run(project)
-        if "[template-update]" in r.stderr:
-            failures.append(f"expected silent when versions match, got: {r.stderr!r}")
+        if "[template-update]" in r.stdout:
+            failures.append(f"expected silent when versions match, got: {r.stdout!r}")
 
         # 3. Upstream advances again, then env opt-out silences it.
         meta["template_version"] = "1.0.0"
         meta_path.write_text(json.dumps(meta) + "\n")
         r = _run(project, {"NO_TEMPLATE_UPDATE_CHECK": "1"})
-        if "[template-update]" in r.stderr:
-            failures.append(f"expected silent with env opt-out, got: {r.stderr!r}")
+        if "[template-update]" in r.stdout:
+            failures.append(f"expected silent with env opt-out, got: {r.stdout!r}")
 
         # 4. Sentinel file silences it.
         (project / ".claude" / "no-template-update-check").touch()
         r = _run(project)
-        if "[template-update]" in r.stderr:
-            failures.append(f"expected silent with sentinel file, got: {r.stderr!r}")
+        if "[template-update]" in r.stdout:
+            failures.append(f"expected silent with sentinel file, got: {r.stdout!r}")
         (project / ".claude" / "no-template-update-check").unlink()
 
         # 5. Missing meta -> silent.
         meta_path.unlink()
         r = _run(project)
-        if "[template-update]" in r.stderr:
-            failures.append(f"expected silent without meta, got: {r.stderr!r}")
+        if "[template-update]" in r.stdout:
+            failures.append(f"expected silent without meta, got: {r.stdout!r}")
 
     if failures:
         print("FAIL")
