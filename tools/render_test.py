@@ -2,6 +2,7 @@
 """Render and smoke-test all cookiecutter templates with multiple context variants."""
 import json
 import platform
+import py_compile
 import shutil
 import subprocess
 import sys
@@ -31,6 +32,10 @@ TEMPLATES: dict[str, list[dict]] = {
         {},
         {"mcp_servers": "minimal", "mcp_scope": "project"},
     ],
+    "typescript/bun-package": [
+        {},
+        {"mcp_servers": "standard", "mcp_scope": "project"},
+    ],
     "typescript/node-lib": [
         {},
         {"mcp_servers": "standard", "mcp_scope": "project"},
@@ -51,6 +56,15 @@ TEMPLATES: dict[str, list[dict]] = {
         {"include_tracking": "y"},
         {"include_tracking": "n", "mcp_servers": "standard", "mcp_scope": "project"},
     ],
+    "typescript/nextjs": [
+        {"include_tracking": "n"},
+        {"include_tracking": "y"},
+        {"include_tracking": "n", "mcp_servers": "standard", "mcp_scope": "project"},
+    ],
+    "rust/cli": [
+        {},
+        {"mcp_servers": "standard", "mcp_scope": "project"},
+    ],
     "swift/ios": [
         {},
         {"mcp_servers": "standard", "mcp_scope": "project"},
@@ -58,6 +72,14 @@ TEMPLATES: dict[str, list[dict]] = {
     "swift/macos": [
         {},
         {"mcp_servers": "minimal", "mcp_scope": "project"},
+    ],
+    "swift/stt-component": [
+        {},
+    ],
+    "android/quest-vr": [
+        {},
+        {"graphics_api": "vulkan"},
+        {"mcp_servers": "standard", "mcp_scope": "project"},
     ],
     "legacy/cookiecutter-uv": [
         {"layout": "flat"},
@@ -119,6 +141,71 @@ def run_smoke(cmd: list[str], cwd: Path) -> tuple[bool, str]:
     return result.returncode == 0, output
 
 
+def check_versioning_payload(
+    project_dir: Path, template_name: str, template_path: Path
+) -> list[tuple[str, bool, str]]:
+    """Assert .template-meta.json + .claude payload are shaped correctly."""
+    results: list[tuple[str, bool, str]] = []
+    legacy = template_name.startswith("legacy/")
+
+    # .template-meta.json with matching template_version
+    meta_path = project_dir / ".template-meta.json"
+    if not meta_path.is_file():
+        results.append(("meta exists", False, f"missing: {meta_path}"))
+        return results
+    try:
+        meta = json.loads(meta_path.read_text())
+    except Exception as e:
+        results.append(("meta parses", False, f"{e}"))
+        return results
+
+    cc = template_path / "cookiecutter.json"
+    cc_version = json.loads(cc.read_text()).get("_version")
+    if cc_version != meta.get("template_version"):
+        results.append((
+            "meta version matches cookiecutter._version",
+            False,
+            f"cookiecutter.json={cc_version!r} meta={meta.get('template_version')!r}",
+        ))
+        return results
+    results.append(("meta shape", True, ""))
+
+    if legacy:
+        return results
+
+    settings = project_dir / ".claude" / "settings.json"
+    if not settings.is_file():
+        results.append((".claude/settings.json exists", False, "missing"))
+        return results
+    try:
+        json.loads(settings.read_text())
+    except Exception as e:
+        results.append((".claude/settings.json parses", False, f"{e}"))
+        return results
+
+    script = project_dir / ".claude" / "scripts" / "check_template_update.py"
+    if not script.is_file():
+        results.append(("check_template_update.py exists", False, "missing"))
+        return results
+    try:
+        py_compile.compile(str(script), doraise=True)
+    except py_compile.PyCompileError as e:
+        results.append(("check_template_update.py compiles", False, f"{e}"))
+        return results
+    results.append((".claude payload", True, ""))
+    return results
+
+
+def smoke_just_fmt(project_dir: Path) -> list[tuple[str, bool, str]]:
+    """Verify the rendered Justfile is canonically formatted."""
+    if not (project_dir / "Justfile").exists():
+        return []
+    if not has_command("just"):
+        return []
+    ok, out = run_smoke(["just", "--fmt", "--check"], project_dir)
+    return [("just --fmt --check", ok, out)]
+
+
 def smoke_python(project_dir: Path) -> list[tuple[str, bool, str]]:
     results = []
     src_dir = project_dir / "src"
@@ -147,6 +234,16 @@ def smoke_typescript(project_dir: Path) -> list[tuple[str, bool, str]]:
     return results
 
 
+def smoke_rust(project_dir: Path) -> list[tuple[str, bool, str]]:
+    results = []
+    if not has_command("cargo"):
+        results.append(("cargo build", False, "cargo not found, skipping"))
+        return results
+    ok, out = run_smoke(["cargo", "build"], project_dir)
+    results.append(("cargo build", ok, out))
+    return results
+
+
 def smoke_swift(project_dir: Path) -> list[tuple[str, bool, str]]:
     results = []
     if not has_command("swift"):
@@ -160,14 +257,117 @@ def smoke_swift(project_dir: Path) -> list[tuple[str, bool, str]]:
     return results
 
 
+def smoke_android(project_dir: Path) -> list[tuple[str, bool, str]]:
+    """File-existence + content sanity for Android/NDK templates.
+
+    Running a real Gradle build requires the Android SDK and NDK, which we
+    can't rely on in CI. Instead we verify the rendered scaffold has the
+    expected layout and no leftover Jinja markers.
+    """
+    results = []
+    required = [
+        "build.gradle.kts",
+        "settings.gradle.kts",
+        "gradle.properties",
+        "app/build.gradle.kts",
+        "app/src/main/AndroidManifest.xml",
+        "app/src/main/cpp/CMakeLists.txt",
+        "app/src/main/cpp/main.cpp",
+        "app/src/main/cpp/openxr_app.cpp",
+        "app/src/main/cpp/openxr_app.h",
+    ]
+    missing = [p for p in required if not (project_dir / p).is_file()]
+    if missing:
+        results.append(("files exist", False, "missing: " + ", ".join(missing)))
+        return results
+    results.append(("files exist", True, ""))
+
+    manifest = (project_dir / "app/src/main/AndroidManifest.xml").read_text()
+    if "com.oculus.intent.category.VR" not in manifest:
+        results.append(("manifest has VR intent", False, "missing VR intent category"))
+        return results
+    if "com.oculus.supportedDevices" not in manifest:
+        results.append(("manifest has VR intent", False, "missing supportedDevices"))
+        return results
+    results.append(("manifest has VR intent", True, ""))
+
+    for path in project_dir.rglob("*"):
+        if not path.is_file():
+            continue
+        if path.suffix not in {".kts", ".xml", ".cpp", ".h", ".txt", ".md", ".json", ".properties"}:
+            continue
+        text = path.read_text(errors="ignore")
+        if "{{ cookiecutter." in text or "{% cookiecutter" in text:
+            rel = path.relative_to(project_dir)
+            results.append(("no unrendered jinja", False, f"{rel}"))
+            return results
+    results.append(("no unrendered jinja", True, ""))
+    return results
+
+
 def get_smoke_fn(template_name: str):
     if template_name.startswith("python/") or template_name.startswith("legacy/"):
         return smoke_python
     if template_name.startswith("typescript/"):
         return smoke_typescript
+    if template_name.startswith("rust/"):
+        return smoke_rust
     if template_name.startswith("swift/"):
         return smoke_swift
+    if template_name.startswith("android/"):
+        return smoke_android
     return lambda _: []
+
+
+WORKSPACE_DEFS = ["hub-and-spoke"]
+
+SPOKE_MANIFESTS = {
+    "typescript/sveltekit": "package.json",
+    "typescript/node-worker": "package.json",
+    "rust/cli": "Cargo.toml",
+}
+
+
+def smoke_workspace(ws_name: str) -> tuple[bool, list[str]]:
+    """Render a workspace and verify root + spoke structure."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "scaffold_workspace", ROOT / "tools" / "scaffold_workspace.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    ws_def = mod.load_workspace_def(ws_name)
+    errors = []
+
+    with tempfile.TemporaryDirectory() as tmp:
+        try:
+            mod.scaffold(ws_name, "test project", Path(tmp))
+        except Exception as e:
+            return False, [f"scaffold failed: {e}"]
+
+        ws_root = Path(tmp) / "test-project"
+        if not ws_root.exists():
+            return False, [f"workspace root not created: {ws_root}"]
+
+        for expected in ["shared-config.json", "Justfile", "README.md", "CLAUDE.md"]:
+            if not (ws_root / expected).exists():
+                errors.append(f"missing root file: {expected}")
+
+        if not (ws_root / "infra").is_dir():
+            errors.append("missing infra/ directory")
+
+        for spoke in ws_def["spokes"]:
+            spoke_dir = ws_root / ("test-project" + spoke["suffix"])
+            if not spoke_dir.exists():
+                errors.append(f"missing spoke dir: {spoke_dir.name}")
+                continue
+            manifest = SPOKE_MANIFESTS.get(spoke["template"])
+            if manifest and not (spoke_dir / manifest).exists():
+                errors.append(f"missing manifest {manifest} in {spoke_dir.name}")
+
+    return len(errors) == 0, errors
 
 
 def main():
@@ -208,7 +408,11 @@ def main():
                     failed_list.append((variant_label, f"render: {e}"))
                     continue
 
-                smoke_results = smoke_fn(project_dir)
+                smoke_results = (
+                    check_versioning_payload(project_dir, name, template_path)
+                    + smoke_just_fmt(project_dir)
+                    + smoke_fn(project_dir)
+                )
                 variant_ok = True
                 for check_name, ok, output in smoke_results:
                     status = "PASS" if ok else "FAIL"
@@ -223,6 +427,21 @@ def main():
                     passed += 1
                 else:
                     failed_list.append((variant_label, "smoke test"))
+
+    # Workspace rendering tests
+    for ws_name in WORKSPACE_DEFS:
+        total += 1
+        print(f"\n{'='*60}")
+        print(f"Workspace: {ws_name}")
+        print(f"{'='*60}")
+        ok, errors = smoke_workspace(ws_name)
+        if ok:
+            print(f"  PASSED")
+            passed += 1
+        else:
+            for err in errors:
+                print(f"  FAIL: {err}")
+            failed_list.append((f"workspace/{ws_name}", "; ".join(errors)))
 
     print(f"\n{'='*60}")
     print(f"Results: {passed}/{total} passed")

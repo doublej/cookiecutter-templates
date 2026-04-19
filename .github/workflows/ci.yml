@@ -15,6 +15,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -35,8 +37,15 @@ jobs:
       - name: Check template sync
         run: uv run tools/sync_check.py
 
+      - name: Enforce template version bumps
+        if: github.event_name == 'pull_request'
+        run: uv run tools/sync_check.py --enforce-bumps --bump-base origin/${{ github.base_ref }}
+
       - name: Run render tests
         run: uv run tools/render_test.py
+
+      - name: Test update-check hook
+        run: uv run tools/test_update_check.py
 
       - name: Upload rendered projects on failure
         if: failure()
