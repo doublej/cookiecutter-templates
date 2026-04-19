@@ -4,29 +4,33 @@
       "templates": ["python/cli", "python/fastapi", "python/flask"],
       "identical_files": [
         "hooks/pre_gen_project.py",
-        "{{cookiecutter.project_slug}}/.gitignore"
+        "{{cookiecutter.project_slug}}/.gitignore",
+        "{{cookiecutter.project_slug}}/.quality.json"
       ],
       "justfile_shared_recipes": [
         "default", "install", "lint", "lint-fix", "format", "format-check",
-        "typecheck", "test", "loc-check", "check", "clean"
+        "typecheck", "test", "loc-check", "dir-check", "just-fmt-check",
+        "check", "clean", "update-scaffold"
       ]
     },
     "typescript": {
       "templates": [
-        "typescript/node-api", "typescript/node-cli", "typescript/node-lib",
-        "typescript/node-worker", "typescript/react", "typescript/sveltekit"
+        "typescript/node-api", "typescript/node-cli", "typescript/bun-package",
+        "typescript/node-lib", "typescript/node-worker", "typescript/react",
+        "typescript/sveltekit", "typescript/nextjs"
       ],
       "identical_files": ["hooks/pre_gen_project.py"],
       "justfile_shared_recipes": [
         "default", "install", "lint", "lint-fix", "test",
-        "loc-check", "check", "build", "clean"
+        "loc-check", "dir-check", "just-fmt-check", "check", "build", "clean",
+        "update-scaffold"
       ],
       "justfile_exceptions": {
-        "typescript/react": {
-          "skip_recipes": ["loc-check"]
-        },
         "typescript/sveltekit": {
-          "skip_recipes": ["typecheck", "loc-check", "clean"]
+          "skip_recipes": ["typecheck", "clean"]
+        },
+        "typescript/nextjs": {
+          "skip_recipes": ["clean"]
         }
       }
     },
@@ -34,12 +38,40 @@
       "templates": ["swift/ios", "swift/macos"],
       "identical_files": [
         "hooks/pre_gen_project.py",
+        "{{cookiecutter.project_slug}}/.gitignore",
+        "{{cookiecutter.project_slug}}/.quality.json",
+        "{{cookiecutter.project_slug}}/.swiftlint.yml"
+      ],
+      "justfile_shared_recipes": [
+        "default", "install", "xcode", "lint", "lint-fix", "test",
+        "loc-check", "dir-check", "just-fmt-check", "check",
+        "build", "build-release", "clean", "update-scaffold"
+      ]
+    },
+    "rust": {
+      "templates": ["rust/cli"],
+      "identical_files": [
+        "hooks/pre_gen_project.py",
         "{{cookiecutter.project_slug}}/.gitignore"
       ],
       "justfile_shared_recipes": [
-        "default", "install", "xcode", "test", "loc-check", "check",
-        "build", "build-release", "clean"
+        "default", "lint", "fmt", "fmt-check", "just-fmt-check",
+        "check", "test", "loc-check", "dir-check", "build-release",
+        "reinstall", "update-scaffold"
       ]
     }
+  },
+  "cross_family": {
+    "identical_files": [
+      "{{cookiecutter.project_slug}}/.claude/settings.json",
+      "{{cookiecutter.project_slug}}/.claude/scripts/check_template_update.py"
+    ],
+    "slug_dir_overrides": {
+      "swift/stt-component": "{{cookiecutter.component_slug}}"
+    },
+    "exclude_templates": ["legacy/cookiecutter-uv"]
+  },
+  "workspaces": {
+    "definitions": ["workspace/hub-and-spoke.json"]
   }
 }

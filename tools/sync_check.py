@@ -119,6 +119,63 @@ def check_justfile_recipes(family: str, cfg: dict) -> list[str]:
     return errors
 
 
+def check_cross_family_files(manifest: dict) -> list[str]:
+    """Check that cross_family identical_files match across every non-excluded template."""
+    errors: list[str] = []
+    cfg = manifest.get("cross_family")
+    if not cfg:
+        return errors
+
+    exclude = set(cfg.get("exclude_templates", []))
+    overrides = cfg.get("slug_dir_overrides", {})
+    # Discover every template dir (has a cookiecutter.json), then apply excludes.
+    discovered = sorted(
+        p.parent.relative_to(ROOT).as_posix()
+        for p in ROOT.glob("*/*/cookiecutter.json")
+    )
+    all_templates = [t for t in discovered if t not in exclude]
+
+    for rel_path in cfg.get("identical_files", []):
+        hashes: dict[str, str] = {}
+        for tmpl in all_templates:
+            slug_dir = overrides.get(tmpl, "{{cookiecutter.project_slug}}")
+            full = ROOT / tmpl / rel_path.replace(
+                "{{cookiecutter.project_slug}}", slug_dir
+            )
+            if not full.exists():
+                errors.append(f"  cross_family: {rel_path} missing in {tmpl}")
+                continue
+            hashes[tmpl] = file_hash(full)
+
+        unique = set(hashes.values())
+        if len(unique) <= 1:
+            continue
+        errors.append(f"  cross_family: {rel_path} differs across templates:")
+        for tmpl, h in hashes.items():
+            errors.append(f"    {tmpl}: {h}")
+    return errors
+
+
+def check_workspace_refs(manifest: dict) -> list[str]:
+    """Verify every spoke template in workspace definitions points to an existing dir."""
+    errors = []
+    for ws_path_str in manifest.get("workspaces", {}).get("definitions", []):
+        ws_path = ROOT / ws_path_str
+        if not ws_path.exists():
+            errors.append(f"  workspace: definition not found: {ws_path_str}")
+            continue
+        with open(ws_path) as f:
+            ws_def = json.load(f)
+        for spoke in ws_def.get("spokes", []):
+            tmpl_dir = ROOT / spoke["template"]
+            if not tmpl_dir.exists():
+                errors.append(
+                    f"  workspace {ws_path.stem}: spoke '{spoke.get('role', '?')}' "
+                    f"references missing template: {spoke['template']}"
+                )
+    return errors
+
+
 def main():
     manifest = load_manifest()
     all_errors: list[str] = []
@@ -132,6 +189,22 @@ def main():
             print(f"  FAIL ({len(errors)} issue(s))")
         else:
             print(f"  OK")
+
+    print(f"Checking cross-family...")
+    cf_errors = check_cross_family_files(manifest)
+    if cf_errors:
+        all_errors.extend(cf_errors)
+        print(f"  FAIL ({len(cf_errors)} issue(s))")
+    else:
+        print(f"  OK")
+
+    print(f"Checking workspaces...")
+    ws_errors = check_workspace_refs(manifest)
+    if ws_errors:
+        all_errors.extend(ws_errors)
+        print(f"  FAIL ({len(ws_errors)} issue(s))")
+    else:
+        print(f"  OK")
 
     if all_errors:
         print(f"\nSync errors found:")
