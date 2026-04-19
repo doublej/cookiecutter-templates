@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Check that shared files stay in sync within each language family."""
+import argparse
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -156,6 +158,75 @@ def check_cross_family_files(manifest: dict) -> list[str]:
     return errors
 
 
+def _git_diff_names(base: str) -> list[str]:
+    try:
+        r = subprocess.run(
+            ["git", "diff", "--name-only", f"{base}...HEAD"],
+            capture_output=True, text=True, cwd=ROOT, timeout=10,
+        )
+    except Exception as e:
+        raise SystemExit(f"error: git diff failed: {e}")
+    if r.returncode != 0:
+        raise SystemExit(f"error: git diff {base}...HEAD failed: {r.stderr.strip()}")
+    return [line for line in r.stdout.splitlines() if line]
+
+
+def _version_in_ref(template: str, ref: str) -> str | None:
+    path = f"{template}/cookiecutter.json"
+    try:
+        r = subprocess.run(
+            ["git", "show", f"{ref}:{path}"],
+            capture_output=True, text=True, cwd=ROOT, timeout=5,
+        )
+    except Exception:
+        return None
+    if r.returncode != 0:
+        return None
+    try:
+        return json.loads(r.stdout).get("_version")
+    except Exception:
+        return None
+
+
+def check_versions_bumped(manifest: dict, base: str = "origin/main") -> list[str]:
+    """For every template changed vs `base`, require `_version` to bump.
+
+    Intended for CI (--enforce-bumps). Discovers templates via cookiecutter.json
+    presence so android/quest-vr and swift/stt-component are covered too.
+    """
+    errors: list[str] = []
+    changed = _git_diff_names(base)
+    if not changed:
+        return errors
+
+    discovered = sorted(
+        p.parent.relative_to(ROOT).as_posix()
+        for p in ROOT.glob("*/*/cookiecutter.json")
+    )
+    exclude = set(manifest.get("cross_family", {}).get("exclude_templates", []))
+
+    for tmpl in discovered:
+        if tmpl in exclude:
+            continue
+        if not any(f.startswith(tmpl + "/") for f in changed):
+            continue
+        head_cc = ROOT / tmpl / "cookiecutter.json"
+        if not head_cc.is_file():
+            continue
+        head_version = json.loads(head_cc.read_text()).get("_version")
+        base_version = _version_in_ref(tmpl, base)
+        if base_version is None:
+            # New template — no prior _version to compare; accept.
+            continue
+        if head_version == base_version:
+            errors.append(
+                f"  bumps: {tmpl} has file changes vs {base} but _version "
+                f"is still {head_version} — run `uv run tools/bump_version.py "
+                f"{tmpl} {{major|minor|patch}}`"
+            )
+    return errors
+
+
 def check_workspace_refs(manifest: dict) -> list[str]:
     """Verify every spoke template in workspace definitions points to an existing dir."""
     errors = []
@@ -177,6 +248,19 @@ def check_workspace_refs(manifest: dict) -> list[str]:
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--enforce-bumps",
+        action="store_true",
+        help="Fail when a changed template's cookiecutter.json _version did not bump vs origin/main.",
+    )
+    parser.add_argument(
+        "--bump-base",
+        default="origin/main",
+        help="Git ref used as the baseline for --enforce-bumps (default: origin/main).",
+    )
+    args = parser.parse_args()
+
     manifest = load_manifest()
     all_errors: list[str] = []
 
@@ -205,6 +289,15 @@ def main():
         print(f"  FAIL ({len(ws_errors)} issue(s))")
     else:
         print(f"  OK")
+
+    if args.enforce_bumps:
+        print(f"Checking version bumps vs {args.bump_base}...")
+        bump_errors = check_versions_bumped(manifest, args.bump_base)
+        if bump_errors:
+            all_errors.extend(bump_errors)
+            print(f"  FAIL ({len(bump_errors)} issue(s))")
+        else:
+            print(f"  OK")
 
     if all_errors:
         print(f"\nSync errors found:")
