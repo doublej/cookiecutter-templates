@@ -1,11 +1,14 @@
 {
     "_version": "1.0.0",
-    "project_name": "My macOS App",
+    "project_name": "My Quest VR App",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "module_name": "{{ cookiecutter.project_name.replace(' ', '').replace('-', '').replace('_', '') }}",
-    "description": "A macOS application",
+    "package_id": "com.example.{{ cookiecutter.project_slug.replace('-', '') }}",
+    "description": "A Quest VR application using OpenXR",
     "author": "Your Name",
-    "deployment_target": "14.0",
+    "graphics_api": ["gles", "vulkan"],
+    "min_sdk_version": "29",
+    "target_sdk_version": "32",
     "mcp_servers": ["none", "minimal", "standard", "interactive"],
     "mcp_scope": ["project", "local"]
 }

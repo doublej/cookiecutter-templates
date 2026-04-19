@@ -7,6 +7,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 PROJECT_SLUG = "{{ cookiecutter.project_slug }}"
+MODULE_NAME = "{{ cookiecutter.module_name }}"
+PACKAGE_ID = "{{ cookiecutter.package_id }}"
+GRAPHICS_API = "{{ cookiecutter.graphics_api }}"
 MCP_SERVERS = "{{ cookiecutter.mcp_servers }}"
 MCP_SCOPE = "{{ cookiecutter.mcp_scope }}"
 TEMPLATE_VERSION = "{{ cookiecutter._version }}"
@@ -15,9 +18,13 @@ TEMPLATE_PATH = r"{{ cookiecutter._template }}"
 CONTEXT = {
     "project_name": "{{ cookiecutter.project_name }}",
     "project_slug": PROJECT_SLUG,
+    "module_name": MODULE_NAME,
+    "package_id": PACKAGE_ID,
     "description": "{{ cookiecutter.description }}",
     "author": "{{ cookiecutter.author }}",
-    "python_version": "{{ cookiecutter.python_version }}",
+    "graphics_api": GRAPHICS_API,
+    "min_sdk_version": "{{ cookiecutter.min_sdk_version }}",
+    "target_sdk_version": "{{ cookiecutter.target_sdk_version }}",
     "mcp_servers": MCP_SERVERS,
     "mcp_scope": MCP_SCOPE,
 }
@@ -67,7 +74,7 @@ def resolve_template_source():
 
 def write_meta():
     meta = {
-        "template": "python/fastapi",
+        "template": "android/quest-vr",
         "template_version": TEMPLATE_VERSION,
         "template_source": resolve_template_source(),
         "rendered_at": datetime.now(timezone.utc).isoformat(),
@@ -144,5 +151,6 @@ if __name__ == "__main__":
     print(f"\n  Project created: {PROJECT_SLUG}\n")
     print("  Getting started:")
     print(f"    cd {PROJECT_SLUG}")
-    print("    uv sync")
-    print("    uv run uvicorn {}.main:app --reload\n".format(PROJECT_SLUG.replace("-", "_")))
+    print("    just install        # download gradle wrapper + Android SDK deps")
+    print("    just build          # assembleDebug APK")
+    print("    just install-device # adb install on connected Quest\n")

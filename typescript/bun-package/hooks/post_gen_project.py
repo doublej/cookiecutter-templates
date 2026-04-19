@@ -17,7 +17,6 @@ CONTEXT = {
     "project_slug": PROJECT_SLUG,
     "description": "{{ cookiecutter.description }}",
     "author": "{{ cookiecutter.author }}",
-    "python_version": "{{ cookiecutter.python_version }}",
     "mcp_servers": MCP_SERVERS,
     "mcp_scope": MCP_SCOPE,
 }
@@ -67,7 +66,7 @@ def resolve_template_source():
 
 def write_meta():
     meta = {
-        "template": "python/fastapi",
+        "template": "typescript/bun-package",
         "template_version": TEMPLATE_VERSION,
         "template_source": resolve_template_source(),
         "rendered_at": datetime.now(timezone.utc).isoformat(),
@@ -144,5 +143,5 @@ if __name__ == "__main__":
     print(f"\n  Project created: {PROJECT_SLUG}\n")
     print("  Getting started:")
     print(f"    cd {PROJECT_SLUG}")
-    print("    uv sync")
-    print("    uv run uvicorn {}.main:app --reload\n".format(PROJECT_SLUG.replace("-", "_")))
+    print("    bun install")
+    print("    bun run dev\n")

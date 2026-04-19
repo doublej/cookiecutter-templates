@@ -7,10 +7,13 @@ import os
 import shutil
 import subprocess
 from datetime import datetime, timezone
+from pathlib import Path
 
 PROJECT_DIRECTORY = os.path.realpath(os.path.curdir)
 MCP_SERVERS = "{{cookiecutter.mcp_servers}}"
 MCP_SCOPE = "{{cookiecutter.mcp_scope}}"
+TEMPLATE_VERSION = "{{cookiecutter._version}}"
+TEMPLATE_PATH = r"{{cookiecutter._template}}"
 
 
 def remove_file(filepath: str) -> None:
@@ -113,9 +116,37 @@ def handle_layout():
         move_dir("{{cookiecutter.project_slug}}", os.path.join("src", "{{cookiecutter.project_slug}}"))
 
 
+def resolve_template_source():
+    """Best-effort source-repo info for .template-meta.json."""
+    try:
+        tmpl = Path(TEMPLATE_PATH).resolve()
+    except Exception:
+        return {"type": "unknown"}
+    for p in [tmpl, *tmpl.parents]:
+        if (p / "tools" / "sync_manifest.json").is_file():
+            def _g(*args):
+                try:
+                    r = subprocess.run(
+                        ["git", "-C", str(p), *args],
+                        capture_output=True, text=True, timeout=5,
+                    )
+                    return (r.stdout.strip() or None) if r.returncode == 0 else None
+                except Exception:
+                    return None
+            return {
+                "type": "local",
+                "path": str(p),
+                "git_remote": _g("config", "--get", "remote.origin.url"),
+                "git_sha": _g("rev-parse", "HEAD"),
+            }
+    return {"type": "unknown", "path": str(tmpl)}
+
+
 def write_meta():
     meta = {
         "template": "legacy/cookiecutter-uv",
+        "template_version": TEMPLATE_VERSION,
+        "template_source": resolve_template_source(),
         "rendered_at": datetime.now(timezone.utc).isoformat(),
         "context": {
             "project_name": "{{cookiecutter.project_name}}",
@@ -130,6 +161,7 @@ def write_meta():
     meta_path = os.path.join(PROJECT_DIRECTORY, ".template-meta.json")
     with open(meta_path, "w") as f:
         json.dump(meta, f, indent=2)
+        f.write("\n")
 
 
 def _write_mcp_json(server_names):

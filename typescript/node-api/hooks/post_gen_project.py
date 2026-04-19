@@ -10,6 +10,8 @@ PROJECT_SLUG = "{{ cookiecutter.project_slug }}"
 INCLUDE_DOCKER = "{{ cookiecutter.include_docker }}".lower() in ("true", "y", "yes", "1")
 MCP_SERVERS = "{{ cookiecutter.mcp_servers }}"
 MCP_SCOPE = "{{ cookiecutter.mcp_scope }}"
+TEMPLATE_VERSION = "{{ cookiecutter._version }}"
+TEMPLATE_PATH = r"{{ cookiecutter._template }}"
 
 CONTEXT = {
     "project_name": "{{ cookiecutter.project_name }}",
@@ -44,14 +46,43 @@ def rm(path: str) -> None:
         p.unlink()
 
 
+def resolve_template_source():
+    """Best-effort source-repo info for .template-meta.json."""
+    try:
+        tmpl = Path(TEMPLATE_PATH).resolve()
+    except Exception:
+        return {"type": "unknown"}
+    for p in [tmpl, *tmpl.parents]:
+        if (p / "tools" / "sync_manifest.json").is_file():
+            def _g(*args):
+                try:
+                    r = subprocess.run(
+                        ["git", "-C", str(p), *args],
+                        capture_output=True, text=True, timeout=5,
+                    )
+                    return (r.stdout.strip() or None) if r.returncode == 0 else None
+                except Exception:
+                    return None
+            return {
+                "type": "local",
+                "path": str(p),
+                "git_remote": _g("config", "--get", "remote.origin.url"),
+                "git_sha": _g("rev-parse", "HEAD"),
+            }
+    return {"type": "unknown", "path": str(tmpl)}
+
+
 def write_meta():
     meta = {
         "template": "typescript/node-api",
+        "template_version": TEMPLATE_VERSION,
+        "template_source": resolve_template_source(),
         "rendered_at": datetime.now(timezone.utc).isoformat(),
         "context": CONTEXT,
     }
     with open(".template-meta.json", "w") as f:
         json.dump(meta, f, indent=2)
+        f.write("\n")
 
 
 def _write_mcp_json(server_names):

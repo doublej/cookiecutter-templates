@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Post-generation hook: write meta file, set up MCP, print instructions."""
+"""Post-generation hook: clean up tracking placeholder, set up MCP, write meta."""
 import json
+import os
 import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+PROJECT_DIR = Path(os.path.realpath(os.path.curdir))
 PROJECT_SLUG = "{{ cookiecutter.project_slug }}"
+INCLUDE_TRACKING = "{{ cookiecutter.include_tracking }}"
 MCP_SERVERS = "{{ cookiecutter.mcp_servers }}"
 MCP_SCOPE = "{{ cookiecutter.mcp_scope }}"
 TEMPLATE_VERSION = "{{ cookiecutter._version }}"
@@ -17,7 +20,7 @@ CONTEXT = {
     "project_slug": PROJECT_SLUG,
     "description": "{{ cookiecutter.description }}",
     "author": "{{ cookiecutter.author }}",
-    "python_version": "{{ cookiecutter.python_version }}",
+    "include_tracking": INCLUDE_TRACKING,
     "mcp_servers": MCP_SERVERS,
     "mcp_scope": MCP_SCOPE,
 }
@@ -37,6 +40,24 @@ MCP_SERVER_CONFIGS = {
         "args": ["-y", "consult-user-mcp@latest"],
     },
 }
+
+
+def cleanup_tracking():
+    layout_file = PROJECT_DIR / "src" / "app" / "layout.tsx"
+    if not layout_file.exists():
+        return
+
+    if INCLUDE_TRACKING != "y":
+        content = layout_file.read_text()
+        content = content.replace(
+            "      <body>\n        {/* TRACKING_PLACEHOLDER */}\n        {children}\n      </body>",
+            "      <body>{children}</body>",
+        )
+        layout_file.write_text(content)
+        return
+
+    print("  Note: tracking placeholder left in src/app/layout.tsx")
+    print("  Run tools/inject_tracking.py to inject Umami tracking")
 
 
 def resolve_template_source():
@@ -67,7 +88,7 @@ def resolve_template_source():
 
 def write_meta():
     meta = {
-        "template": "python/fastapi",
+        "template": "typescript/nextjs",
         "template_version": TEMPLATE_VERSION,
         "template_source": resolve_template_source(),
         "rendered_at": datetime.now(timezone.utc).isoformat(),
@@ -138,11 +159,16 @@ def setup_mcp():
         _add_via_claude_cli(server_names)
 
 
-if __name__ == "__main__":
+def main():
+    cleanup_tracking()
     write_meta()
     setup_mcp()
     print(f"\n  Project created: {PROJECT_SLUG}\n")
     print("  Getting started:")
     print(f"    cd {PROJECT_SLUG}")
-    print("    uv sync")
-    print("    uv run uvicorn {}.main:app --reload\n".format(PROJECT_SLUG.replace("-", "_")))
+    print("    bun install")
+    print("    bun run dev\n")
+
+
+if __name__ == "__main__":
+    main()
