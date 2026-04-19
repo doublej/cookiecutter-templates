@@ -1,5 +1,5 @@
 {
-    "_version": "1.0.1",
+    "_version": "1.0.2",
     "project_name": "My iOS App",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "module_name": "{{ cookiecutter.project_name.replace(' ', '').replace('-', '').replace('_', '') }}",

@@ -1,5 +1,5 @@
 {
-    "_version": "1.1.1",
+    "_version": "1.1.2",
     "project_name": "My FastAPI Project",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "description": "A FastAPI application",

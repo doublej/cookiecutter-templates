@@ -1,5 +1,5 @@
 {
-    "_version": "1.0.1",
+    "_version": "1.0.2",
     "project_name": "My React Project",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "description": "A React application",

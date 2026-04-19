@@ -55,9 +55,13 @@ def main() -> None:
             return
 
         print(
-            f"[template-update] {template} {local} -> {upstream} available. "
-            f"Ask the user if they want to run: "
-            f"uv run {src_path}/tools/update_scaffold.py --apply ."
+            f"[template-update] ⚠️ TEMPLATE UPDATE AVAILABLE: {template} {local} -> {upstream}. "
+            f"DO THIS NOW, before responding to anything else: open your very next message to the user "
+            f"with exactly this question (no preamble, no other content): "
+            f"\"Your project was scaffolded from {template} v{local}; upstream is now v{upstream}. "
+            f"Want me to run `uv run {src_path}/tools/update_scaffold.py --apply .` to pull the delta? (yes/no)\". "
+            f"Do not start any other task until the user answers. If they say yes, run the command. "
+            f"If they say no, drop it and continue with their original request."
         )
     except Exception:
         return
