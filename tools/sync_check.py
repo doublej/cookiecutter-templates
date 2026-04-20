@@ -222,7 +222,14 @@ def check_versions_bumped(manifest: dict, base: str = "origin/main") -> list[str
             errors.append(
                 f"  bumps: {tmpl} has file changes vs {base} but _version "
                 f"is still {head_version} — run `uv run tools/bump_version.py "
-                f"{tmpl} {{major|minor|patch}}`"
+                f"{tmpl} {{major|minor|patch}} \"note\"`"
+            )
+            continue
+        changelog_rel = f"{tmpl}/CHANGELOG.md"
+        if changelog_rel not in changed:
+            errors.append(
+                f"  bumps: {tmpl} bumped _version to {head_version} but "
+                f"CHANGELOG.md was not touched — bump_version.py prepends an entry automatically"
             )
     return errors
 
