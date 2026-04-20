@@ -11,6 +11,8 @@ MCP_SERVERS = "{{ cookiecutter.mcp_servers }}"
 MCP_SCOPE = "{{ cookiecutter.mcp_scope }}"
 TEMPLATE_VERSION = "{{ cookiecutter._version }}"
 TEMPLATE_PATH = r"{{ cookiecutter._template }}"
+ATLAS_TYPE = "python"
+ATLAS_FRAMEWORK = "fastapi"
 
 CONTEXT = {
     "project_name": "{{ cookiecutter.project_name }}",
@@ -119,6 +121,25 @@ def _run_mcpick_interactive():
     subprocess.run(["mcpick-plus", "init"])
 
 
+def write_atlas():
+    atlas_path = Path(".atlas")
+    data = {
+        "description": "{{ cookiecutter.description }}",
+        "type": ATLAS_TYPE,
+        "framework": ATLAS_FRAMEWORK,
+        "archived": False,
+    }
+    if atlas_path.is_file():
+        try:
+            existing = json.loads(atlas_path.read_text())
+        except Exception:
+            existing = {}
+        for k, v in data.items():
+            existing.setdefault(k, v)
+        data = existing
+    atlas_path.write_text(json.dumps(data, indent=2) + "\n")
+
+
 def setup_mcp():
     if MCP_SERVERS == "none":
         return
@@ -140,6 +161,7 @@ def setup_mcp():
 
 if __name__ == "__main__":
     write_meta()
+    write_atlas()
     setup_mcp()
     print(f"\n  Project created: {PROJECT_SLUG}\n")
     print("  Getting started:")

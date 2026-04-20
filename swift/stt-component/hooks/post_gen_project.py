@@ -9,6 +9,8 @@ MODULE_NAME = "{{ cookiecutter.module_name }}"
 
 TEMPLATE_VERSION = "{{ cookiecutter._version }}"
 TEMPLATE_PATH = r"{{ cookiecutter._template }}"
+ATLAS_TYPE = "swift"
+ATLAS_FRAMEWORK = "spm"
 
 CONTEXT = {
     "component_name": "{{ cookiecutter.component_name }}",
@@ -56,8 +58,28 @@ def write_meta():
     with open(".template-meta.json", "w") as f:
         json.dump(meta, f, indent=2)
         f.write("\n")
+def write_atlas():
+    atlas_path = Path(".atlas")
+    data = {
+        "description": "{{ cookiecutter.description }}",
+        "type": ATLAS_TYPE,
+        "framework": ATLAS_FRAMEWORK,
+        "archived": False,
+    }
+    if atlas_path.is_file():
+        try:
+            existing = json.loads(atlas_path.read_text())
+        except Exception:
+            existing = {}
+        for k, v in data.items():
+            existing.setdefault(k, v)
+        data = existing
+    atlas_path.write_text(json.dumps(data, indent=2) + "\n")
+
+
 if __name__ == "__main__":
     write_meta()
+    write_atlas()
     print(f"\n  Component created: {COMPONENT_SLUG}\n")
     print("  Getting started:")
     print(f"    cd {COMPONENT_SLUG}")

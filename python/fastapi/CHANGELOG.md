@@ -6,6 +6,11 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+
+## [1.2.0] - 2026-04-20
+- post_gen hook writes .atlas sidecar (description/type/framework/archived)
+- update_scaffold.py shallow-merges .atlas on --apply; local values preserved
+
 ## [1.1.3] - 2026-04-20
 - add per-template CHANGELOG.md surfaced in update-check hook
 - bump_version.py now requires --note

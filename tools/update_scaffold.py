@@ -11,6 +11,38 @@ from pathlib import Path
 
 TEMPLATES_ROOT = Path(__file__).resolve().parent.parent
 SCAFFOLD_FILES = [".gitignore", ".quality.json", "agent.md", "CLAUDE.md", "Justfile"]
+MANIFEST = TEMPLATES_ROOT / "tools" / "sync_manifest.json"
+
+
+def _merge_paths() -> list[str]:
+    try:
+        return json.loads(MANIFEST.read_text()).get("merge_paths", {}).get("files", [])
+    except Exception:
+        return []
+
+
+def _shallow_merge_json(local_path: Path, upstream_path: Path) -> tuple[bool, str]:
+    """Shallow-merge upstream JSON into local, preserving local values.
+
+    Returns (changed, merged_text). changed=True when the merge adds fields
+    missing locally; existing local values are never overwritten.
+    """
+    try:
+        local = json.loads(local_path.read_text()) if local_path.is_file() else {}
+        upstream = json.loads(upstream_path.read_text())
+    except Exception:
+        return False, ""
+    if not isinstance(local, dict) or not isinstance(upstream, dict):
+        return False, ""
+    merged = dict(local)
+    added = []
+    for k, v in upstream.items():
+        if k not in merged:
+            merged[k] = v
+            added.append(k)
+    if not added:
+        return False, ""
+    return True, json.dumps(merged, indent=2) + "\n"
 
 
 def load_meta(project_dir: Path) -> dict:
@@ -85,15 +117,28 @@ def main():
             if diff:
                 changes.append((fname, diff))
 
-        if not changes and local_version == upstream_version:
+        merges: list[tuple[str, str]] = []
+        for fname in _merge_paths():
+            src = rendered / fname
+            if not src.is_file():
+                continue
+            dst = project_dir / fname
+            changed, merged_text = _shallow_merge_json(dst, src)
+            if changed:
+                merges.append((fname, merged_text))
+
+        if not changes and not merges and local_version == upstream_version:
             print("Up to date.")
             return
-        if not changes:
+        if not changes and not merges:
             print("scaffold files are up to date")
         else:
             for fname, diff in changes:
                 print(f"--- {fname} ---")
                 sys.stdout.writelines(diff)
+                print()
+            for fname, _ in merges:
+                print(f"--- {fname} (merge: new fields will be added; your values preserved) ---")
                 print()
 
         if apply:
@@ -101,6 +146,9 @@ def main():
                 src = rendered / fname
                 shutil.copy2(src, project_dir / fname)
                 print(f"  updated: {fname}")
+            for fname, merged_text in merges:
+                (project_dir / fname).write_text(merged_text)
+                print(f"  merged: {fname}")
             if upstream_version:
                 meta["template_version"] = upstream_version
             meta["rendered_at"] = datetime.now(timezone.utc).isoformat()
@@ -108,10 +156,11 @@ def main():
                 json.dumps(meta, indent=2) + "\n"
             )
             print(f"  updated: .template-meta.json")
-            n = len(changes) + 1
+            n = len(changes) + len(merges) + 1
             print(f"\n{n} file(s) updated")
-        elif changes:
-            print(f"{len(changes)} file(s) differ — run with --apply to update")
+        elif changes or merges:
+            total = len(changes) + len(merges)
+            print(f"{total} file(s) differ — run with --apply to update")
 
 
 if __name__ == "__main__":

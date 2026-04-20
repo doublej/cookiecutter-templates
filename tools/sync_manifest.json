@@ -71,6 +71,10 @@
     },
     "exclude_templates": ["legacy/cookiecutter-uv"]
   },
+  "merge_paths": {
+    "description": "JSON files that update_scaffold.py shallow-merges instead of overwriting: upstream fields missing locally are added; existing local values are preserved so user edits survive.",
+    "files": [".atlas"]
+  },
   "workspaces": {
     "definitions": ["workspace/hub-and-spoke.json"]
   }
