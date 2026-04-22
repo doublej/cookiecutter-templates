@@ -14,8 +14,10 @@ dev:
     bun run dev
 
 [group('develop')]
-run *ARGS:
+run-cli *ARGS:
     bun run start {% raw %}{{ARGS}}{% endraw %}
+
+alias run := run-cli
 
 [group('quality')]
 lint:

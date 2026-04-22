@@ -13,7 +13,7 @@ Use `just` as the task runner:
 
 - `just check` — run all checks (loc-check + lint + format-check + typecheck + test)
 - `just loc-check` — check file lengths (warn >300, error >400 lines)
-- `just run` — run the CLI
+- `just run-cli` — run the CLI (alias: `just run`)
 - `just test` — run tests
 - `just lint-fix` — auto-fix lint issues
 - `just format` — format code

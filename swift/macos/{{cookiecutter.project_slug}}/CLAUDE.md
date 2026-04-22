@@ -14,7 +14,7 @@ Use `just` as the task runner:
 - `just install` — resolve package dependencies
 - `just check` — run all checks (loc-check + build + test)
 - `just loc-check` — check file lengths (warn >300, error >400 lines)
-- `just run` — build and run
+- `just run-app` — build and run (alias: `just run`)
 - `just build` — debug build
 - `just build-release` — release build
 - `just test` — run tests

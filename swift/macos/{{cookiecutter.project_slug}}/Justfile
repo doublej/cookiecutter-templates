@@ -10,8 +10,10 @@ install:
     swift package resolve
 
 [group('develop')]
-run:
+run-app:
     swift run {{ cookiecutter.module_name }}
+
+alias run := run-app
 
 [group('develop')]
 xcode:

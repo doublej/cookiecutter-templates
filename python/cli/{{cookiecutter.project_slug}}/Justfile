@@ -10,8 +10,10 @@ install:
     uv sync
 
 [group('develop')]
-run *ARGS:
+run-cli *ARGS:
     uv run {{ cookiecutter.project_slug }} {% raw %}{{ARGS}}{% endraw %}
+
+alias run := run-cli
 
 [group('quality')]
 lint:
