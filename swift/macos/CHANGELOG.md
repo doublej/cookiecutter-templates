@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [1.2.1] - 2026-04-25
+- module_name default now PascalCases input — works with lowercase project_name
+
 ## [1.2.0] - 2026-04-22
 - rename 'run' to 'run-app' with retro-compat alias
 

@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [1.1.1] - 2026-04-25
+- module_name default now PascalCases input — works with lowercase project_name
+
 ## [1.1.0] - 2026-04-20
 - post_gen hook writes .atlas sidecar (description/type/framework/archived)
 - update_scaffold.py shallow-merges .atlas on --apply; local values preserved
