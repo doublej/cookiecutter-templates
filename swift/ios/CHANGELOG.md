@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.0.0] - 2026-04-25
+- deployment target raised to iOS 26, swift-tools-version 6.2
+
 ## [1.1.1] - 2026-04-25
 - module_name default now PascalCases input — works with lowercase project_name
 

@@ -1,11 +1,11 @@
 {
-    "_version": "1.2.1",
+    "_version": "2.0.0",
     "project_name": "My macOS App",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "module_name": "{% set words = cookiecutter.project_name.replace('-', ' ').replace('_', ' ').split() %}{% for w in words %}{{ w[0]|upper }}{{ w[1:] }}{% endfor %}",
     "description": "A macOS application",
     "author": "Your Name",
-    "deployment_target": "14.0",
+    "deployment_target": "26.0",
     "mcp_servers": ["none", "minimal", "standard", "interactive"],
     "mcp_scope": ["project", "local"]
 }
