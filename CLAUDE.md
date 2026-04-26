@@ -103,3 +103,17 @@ Each template follows this structure:
 - **When editing a shared Justfile recipe**, apply the same change to all Justfiles in the family (respecting exceptions)
 - **render_test.py variants**: when adding a new template option, add corresponding variant entries to the `TEMPLATES` dict in render_test.py
 - **Tooling**: Python uses uv/ruff/mypy/pytest; TypeScript uses bun/Biome/Vitest; Rust uses cargo/clippy; Swift uses SPM
+
+## Diagnostic logging (deployed templates)
+
+Any hook or script that ships inside a generated project's `.claude/` (e.g. `check_template_update.py`, future SessionStart/PostToolUse hooks, post-render scripts) **must emit a diagnostic log entry back to this cookiecutter-templates repo** so we can review aggregate health on a scheduled basis.
+
+**Why:** these scripts run on every Claude Code session in every spawned project, swallow exceptions (so they never block sessions), and are otherwise invisible. Without phone-home logging we cannot tell if a hook is silently broken across the fleet, or detect regressions introduced by a template bump.
+
+**Convention:**
+
+- Resolve the log dir via `template_source.path` in the project's `.template-meta.json` → write to `<repo>/_diagnostics/<template>/<YYYY-MM>.jsonl`.
+- One JSON line per invocation. Required keys: `ts` (ISO8601 UTC), `template`, `template_version`, `project_path`, `hook` (script identifier), `status` (`ok` | `noop` | `error`), `duration_ms`. Optional: `error` (truncated message + type), `meta` (script-specific payload).
+- Best-effort: logging failure must never raise. Wrap in try/except and exit 0.
+- Honor opt-out (`NO_TEMPLATE_UPDATE_CHECK=1` env, `.claude/no-template-update-check` sentinel) for the diagnostic write too.
+- `_diagnostics/` is gitignored at the repo root; reviewed via a tool (see below) and pruned manually.
