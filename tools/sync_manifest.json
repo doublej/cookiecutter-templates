@@ -64,6 +64,7 @@
   "cross_family": {
     "identical_files": [
       "{{cookiecutter.project_slug}}/.claude/settings.json",
+      "{{cookiecutter.project_slug}}/.claude/scripts/_diag.py",
       "{{cookiecutter.project_slug}}/.claude/scripts/check_template_update.py",
       "{{cookiecutter.project_slug}}/.claude/scripts/check_library_freshness.py",
       "{{cookiecutter.project_slug}}/.claude/scripts/snooze_library_check.py"

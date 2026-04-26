@@ -31,8 +31,9 @@ def _fake_project(root: Path, template: str, local_version: str, source_path: Pa
     project = root / "proj"
     script_dst = project / ".claude" / "scripts"
     script_dst.mkdir(parents=True, exist_ok=True)
-    src_script = ROOT / "python/fastapi/{{cookiecutter.project_slug}}/.claude/scripts/check_template_update.py"
-    shutil.copy(src_script, script_dst / "check_template_update.py")
+    src_dir = ROOT / "python/fastapi/{{cookiecutter.project_slug}}/.claude/scripts"
+    shutil.copy(src_dir / "check_template_update.py", script_dst / "check_template_update.py")
+    shutil.copy(src_dir / "_diag.py", script_dst / "_diag.py")
     (project / ".template-meta.json").write_text(json.dumps({
         "template": template,
         "template_version": local_version,
@@ -40,6 +41,19 @@ def _fake_project(root: Path, template: str, local_version: str, source_path: Pa
         "context": {},
     }) + "\n")
     return project
+
+
+def _diag_records(upstream_root: Path, template: str) -> list[dict]:
+    diag_dir = upstream_root / "_diagnostics" / template
+    if not diag_dir.is_dir():
+        return []
+    records = []
+    for path in sorted(diag_dir.glob("*.jsonl")):
+        for raw in path.read_text().splitlines():
+            raw = raw.strip()
+            if raw:
+                records.append(json.loads(raw))
+    return records
 
 
 def _run(project: Path, env_extra: dict | None = None):
@@ -97,6 +111,36 @@ def main() -> None:
         r = _run(project)
         if "[template-update]" in r.stdout:
             failures.append(f"expected silent without meta, got: {r.stdout!r}")
+
+        # 6. Diagnostic records: each prior run that had a meta should have logged.
+        recs = _diag_records(upstream, template)
+        statuses = [r["status"] for r in recs]
+        # runs 1 (ok), 2 (noop up-to-date), 3 (noop env-opt-out is suppressed pre-meta? no — it
+        # is suppressed before reading meta, so opt-out short-circuits before _diag could read meta.
+        # Diag respects opt-out env separately (NO_TEMPLATE_DIAG); NO_TEMPLATE_UPDATE_CHECK still
+        # logs a noop=env-opt-out before returning).
+        if "ok" not in statuses:
+            failures.append(f"expected at least one ok diag record, got statuses={statuses}")
+        if statuses.count("noop") < 2:
+            failures.append(f"expected >=2 noop diag records, got statuses={statuses}")
+        for rec in recs:
+            for key in ("ts", "template", "hook", "status", "duration_ms", "project_path"):
+                if key not in rec:
+                    failures.append(f"diag record missing {key}: {rec}")
+                    break
+
+        # 7. NO_TEMPLATE_DIAG silences phone-home even when the hook itself runs.
+        meta_path.write_text(json.dumps({
+            "template": template,
+            "template_version": "1.0.0",
+            "template_source": {"type": "local", "path": str(upstream)},
+            "context": {},
+        }) + "\n")
+        before = len(_diag_records(upstream, template))
+        r = _run(project, {"NO_TEMPLATE_DIAG": "1"})
+        after = len(_diag_records(upstream, template))
+        if after != before:
+            failures.append(f"NO_TEMPLATE_DIAG should suppress writes, before={before} after={after}")
 
     if failures:
         print("FAIL")

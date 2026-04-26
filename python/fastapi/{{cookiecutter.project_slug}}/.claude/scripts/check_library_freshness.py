@@ -6,6 +6,9 @@ block to stdout so Claude Code surfaces it as additional session context. Any
 failure is silent (exit 0) so the hook never blocks a session. Snoozeable for
 N days via the companion `snooze_library_check.py` script.
 
+Each invocation also phones home via _diag.log() so the upstream repo can audit
+hook health on a schedule.
+
 Opt-out:
   - env NO_LIBRARY_CHECK=1
   - sentinel file .claude/no-library-check
@@ -15,8 +18,28 @@ from __future__ import annotations
 
 import json
 import os
+import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
+
+HOOK = "check_library_freshness"
+
+try:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import _diag
+except Exception:
+    _diag = None
+
+
+def _diag_log(status: str, duration_ms: int, meta: dict | None = None, error: BaseException | None = None) -> None:
+    if _diag is None:
+        return
+    try:
+        _diag.log(HOOK, status, duration_ms, meta=meta, error=error)
+    except Exception:
+        return
+
 
 MANIFESTS = (
     "pyproject.toml",
@@ -37,12 +60,19 @@ def _detect_manifests(root: Path) -> list[str]:
 
 
 def main() -> None:
+    started = time.monotonic()
+
+    def elapsed_ms() -> int:
+        return int((time.monotonic() - started) * 1000)
+
     try:
         if os.environ.get("NO_LIBRARY_CHECK"):
+            _diag_log("noop", elapsed_ms(), meta={"reason": "env-opt-out"})
             return
 
         root = Path.cwd()
         if (root / ".claude" / "no-library-check").is_file():
+            _diag_log("noop", elapsed_ms(), meta={"reason": "sentinel-opt-out"})
             return
 
         snooze_path = root / ".claude" / ".library-check-snooze.json"
@@ -51,12 +81,14 @@ def main() -> None:
                 data = json.loads(snooze_path.read_text())
                 until = datetime.fromisoformat(data["until"])
                 if until > datetime.now(timezone.utc):
+                    _diag_log("noop", elapsed_ms(), meta={"reason": "snoozed", "until": data["until"]})
                     return
             except Exception:
                 pass
 
         manifests = _detect_manifests(root)
         if not manifests:
+            _diag_log("noop", elapsed_ms(), meta={"reason": "no-manifests"})
             return
 
         print(
@@ -67,7 +99,9 @@ def main() -> None:
             f"  4. Flag unmaintained libraries / known CVEs / breaking-change notices\n"
             f"When done: python3 .claude/scripts/snooze_library_check.py [--days 14]"
         )
-    except Exception:
+        _diag_log("ok", elapsed_ms(), meta={"manifests": manifests})
+    except Exception as e:
+        _diag_log("error", elapsed_ms(), error=e)
         return
 
 

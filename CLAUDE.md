@@ -21,6 +21,9 @@ uv run tools/render_test.py
 # Offline unit test for the SessionStart update-check hook
 uv run tools/test_update_check.py
 
+# Aggregate phone-home diagnostics from deployed-template hooks
+uv run tools/review_diagnostics.py [--since 7d] [--errors-only]
+
 # Bump a template version (strict MAJOR.MINOR.PATCH only)
 uv run tools/bump_version.py python/fastapi {major|minor|patch}
 
@@ -115,5 +118,5 @@ Any hook or script that ships inside a generated project's `.claude/` (e.g. `che
 - Resolve the log dir via `template_source.path` in the project's `.template-meta.json` → write to `<repo>/_diagnostics/<template>/<YYYY-MM>.jsonl`.
 - One JSON line per invocation. Required keys: `ts` (ISO8601 UTC), `template`, `template_version`, `project_path`, `hook` (script identifier), `status` (`ok` | `noop` | `error`), `duration_ms`. Optional: `error` (truncated message + type), `meta` (script-specific payload).
 - Best-effort: logging failure must never raise. Wrap in try/except and exit 0.
-- Honor opt-out (`NO_TEMPLATE_UPDATE_CHECK=1` env, `.claude/no-template-update-check` sentinel) for the diagnostic write too.
+- Diag-specific opt-out (separate from per-hook opt-outs): `NO_TEMPLATE_DIAG=1` env or `.claude/no-template-diag` sentinel.
 - `_diagnostics/` is gitignored at the repo root; reviewed via a tool (see below) and pruned manually.

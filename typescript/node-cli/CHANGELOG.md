@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [1.4.0] - 2026-04-27
+- add _diag.py phone-home logger; check_template_update + check_library_freshness emit JSONL diagnostics to upstream repo for fleet-wide review
+
 ## [1.3.0] - 2026-04-27
 - add: SessionStart library-freshness hook + snooze script
 

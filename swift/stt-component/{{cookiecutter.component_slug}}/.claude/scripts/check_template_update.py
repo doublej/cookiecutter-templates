@@ -6,6 +6,9 @@ against the upstream cookiecutter.json _version, and prints a single line to
 stdout so Claude Code surfaces it as additional session context. Any failure
 is silent (exit 0) so the hook never blocks a session.
 
+Each invocation also phones home via _diag.log() so the upstream repo can audit
+hook health on a schedule.
+
 Opt-out:
   - env NO_TEMPLATE_UPDATE_CHECK=1
   - sentinel file .claude/no-template-update-check
@@ -16,7 +19,25 @@ import json
 import os
 import re
 import sys
+import time
 from pathlib import Path
+
+HOOK = "check_template_update"
+
+try:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import _diag
+except Exception:
+    _diag = None
+
+
+def _diag_log(status: str, duration_ms: int, meta: dict | None = None, error: BaseException | None = None) -> None:
+    if _diag is None:
+        return
+    try:
+        _diag.log(HOOK, status, duration_ms, meta=meta, error=error)
+    except Exception:
+        return
 
 
 def _parse(version: str) -> tuple[int, ...]:
@@ -25,7 +46,6 @@ def _parse(version: str) -> tuple[int, ...]:
 
 def _extract_entries(changelog_text: str, local: str, upstream: str) -> str:
     """Return concatenated changelog sections for versions > local and <= upstream."""
-    # Split on `## [X.Y.Z] - DATE` headers; keep one section per entry.
     pattern = re.compile(r"^## \[(\d+\.\d+\.\d+)\].*$", flags=re.MULTILINE)
     matches = list(pattern.finditer(changelog_text))
     if not matches:
@@ -45,16 +65,24 @@ def _extract_entries(changelog_text: str, local: str, upstream: str) -> str:
 
 
 def main() -> None:
+    started = time.monotonic()
+
+    def elapsed_ms() -> int:
+        return int((time.monotonic() - started) * 1000)
+
     try:
         if os.environ.get("NO_TEMPLATE_UPDATE_CHECK"):
+            _diag_log("noop", elapsed_ms(), meta={"reason": "env-opt-out"})
             return
 
         root = Path.cwd()
         if (root / ".claude" / "no-template-update-check").is_file():
+            _diag_log("noop", elapsed_ms(), meta={"reason": "sentinel-opt-out"})
             return
 
         meta_path = root / ".template-meta.json"
         if not meta_path.is_file():
+            _diag_log("noop", elapsed_ms(), meta={"reason": "no-meta"})
             return
 
         meta = json.loads(meta_path.read_text())
@@ -63,17 +91,21 @@ def main() -> None:
         source = meta.get("template_source") or {}
         src_path = source.get("path")
         if not (local and template and src_path):
+            _diag_log("noop", elapsed_ms(), meta={"reason": "incomplete-meta"})
             return
 
         upstream_cc = Path(src_path) / template / "cookiecutter.json"
         if not upstream_cc.is_file():
+            _diag_log("noop", elapsed_ms(), meta={"reason": "upstream-missing", "src_path": src_path})
             return
 
         upstream = json.loads(upstream_cc.read_text()).get("_version")
         if not upstream:
+            _diag_log("noop", elapsed_ms(), meta={"reason": "upstream-no-version"})
             return
 
         if _parse(upstream) <= _parse(local):
+            _diag_log("noop", elapsed_ms(), meta={"reason": "up-to-date", "version": local})
             return
 
         changelog_path = Path(src_path) / template / "CHANGELOG.md"
@@ -96,7 +128,9 @@ def main() -> None:
             f"Do not start any other task until the user answers. If they say yes, run the command. "
             f"If they say no, drop it and continue with their original request."
         )
-    except Exception:
+        _diag_log("ok", elapsed_ms(), meta={"local": local, "upstream": upstream, "has_changelog": bool(entries)})
+    except Exception as e:
+        _diag_log("error", elapsed_ms(), error=e)
         return
 
 
