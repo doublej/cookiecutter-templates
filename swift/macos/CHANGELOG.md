@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.1.0] - 2026-04-27
+- add: SessionStart library-freshness hook + snooze script
+
 ## [2.0.0] - 2026-04-25
 - deployment target raised to macOS 26 (Tahoe), swift-tools-version 6.2
 

@@ -7,6 +7,9 @@ pinned version and the upstream version.
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
 
+## [1.3.0] - 2026-04-27
+- add: SessionStart library-freshness hook + snooze script
+
 ## [1.2.0] - 2026-04-20
 - post_gen hook writes .atlas sidecar (description/type/framework/archived)
 - update_scaffold.py shallow-merges .atlas on --apply; local values preserved

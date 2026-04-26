@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [1.3.0] - 2026-04-27
+- add: SessionStart library-freshness hook + snooze script
+
 ## [1.2.0] - 2026-04-22
 - rename 'run' to 'run-cli' with retro-compat alias
 

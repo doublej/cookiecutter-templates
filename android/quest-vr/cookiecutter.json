@@ -1,5 +1,5 @@
 {
-    "_version": "1.1.0",
+    "_version": "1.2.0",
     "project_name": "My Quest VR App",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "module_name": "{{ cookiecutter.project_name.replace(' ', '').replace('-', '').replace('_', '') }}",
