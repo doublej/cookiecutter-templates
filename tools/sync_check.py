@@ -192,7 +192,7 @@ def check_versions_bumped(manifest: dict, base: str = "origin/main") -> list[str
     """For every template changed vs `base`, require `_version` to bump.
 
     Intended for CI (--enforce-bumps). Discovers templates via cookiecutter.json
-    presence so android/quest-vr and swift/stt-component are covered too.
+    presence so android/quest-vr is covered too.
     """
     errors: list[str] = []
     changed = _git_diff_names(base)
@@ -234,26 +234,6 @@ def check_versions_bumped(manifest: dict, base: str = "origin/main") -> list[str
     return errors
 
 
-def check_workspace_refs(manifest: dict) -> list[str]:
-    """Verify every spoke template in workspace definitions points to an existing dir."""
-    errors = []
-    for ws_path_str in manifest.get("workspaces", {}).get("definitions", []):
-        ws_path = ROOT / ws_path_str
-        if not ws_path.exists():
-            errors.append(f"  workspace: definition not found: {ws_path_str}")
-            continue
-        with open(ws_path) as f:
-            ws_def = json.load(f)
-        for spoke in ws_def.get("spokes", []):
-            tmpl_dir = ROOT / spoke["template"]
-            if not tmpl_dir.exists():
-                errors.append(
-                    f"  workspace {ws_path.stem}: spoke '{spoke.get('role', '?')}' "
-                    f"references missing template: {spoke['template']}"
-                )
-    return errors
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -286,14 +266,6 @@ def main():
     if cf_errors:
         all_errors.extend(cf_errors)
         print(f"  FAIL ({len(cf_errors)} issue(s))")
-    else:
-        print(f"  OK")
-
-    print(f"Checking workspaces...")
-    ws_errors = check_workspace_refs(manifest)
-    if ws_errors:
-        all_errors.extend(ws_errors)
-        print(f"  FAIL ({len(ws_errors)} issue(s))")
     else:
         print(f"  OK")
 

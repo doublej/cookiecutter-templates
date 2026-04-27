@@ -73,20 +73,10 @@ TEMPLATES: dict[str, list[dict]] = {
         {},
         {"mcp_servers": "minimal", "mcp_scope": "project"},
     ],
-    "swift/stt-component": [
-        {},
-    ],
     "android/quest-vr": [
         {},
         {"graphics_api": "vulkan"},
         {"mcp_servers": "standard", "mcp_scope": "project"},
-    ],
-    "legacy/cookiecutter-uv": [
-        {"layout": "flat"},
-        {"layout": "src"},
-        {"layout": "flat", "dockerfile": "y"},
-        {"layout": "flat", "mkdocs": "y"},
-        {"layout": "flat", "mcp_servers": "standard", "mcp_scope": "project"},
     ],
 }
 
@@ -146,7 +136,6 @@ def check_versioning_payload(
 ) -> list[tuple[str, bool, str]]:
     """Assert .template-meta.json + .claude payload are shaped correctly."""
     results: list[tuple[str, bool, str]] = []
-    legacy = template_name.startswith("legacy/")
 
     # .template-meta.json with matching template_version
     meta_path = project_dir / ".template-meta.json"
@@ -169,9 +158,6 @@ def check_versioning_payload(
         ))
         return results
     results.append(("meta shape", True, ""))
-
-    if legacy:
-        return results
 
     settings = project_dir / ".claude" / "settings.json"
     if not settings.is_file():
@@ -306,7 +292,7 @@ def smoke_android(project_dir: Path) -> list[tuple[str, bool, str]]:
 
 
 def get_smoke_fn(template_name: str):
-    if template_name.startswith("python/") or template_name.startswith("legacy/"):
+    if template_name.startswith("python/"):
         return smoke_python
     if template_name.startswith("typescript/"):
         return smoke_typescript
@@ -317,57 +303,6 @@ def get_smoke_fn(template_name: str):
     if template_name.startswith("android/"):
         return smoke_android
     return lambda _: []
-
-
-WORKSPACE_DEFS = ["hub-and-spoke"]
-
-SPOKE_MANIFESTS = {
-    "typescript/sveltekit": "package.json",
-    "typescript/node-worker": "package.json",
-    "rust/cli": "Cargo.toml",
-}
-
-
-def smoke_workspace(ws_name: str) -> tuple[bool, list[str]]:
-    """Render a workspace and verify root + spoke structure."""
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location(
-        "scaffold_workspace", ROOT / "tools" / "scaffold_workspace.py"
-    )
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-
-    ws_def = mod.load_workspace_def(ws_name)
-    errors = []
-
-    with tempfile.TemporaryDirectory() as tmp:
-        try:
-            mod.scaffold(ws_name, "test project", Path(tmp))
-        except Exception as e:
-            return False, [f"scaffold failed: {e}"]
-
-        ws_root = Path(tmp) / "test-project"
-        if not ws_root.exists():
-            return False, [f"workspace root not created: {ws_root}"]
-
-        for expected in ["shared-config.json", "Justfile", "README.md", "CLAUDE.md"]:
-            if not (ws_root / expected).exists():
-                errors.append(f"missing root file: {expected}")
-
-        if not (ws_root / "infra").is_dir():
-            errors.append("missing infra/ directory")
-
-        for spoke in ws_def["spokes"]:
-            spoke_dir = ws_root / ("test-project" + spoke["suffix"])
-            if not spoke_dir.exists():
-                errors.append(f"missing spoke dir: {spoke_dir.name}")
-                continue
-            manifest = SPOKE_MANIFESTS.get(spoke["template"])
-            if manifest and not (spoke_dir / manifest).exists():
-                errors.append(f"missing manifest {manifest} in {spoke_dir.name}")
-
-    return len(errors) == 0, errors
 
 
 def main():
@@ -427,21 +362,6 @@ def main():
                     passed += 1
                 else:
                     failed_list.append((variant_label, "smoke test"))
-
-    # Workspace rendering tests
-    for ws_name in WORKSPACE_DEFS:
-        total += 1
-        print(f"\n{'='*60}")
-        print(f"Workspace: {ws_name}")
-        print(f"{'='*60}")
-        ok, errors = smoke_workspace(ws_name)
-        if ok:
-            print(f"  PASSED")
-            passed += 1
-        else:
-            for err in errors:
-                print(f"  FAIL: {err}")
-            failed_list.append((f"workspace/{ws_name}", "; ".join(errors)))
 
     print(f"\n{'='*60}")
     print(f"Results: {passed}/{total} passed")

@@ -1,6 +1,6 @@
 # Cookiecutter Templates
 
-Project templates organized by language and framework, plus workspace scaffolding for multi-project setups.
+Project templates organized by language and framework.
 
 ## Templates
 
@@ -43,28 +43,6 @@ Project templates organized by language and framework, plus workspace scaffoldin
 |----------|-------------|---------|
 | `android/quest-vr` | Native Quest VR app (C++17, OpenXR, Gradle+CMake, GameActivity) | `graphics_api`, `min_sdk_version`, `target_sdk_version` |
 
-### Legacy
-
-| Template | Description | Options |
-|----------|-------------|---------|
-| `legacy/cookiecutter-uv` | Full Python project | `layout`, `include_github_actions`, `publish_to_pypi`, `mkdocs`, `codecov`, `dockerfile`, `devcontainer`, `open_source_license` |
-
-## Workspaces
-
-Workspace scaffolding composes multiple templates into a unified multi-project workspace.
-
-| Workspace | Description |
-|-----------|-------------|
-| `hub-and-spoke` | Backend API + browser UI + Rust picker + cron monitor |
-
-### Scaffold a workspace
-
-```bash
-uv run tools/scaffold_workspace.py hub-and-spoke --output ~/projects/ --name "my project"
-```
-
-This creates a workspace root with shared config, root Justfile, daemon configs, and one directory per spoke.
-
 ## Usage
 
 ```bash
@@ -78,7 +56,6 @@ cookiecutter typescript/bun-package
 cookiecutter rust/cli
 cookiecutter swift/macos
 cookiecutter android/quest-vr
-cookiecutter legacy/cookiecutter-uv
 ```
 
 ## Quick Start
@@ -134,7 +111,7 @@ All templates share these variables:
 - Pre-generation validation on `project_name` and `project_slug`
 - Unified `.gitignore` baseline across all templates
 - Every template includes a `README.md` with getting started instructions
-- Every non-legacy template ships a `.claude/` SessionStart hook that notifies the agent when the upstream template has advanced
+- Every template ships a `.claude/` SessionStart hook that notifies the agent when the upstream template has advanced
 
 ## Versioning
 
@@ -155,12 +132,11 @@ Opt-out per generated project: `export NO_TEMPLATE_UPDATE_CHECK=1` or `touch .cl
 
 | Script | Description |
 |--------|-------------|
-| `tools/render_test.py` | Render and smoke-test all templates + workspaces |
-| `tools/sync_check.py` | Validate file sync across template families + workspace refs (`--enforce-bumps` for CI) |
+| `tools/render_test.py` | Render and smoke-test all templates |
+| `tools/sync_check.py` | Validate file sync across template families (`--enforce-bumps` for CI) |
 | `tools/bump_version.py` | Bump `_version` in a template's cookiecutter.json |
 | `tools/update_scaffold.py` | Diff a rendered project against its source template and optionally `--apply` the delta |
 | `tools/test_update_check.py` | Offline test for the SessionStart update-check hook |
-| `tools/scaffold_workspace.py` | Scaffold multi-project workspaces from definitions |
 | `tools/inject_tracking.py` | Inject Umami tracking into rendered projects |
 
 ## Contributing

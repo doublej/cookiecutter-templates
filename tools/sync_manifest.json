@@ -69,16 +69,11 @@
       "{{cookiecutter.project_slug}}/.claude/scripts/check_library_freshness.py",
       "{{cookiecutter.project_slug}}/.claude/scripts/snooze_library_check.py"
     ],
-    "slug_dir_overrides": {
-      "swift/stt-component": "{{cookiecutter.component_slug}}"
-    },
-    "exclude_templates": ["legacy/cookiecutter-uv"]
+    "slug_dir_overrides": {},
+    "exclude_templates": []
   },
   "merge_paths": {
     "description": "JSON files that update_scaffold.py shallow-merges instead of overwriting: upstream fields missing locally are added; existing local values are preserved so user edits survive.",
     "files": [".atlas"]
-  },
-  "workspaces": {
-    "definitions": ["workspace/hub-and-spoke.json"]
   }
 }
