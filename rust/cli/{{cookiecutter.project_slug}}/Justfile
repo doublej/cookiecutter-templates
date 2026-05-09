@@ -1,0 +1,105 @@
+set shell := ["zsh", "-uo", "pipefail", "-c"]
+set unstable := true
+
+default:
+    @just --list
+    @echo ''
+    @echo "branch: $(git branch --show-current 2>/dev/null || echo 'n/a')"
+
+[group('setup')]
+reinstall:
+    cargo install --path .
+
+[group('quality')]
+lint:
+    cargo clippy -- -D warnings
+
+[group('quality')]
+fmt:
+    cargo fmt
+
+[group('quality')]
+fmt-check:
+    cargo fmt -- --check
+
+[group('quality')]
+test:
+    cargo test
+
+[group('quality')]
+loc-check:
+    #!/usr/bin/env zsh
+    setopt null_glob
+    eval "$(python3 -c "
+    import json, shlex
+    c = json.load(open('.quality.json'))
+    print(f'WARN={c[\"loc\"][\"warn\"]}')
+    print(f'ERROR={c[\"loc\"][\"error\"]}')
+    g = c['globs']
+    print(f'GLOBS=({shlex.join(g)})')
+    ")"
+    err=0
+    for pattern in $GLOBS; do
+        for f in ${~pattern}; do
+            lines=$(wc -l < "$f")
+            if (( lines > ERROR )); then echo "error: $f ($lines lines, max $ERROR)"; err=1
+            elif (( lines > WARN )); then echo "warn: $f ($lines lines, target ≤$WARN — don't trim, split the file!)"; fi
+        done
+    done
+    exit $err
+
+[group('quality')]
+dir-check:
+    #!/usr/bin/env zsh
+    setopt null_glob
+    eval "$(python3 -c "
+    import json, shlex
+    c = json.load(open('.quality.json'))
+    print(f'MAX={c[\"dir\"][\"max_files\"]}')
+    g = c['globs']
+    print(f'GLOBS=({shlex.join(g)})')
+    ")"
+    err=0
+    typeset -A counts
+    for pattern in $GLOBS; do
+        for f in ${~pattern}; do
+            dir=${f:h}
+            counts[$dir]=$(( ${counts[$dir]:-0} + 1 ))
+        done
+    done
+    for dir count in ${(kv)counts}; do
+        if (( count > MAX )); then
+            echo "error: $dir ($count files, max $MAX)"
+            err=1
+        fi
+    done
+    exit $err
+
+[group('quality')]
+just-fmt-check:
+    just --fmt --check
+
+[group('quality')]
+check:
+    @echo '→ Checking Justfile format...'
+    just just-fmt-check
+    @echo '→ Checking file lengths...'
+    just loc-check
+    @echo '→ Checking directory sizes...'
+    just dir-check
+    @echo '→ Checking format...'
+    just fmt-check
+    @echo '→ Running clippy...'
+    just lint
+    @echo '→ Running tests...'
+    just test
+
+[group('build')]
+build-release:
+    cargo build --release
+
+[group('scaffold')]
+update-scaffold *ARGS:
+    #!/usr/bin/env zsh
+    set -euo pipefail
+    python3 "${COOKIECUTTER_TEMPLATES:?Set COOKIECUTTER_TEMPLATES to the cookiecutter-templates repo}/tools/update_scaffold.py" {% raw %}{{ ARGS }}{% endraw %}
