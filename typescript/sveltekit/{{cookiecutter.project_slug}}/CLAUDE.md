@@ -2,56 +2,68 @@
 
 > {{ cookiecutter.description }}
 
-## Stack
+## What this is
 
-- TypeScript, bun, Biome, Vitest
-- SvelteKit + Vite
+A SvelteKit application built with Vite. `bun` for install, Biome for lint + format, `svelte-check` for typechecking, Vitest for tests. SvelteKit owns routing, SSR, and the build adapter.
 
-## Commands
-
-Use `just` as the task runner:
-
-- `just check` — run all checks (just-fmt-check + loc-check + dir-check + lint + typecheck + test)
-- `just install` — install dependencies (`bun install`)
-- `just dev` — start dev server
-- `just build` — production build
-- `just preview` — preview production build
-- `just sync` — sync SvelteKit types
-- `just lint` — run Biome check
-- `just lint-fix` — auto-fix lint issues
-- `just typecheck` — `svelte-check`
-- `just test` — run tests
-- `just loc-check` — check file lengths (thresholds in `.quality.json`)
-- `just dir-check` — check files per directory (thresholds in `.quality.json`)
-- `just just-fmt-check` — verify Justfile formatting
-- `just clean` — remove build artifacts and caches
-- `just update-scaffold` — pull updates from the cookiecutter template
-
-## Project Structure
+## Mental model
 
 ```
 src/
 ├── routes/
-│   └── +page.svelte    # home page
-├── lib/                # shared modules
+│   └── +page.svelte    # home page (file-based routing)
+├── lib/                # shared modules — import via `$lib/...`
 └── app.html            # HTML shell
-svelte.config.js        # SvelteKit config
-vite.config.ts          # Vite config
-package.json            # project config, dependencies
-tsconfig.json           # TypeScript config
-biome.json              # linter/formatter config
-Justfile                # task runner
+svelte.config.js        # SvelteKit + adapter config
+vite.config.ts          # Vite + Vitest config
+package.json            # type: module, scripts, dependencies
+tsconfig.json           # extends .svelte-kit/tsconfig.json
+biome.json              # lint + format rules
 ```
 
-## Conventions
+The runtime path is `request → src/routes/<path>/+page(.server).svelte → render`. `src/lib/` holds anything reusable; consume via the `$lib` alias. `.svelte-kit/` is generated — never edit by hand.
 
-- ES modules (`"type": "module"`)
-- Strict TypeScript config
-- Biome for linting and formatting (not ESLint/Prettier)
-- SvelteKit file-based routing (`src/routes/`)
-- Shared code in `src/lib/`
-- Keep functions small (5–10 lines target, 20 max)
-- Prefer explicit, readable code over cleverness
-- Handle errors at boundaries; let unexpected errors surface
+## Invariants
 
-See [agent.md](agent.md) for AI coding agent workflow and guidelines.
+- File-based routing under `src/routes/` — folder name = URL segment, `+page.svelte` / `+page.ts` / `+page.server.ts` are SvelteKit-reserved.
+- Shared code lives in `src/lib/` and imports via `$lib/...`.
+- Strict TypeScript — `svelte-check` is the source of truth for types in `.svelte` files.
+- Biome handles `.ts` / `.js` / `.json`; Svelte file formatting follows Svelte / Prettier conventions when needed.
+- Functions stay small (5–10 lines target, 20 max).
+- Errors surface at the boundary; SvelteKit's `+error.svelte` / `hooks.server.ts` translate them to responses.
+- `bun` owns the lockfile. Add deps with `bun add <pkg>`.
+
+## Common change patterns
+
+- **Add a route** → new folder under `src/routes/` with a `+page.svelte`.
+- **Add data loading** → sibling `+page.ts` (universal) or `+page.server.ts` (server-only).
+- **Add an API endpoint** → `+server.ts` with `GET` / `POST` / etc. exports.
+- **Add shared code** → module under `src/lib/`, imported via `$lib/...`.
+- **Add a dependency** → `bun add <pkg>` (or `bun add -d <pkg>` for dev).
+
+## Verification
+
+Run `just check` after every change. It composes:
+
+`just-fmt-check` + `loc-check` + `dir-check` + `lint` + `typecheck` + `test`
+
+Recipe reference:
+
+- `just install` — `bun install`
+- `just dev` — Vite dev server (agent must not run this)
+- `just build` — production build
+- `just preview` — preview the production build
+- `just sync` — regenerate `.svelte-kit/` types
+- `just lint` / `just lint-fix` — Biome check / `--write`
+- `just typecheck` — `svelte-check`
+- `just test` — Vitest
+- `just loc-check` / `just dir-check` — file-size and per-directory thresholds from `.quality.json`
+- `just just-fmt-check` — verify Justfile formatting
+- `just update-scaffold` — pull updates from the cookiecutter template
+
+## Related context
+
+- [agent.md](agent.md) — verify loop, auto-fix commands, common tasks, boundaries
+- `.claude/` — Claude Code settings, scaffold-update hook, library-freshness hook, diagnostic logging
+- `.quality.json` — loc / dir thresholds (single source of truth)
+- As this project grows, add nested `CLAUDE.md` files in high-value subfolders (`src/lib/<feature>/`, `src/routes/<section>/`, design system, integrations) following the `claude-md-tree` skill's context-packet pattern.

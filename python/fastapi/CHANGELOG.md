@@ -7,6 +7,9 @@ pinned version and the upstream version.
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
 
+## [1.5.0] - 2026-05-21
+- restructure CLAUDE.md as context packet (claude-md-tree)
+
 ## [1.4.0] - 2026-04-27
 - add _diag.py phone-home logger; check_template_update + check_library_freshness emit JSONL diagnostics to upstream repo for fleet-wide review
 

@@ -2,47 +2,58 @@
 
 > {{ cookiecutter.description }}
 
-## Stack
+## What this is
 
-- Python {{ cookiecutter.python_version }}, uv, ruff, mypy, pytest
-- Web framework: Flask
+A Flask web application. Python sources live under `src/`, managed by `uv`, with `ruff` / `mypy` / `pytest` enforcing style, typing, and behaviour against the `.quality.json` thresholds.
 
-## Commands
-
-Use `just` as the task runner:
-
-- `just check` — run all checks (just-fmt-check + loc-check + dir-check + lint + format-check + typecheck + test)
-- `just install` — sync dependencies (`uv sync`)
-- `just dev` — start dev server with debug mode
-- `just lint` — run ruff check
-- `just lint-fix` — auto-fix lint issues
-- `just format` — format with ruff
-- `just format-check` — verify formatting
-- `just typecheck` — run mypy
-- `just test` — run pytest
-- `just loc-check` — check file lengths (thresholds in `.quality.json`)
-- `just dir-check` — check files per directory (thresholds in `.quality.json`)
-- `just just-fmt-check` — verify Justfile formatting
-- `just clean` — remove build artifacts and caches
-- `just update-scaffold` — pull updates from the cookiecutter template
-
-## Project Structure
+## Mental model
 
 ```
 src/{{ cookiecutter.project_slug.replace('-', '_') }}/
 ├── __init__.py
-└── app.py          # Flask app and routes
+└── app.py          # `app = Flask(__name__)` + view functions
 pyproject.toml      # project config, dependencies
-Justfile            # task runner
 ```
 
-## Conventions
+The runtime path is `flask run → {{ cookiecutter.project_slug.replace('-', '_') }}.app → view functions`. Views are functions decorated with `@app.route(...)`. When `app.py` outgrows itself, extract `Blueprint` modules and register them via `app.register_blueprint(...)`.
 
-- src/ layout with hatchling build backend
-- Module name: `{{ cookiecutter.project_slug.replace('-', '_') }}`
-- App instance: `{{ cookiecutter.project_slug.replace('-', '_') }}.app`
-- Keep functions small (5–10 lines target, 20 max)
-- Prefer explicit, readable code over cleverness
-- Handle errors at boundaries; let unexpected errors surface
+## Invariants
 
-See [agent.md](agent.md) for AI coding agent workflow and guidelines.
+- `src/` layout with hatchling — do not move code to a top-level package.
+- Module name is `{{ cookiecutter.project_slug.replace('-', '_') }}`; the WSGI app reference is `{{ cookiecutter.project_slug.replace('-', '_') }}.app`.
+- Functions stay small (5–10 lines target, 20 max).
+- Errors surface at the boundary; Flask error handlers translate domain errors to HTTP responses.
+- `uv` owns the lockfile. Add deps with `uv add <pkg>`.
+
+## Common change patterns
+
+- **Add a view** → function with `@app.route("/path")` in `app.py`.
+- **Add a blueprint** → `Blueprint("name", __name__)` in a new module; register with `app.register_blueprint(...)`.
+- **Add error handling** → `@app.errorhandler(SomeException)` decorator.
+- **Add a dependency** → `uv add <pkg>`.
+
+## Verification
+
+Run `just check` after every change. It composes:
+
+`just-fmt-check` + `loc-check` + `dir-check` + `lint` + `format-check` + `typecheck` + `test`
+
+Recipe reference:
+
+- `just install` — `uv sync`
+- `just dev` — start Flask debug server (agent must not run this)
+- `just lint` / `just lint-fix` — ruff check / `--fix`
+- `just format` / `just format-check` — ruff format / `--check`
+- `just typecheck` — mypy
+- `just test` — pytest
+- `just loc-check` / `just dir-check` — file-size and per-directory thresholds from `.quality.json`
+- `just just-fmt-check` — verify Justfile formatting
+- `just clean` — remove build artifacts and caches
+- `just update-scaffold` — pull updates from the cookiecutter template
+
+## Related context
+
+- [agent.md](agent.md) — verify loop, auto-fix commands, common tasks, boundaries
+- `.claude/` — Claude Code settings, scaffold-update hook, library-freshness hook, diagnostic logging
+- `.quality.json` — loc / dir thresholds (single source of truth)
+- As this project grows past a single `app.py`, add nested `CLAUDE.md` files in high-value subfolders (blueprints, domain logic, integrations) following the `claude-md-tree` skill's context-packet pattern.
