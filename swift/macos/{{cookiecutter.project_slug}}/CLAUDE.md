@@ -11,14 +11,20 @@
 
 Use `just` as the task runner:
 
-- `just install` — resolve package dependencies
-- `just check` — run all checks (loc-check + build + test)
-- `just loc-check` — check file lengths (warn >300, error >400 lines)
+- `just check` — run all checks (just-fmt-check + loc-check + dir-check + lint + build + test)
+- `just install` — resolve package dependencies (warns if SwiftLint missing)
+- `just lint` — run SwiftLint strict
+- `just lint-fix` — autocorrect + relint strict
 - `just run-app` — build and run (alias: `just run`)
 - `just build` — debug build
 - `just build-release` — release build
 - `just test` — run tests
+- `just loc-check` — check file lengths (thresholds in `.quality.json`)
+- `just dir-check` — check files per directory (thresholds in `.quality.json`)
+- `just just-fmt-check` — verify Justfile formatting
+- `just clean` — remove `.build/` artifacts
 - `just xcode` — open in Xcode
+- `just update-scaffold` — pull updates from the cookiecutter template
 
 ## Project Structure
 

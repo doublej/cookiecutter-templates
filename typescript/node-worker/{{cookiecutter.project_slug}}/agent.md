@@ -11,12 +11,18 @@
 
 Use `just` as the task runner:
 
-- `just check` — run all checks (loc-check + lint + typecheck + test)
-- `just loc-check` — check file lengths (warn >300, error >400 lines)
-- `just dev` — start dev mode with watch
-- `just start` — run production build
+- `just check` — run all checks (just-fmt-check + loc-check + dir-check + lint + typecheck + test)
+- `just install` — install dependencies (`bun install`)
+- `just dev` / `just start` — watch / run the worker
+- `just lint` / `just lint-fix` — Biome check / --fix
+- `just typecheck` — `tsc --noEmit`
 - `just test` — run tests
-- `just lint-fix` — auto-fix lint issues
+- `just build` — production build
+- `just loc-check` — check file lengths (thresholds in `.quality.json`)
+- `just dir-check` — check files per directory (thresholds in `.quality.json`)
+- `just just-fmt-check` — verify Justfile formatting
+- `just clean` — remove build artifacts
+- `just update-scaffold` — pull updates from the cookiecutter template
 
 ## Project Structure
 
@@ -42,7 +48,11 @@ Justfile            # task runner
 
 ### Verify Loop
 
-Run after every change:
+Run after every change: `just check`
+
+Runs: just-fmt-check + loc-check + dir-check + lint + typecheck + test.
+
+Step-by-step alternative:
 
 1. `just lint-fix`
 2. `just typecheck`

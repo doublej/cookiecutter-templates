@@ -11,12 +11,20 @@
 
 Use `just` as the task runner:
 
-- `just check` — run all checks (loc-check + lint + format-check + typecheck + test)
-- `just loc-check` — check file lengths (warn >300, error >400 lines)
+- `just check` — run all checks (just-fmt-check + loc-check + dir-check + lint + format-check + typecheck + test)
+- `just install` — sync dependencies (`uv sync`)
 - `just run-cli` — run the CLI (alias: `just run`)
-- `just test` — run tests
+- `just lint` — run ruff check
 - `just lint-fix` — auto-fix lint issues
-- `just format` — format code
+- `just format` — format with ruff
+- `just format-check` — verify formatting
+- `just typecheck` — run mypy
+- `just test` — run pytest
+- `just loc-check` — check file lengths (thresholds in `.quality.json`)
+- `just dir-check` — check files per directory (thresholds in `.quality.json`)
+- `just just-fmt-check` — verify Justfile formatting
+- `just clean` — remove build artifacts and caches
+- `just update-scaffold` — pull updates from the cookiecutter template
 
 ## Project Structure
 

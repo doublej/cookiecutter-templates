@@ -1,4 +1,5 @@
 set shell := ["zsh", "-uo", "pipefail", "-c"]
+set unstable := true
 
 default:
     @just --list
@@ -41,18 +42,63 @@ test:
 loc-check:
     #!/usr/bin/env zsh
     setopt null_glob
+    eval "$(python3 -c "
+    import json, shlex
+    c = json.load(open('.quality.json'))
+    print(f'WARN={c[\"loc\"][\"warn\"]}')
+    print(f'ERROR={c[\"loc\"][\"error\"]}')
+    g = c['globs']
+    print(f'GLOBS=({shlex.join(g)})')
+    ")"
     err=0
-    for f in src/**/*.py tests/**/*.py; do
-        lines=$(wc -l < "$f")
-        if (( lines > 400 )); then echo "error: $f ($lines lines, max 400)"; err=1
-        elif (( lines > 300 )); then echo "warn: $f ($lines lines, target ≤300)"; fi
+    for pattern in $GLOBS; do
+        for f in ${~pattern}; do
+            lines=$(wc -l < "$f")
+            if (( lines > ERROR )); then echo "error: $f ($lines lines, max $ERROR)"; err=1
+            elif (( lines > WARN )); then echo "warn: $f ($lines lines, target ≤$WARN — don't trim, split the file!)"; fi
+        done
     done
     exit $err
 
 [group('quality')]
+dir-check:
+    #!/usr/bin/env zsh
+    setopt null_glob
+    eval "$(python3 -c "
+    import json, shlex
+    c = json.load(open('.quality.json'))
+    print(f'MAX={c[\"dir\"][\"max_files\"]}')
+    g = c['globs']
+    print(f'GLOBS=({shlex.join(g)})')
+    ")"
+    err=0
+    typeset -A counts
+    for pattern in $GLOBS; do
+        for f in ${~pattern}; do
+            dir=${f:h}
+            counts[$dir]=$(( ${counts[$dir]:-0} + 1 ))
+        done
+    done
+    for dir count in ${(kv)counts}; do
+        if (( count > MAX )); then
+            echo "error: $dir ($count files, max $MAX)"
+            err=1
+        fi
+    done
+    exit $err
+
+[group('quality')]
+just-fmt-check:
+    just --fmt --check
+
+[group('quality')]
 check:
+    @echo '→ Checking Justfile format...'
+    just just-fmt-check
     @echo '→ Checking file lengths...'
     just loc-check
+    @echo '→ Checking directory sizes...'
+    just dir-check
     @echo '→ Running lint...'
     just lint
     @echo '→ Running format check...'
@@ -66,3 +112,9 @@ check:
 clean:
     rm -rf dist/ .mypy_cache/ .pytest_cache/ .ruff_cache/
     find . -type d -name __pycache__ -exec rm -rf {} +
+
+[group('scaffold')]
+update-scaffold *ARGS:
+    #!/usr/bin/env zsh
+    set -euo pipefail
+    python3 "${COOKIECUTTER_TEMPLATES:?Set COOKIECUTTER_TEMPLATES to the cookiecutter-templates repo}/tools/update_scaffold.py" {% raw %}{{ ARGS }}{% endraw %}
