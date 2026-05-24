@@ -168,19 +168,20 @@ def extract_preview(text: str) -> dict:
 
 
 def make_node_html(path: Path, text: str) -> str:
-    """Rich (but compact) HTML label for a mermaid node: path, title, blurb,
-    section outline, and a line-count footer."""
+    """Rich HTML label for a mermaid node: a fixed-width card with path, title,
+    blurb, section outline, and a line-count footer. The fixed width (set in CSS
+    on `.cmcard`) is what stops mermaid collapsing the node to a 1-char column."""
     info = extract_preview(text)
-    rows = [f'<span class=cmpath>{_mermaid_escape(short_label(path))}</span>']
+    rows = [f'<div class=cmpath>{_mermaid_escape(short_label(path))}</div>']
     if info["h1"]:
-        rows.append(f'<b class=cmtitle>{_mermaid_escape(_clamp(info["h1"], 48))}</b>')
+        rows.append(f'<div class=cmtitle>{_mermaid_escape(_clamp(info["h1"], 64))}</div>')
     if info["blurb"]:
-        rows.append(f'<span class=cmblurb>{_mermaid_escape(_clamp(info["blurb"], 96))}</span>')
+        rows.append(f'<div class=cmblurb>{_mermaid_escape(_clamp(info["blurb"], 130))}</div>')
     if info["sections"]:
         chips = " · ".join(info["sections"])
-        rows.append(f'<span class=cmsecs>§ {_mermaid_escape(_clamp(chips, 88))}</span>')
-    rows.append(f'<span class=cmmeta>{info["lines"]} lines</span>')
-    return "<br/>".join(rows)
+        rows.append(f'<div class=cmsecs>§ {_mermaid_escape(_clamp(chips, 120))}</div>')
+    rows.append(f'<div class=cmmeta>{info["lines"]} lines</div>')
+    return f'<div class=cmcard>{"".join(rows)}</div>'
 
 
 def build_mermaid(project_root: Path, ancestors: list[Path], descendants: list[Path],
@@ -258,32 +259,68 @@ def render_markdown(project_root: Path, mermaid: str, files: list[Path]) -> str:
     return "\n".join(parts)
 
 
-_STATIC_STYLE = """<style>
-  body { font-family: ui-sans-serif, system-ui, sans-serif; max-width: 1100px;
-         margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
-  h1 { font-size: 1.25rem; margin-bottom: 0.25rem; }
-  .meta { color: #666; font-size: 0.85rem; margin-bottom: 1.5rem; }
-  .diagram { background: #fafafa; border: 1px solid #eee; border-radius: 6px;
-             padding: 1rem; overflow-x: auto; }
-  details { border: 1px solid #eee; border-radius: 6px; margin: 0.5rem 0;
-            background: #fff; }
-  details[open] { background: #fdfdfd; }
-  summary { cursor: pointer; padding: 0.6rem 0.8rem; font-weight: 600;
-            display: flex; gap: 0.75rem; align-items: baseline; }
-  pre { margin: 0; padding: 0.9rem 1rem; border-top: 1px solid #eee;
-        background: #fafafa; overflow-x: auto; font-size: 0.85rem;
-        line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
-  h2 { font-size: 1rem; margin-top: 2rem; }
-  .path { color: #888; font-weight: 400; font-size: 0.75rem; word-break: break-all; }
-  .diagram .nodeLabel { max-width: 230px; white-space: normal; text-align: left;
-                        line-height: 1.3; }
-  .cmpath { color: #9a9a9a; font-size: .62rem; font-family: ui-monospace, Menlo,
-            monospace; word-break: break-all; }
-  .cmtitle { font-size: .82rem; }
-  .cmblurb { color: #666; font-size: .68rem; font-style: italic; }
-  .cmsecs { color: #2f855a; font-size: .64rem; }
-  .cmmeta { color: #aaa; font-size: .6rem; }
-</style>"""
+# Distinctive type pairing (Space Grotesk for UI/headings, IBM Plex Mono for
+# code/paths), loaded from Google Fonts with graceful system fallbacks so the
+# tool still works offline.
+_FONT_LINKS = (
+    '<link rel=preconnect href="https://fonts.googleapis.com">'
+    '<link rel=preconnect href="https://fonts.gstatic.com" crossorigin>'
+    '<link rel=stylesheet href="https://fonts.googleapis.com/css2?'
+    "family=IBM+Plex+Mono:wght@400;500&"
+    'family=Space+Grotesk:wght@400;500;700&display=swap">'
+)
+
+# Mermaid node card — shared by static + live views. The fixed `.cmcard` width is
+# the load-bearing rule: without it mermaid collapses htmlLabel nodes to ~1ch.
+_NODE_CARD_CSS = """
+  .diagram .nodeLabel { white-space: normal; text-align: left; }
+  .diagram .node rect, .diagram .node polygon { fill: #ffffff; stroke: #e3e0d8;
+            stroke-width: 1.25px; rx: 10; ry: 10; }
+  .diagram .node.sel rect, .diagram .node.sel polygon { stroke: #4338ca;
+            stroke-width: 2.25px; }
+  .diagram .edgePath path { stroke: #d2cdc3; }
+  .diagram .arrowheadPath, .diagram marker path { fill: #d2cdc3; stroke: none; }
+  .cmcard { width: 198px; text-align: left; padding: 2px 1px; }
+  .cmpath { font: 9px/1.45 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+            color: #a9a59c; overflow-wrap: anywhere; margin-bottom: 5px; }
+  .cmtitle { font: 600 13px/1.25 'Space Grotesk', ui-sans-serif, sans-serif;
+             color: #1b1b1f; letter-spacing: -.01em; margin-bottom: 5px; }
+  .cmblurb { font: 11px/1.4 'Space Grotesk', ui-sans-serif, sans-serif; color: #6b6b73;
+             display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+             overflow: hidden; margin-bottom: 5px; }
+  .cmsecs { font: 10px/1.4 'IBM Plex Mono', ui-monospace, monospace; color: #0f766e;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden; margin-bottom: 5px; }
+  .cmmeta { font: 9px/1.2 'IBM Plex Mono', ui-monospace, monospace; color: #b6b2a9; }
+"""
+
+_STATIC_STYLE = (
+    "<style>\n"
+    "  body { font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;\n"
+    "         max-width: 1100px; margin: 2rem auto; padding: 0 1rem; color: #1b1b1f;\n"
+    "         background: #f4f3ef; }\n"
+    "  h1 { font-weight: 700; font-size: 1.3rem; letter-spacing: -.02em;\n"
+    "       margin-bottom: .25rem; }\n"
+    "  .meta { color: #6b6b73; font-size: .85rem; margin-bottom: 1.5rem; }\n"
+    "  .diagram { background: #faf9f5; border: 1px solid #e3e0d8; border-radius: 14px;\n"
+    "             padding: 1rem; overflow-x: auto; }\n"
+    "  details { border: 1px solid #e3e0d8; border-radius: 10px; margin: .5rem 0;\n"
+    "            background: #fff; }\n"
+    "  details[open] { background: #fffdf8; }\n"
+    "  summary { cursor: pointer; padding: .6rem .9rem; font-weight: 600;\n"
+    "            display: flex; gap: .75rem; align-items: baseline; }\n"
+    "  pre { margin: 0; padding: .9rem 1rem; border-top: 1px solid #efece4;\n"
+    "        background: #faf9f5; overflow-x: auto;\n"
+    "        font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;\n"
+    "        font-size: .82rem; line-height: 1.5; white-space: pre-wrap;\n"
+    "        word-break: break-word; }\n"
+    "  h2 { font-weight: 600; font-size: 1rem; margin-top: 2rem; }\n"
+    "  .path { color: #a9a59c; font-weight: 400; font-size: .72rem;\n"
+    "          font-family: 'IBM Plex Mono', ui-monospace, monospace;\n"
+    "          word-break: break-all; }\n"
+    + _NODE_CARD_CSS
+    + "</style>"
+)
 
 _STATIC_SCRIPT = (
     "<script type=module>\n"
@@ -320,7 +357,7 @@ def render_static_html(project_root: Path, mermaid: str, files: list[Path],
     project_safe = _html.escape(str(project_root))
     return (
         "<!doctype html>\n<html lang=en>\n<meta charset=utf-8>\n"
-        f"<title>CLAUDE.md tree — {project_safe}</title>\n"
+        f"<title>CLAUDE.md tree — {project_safe}</title>\n{_FONT_LINKS}\n"
         f"{_STATIC_STYLE}\n<h1>CLAUDE.md tree</h1>\n"
         f"<div class=meta>Project: <code>{project_safe}</code><br>"
         f"Generated: {ts} · {len(files)} files</div>\n"
@@ -393,6 +430,8 @@ def _server_html() -> str:
     project_safe = _html.escape(str(_STATE.project_root))
     return _EDITOR_TEMPLATE.replace("__MERMAID__", mermaid_safe) \
                            .replace("__PROJECT__", project_safe) \
+                           .replace("__FONTS__", _FONT_LINKS) \
+                           .replace("__NODECSS__", _NODE_CARD_CSS) \
                            .replace("__TOKEN__", _STATE.token)
 
 
@@ -610,74 +649,93 @@ _EDITOR_TEMPLATE = r"""<!doctype html>
 <html lang=en>
 <meta charset=utf-8>
 <title>CLAUDE.md tree — __PROJECT__</title>
+__FONTS__
 <style>
+  :root {
+    --bg: #f4f3ef; --panel: #ffffff; --panel-2: #faf9f5;
+    --ink: #1b1b1f; --muted: #6b6b73; --faint: #a9a59c;
+    --line: #e3e0d8; --line-soft: #efece4;
+    --accent: #4338ca; --accent-ink: #ffffff; --accent-tint: #ecebfc;
+    --danger: #b4451f;
+    --sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
-  body { font-family: ui-sans-serif, system-ui, sans-serif; color: #1a1a1a;
-         display: flex; flex-direction: column; }
-  .topbar { display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap;
-            padding: .5rem .9rem; border-bottom: 1px solid #e8e8e8; }
-  .topbar h1 { font-size: .95rem; margin: 0; }
-  .topbar .proj { color: #666; font-size: .74rem;
-                  font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
-  .topbar .hint { color: #aaa; font-size: .72rem; margin-left: auto; }
+  body { font-family: var(--sans); color: var(--ink); background: var(--bg);
+         display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+  .topbar { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap;
+            padding: .6rem 1rem; background: var(--panel);
+            border-bottom: 1px solid var(--line); }
+  .topbar h1 { font-size: .95rem; font-weight: 700; letter-spacing: -.02em; margin: 0;
+               display: flex; align-items: center; gap: .5rem; }
+  .topbar h1::before { content: ""; width: 9px; height: 9px; border-radius: 2px;
+                       background: var(--accent); transform: rotate(45deg); }
+  .topbar .proj { color: var(--muted); font: 400 .72rem/1 var(--mono);
+                  word-break: break-all; }
+  .topbar .hint { color: var(--faint); font-size: .72rem; margin-left: auto; }
+  .topbar kbd { font: 500 .68rem var(--mono); background: var(--panel-2);
+                border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
+                color: var(--muted); }
   .split { flex: 1; display: flex; min-height: 0; }
-  .graphpane { flex: 0 0 40%; min-width: 240px; max-width: 72%; overflow: auto;
-               resize: horizontal; border-right: 1px solid #e8e8e8;
-               background: #fafafa; padding: .6rem; }
+  .graphpane { flex: 0 0 36%; min-width: 248px; max-width: 64%; overflow: auto;
+               resize: horizontal; border-right: 1px solid var(--line);
+               background: var(--panel-2); padding: .8rem;
+               background-image: radial-gradient(circle at 1px 1px, #e7e4db 1px, transparent 0);
+               background-size: 22px 22px; animation: rise .5s ease both; }
   .diagram svg { height: auto; }
-  .nodeLabel { max-width: 230px; white-space: normal; text-align: left;
-               line-height: 1.3; }
-  .cmpath { color: #9a9a9a; font-size: .6rem;
-            font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
-  .cmtitle { font-size: .8rem; }
-  .cmblurb { color: #666; font-size: .66rem; font-style: italic; }
-  .cmsecs { color: #2f855a; font-size: .62rem; }
-  .cmmeta { color: #aaa; font-size: .58rem; }
-  g.node.sel > rect, g.node.sel > polygon, g.node.sel > path {
-    stroke: #2563eb !important; stroke-width: 2.5px !important; }
-  .editorpane { flex: 1 1 auto; min-width: 0; display: flex;
-                flex-direction: column; overflow: hidden; }
-  .empty { margin: auto; color: #999; font-size: .85rem; text-align: center;
-           padding: 2rem; }
+__NODECSS__
+  .editorpane { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;
+                overflow: hidden; background: var(--panel);
+                animation: rise .5s .07s ease both; }
+  .empty { margin: auto; color: var(--faint); font: 400 .85rem var(--sans);
+           text-align: center; padding: 2rem; }
   #editor { display: none; flex-direction: column; height: 100%; }
   #editor.show { display: flex; }
   #editor header { display: flex; align-items: baseline; gap: .6rem;
-                   padding: .55rem .9rem; border-bottom: 1px solid #f0f0f0;
+                   padding: .7rem 1rem; border-bottom: 1px solid var(--line-soft);
                    flex-wrap: wrap; }
-  #editor header code { font-size: .9rem; font-weight: 600; }
-  #editor header .path { color: #888; font-size: .7rem; word-break: break-all;
-                         flex: 1 1 auto; }
-  #editor header .badge { font-size: .66rem; padding: 2px 6px; border-radius: 4px;
-                          background: #eef; color: #335; white-space: nowrap; }
-  #editor header .badge.dirty { background: #fde; color: #833; }
-  #editor textarea { flex: 1; width: 100%; border: 0; padding: .8rem .9rem;
-                     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-                     font-size: .82rem; line-height: 1.5; resize: none;
-                     background: #fcfcfc; outline: 0; }
+  #editor header code { font: 600 .92rem var(--sans); letter-spacing: -.01em; }
+  #editor header .path { color: var(--faint); font: 400 .7rem var(--mono);
+                         word-break: break-all; flex: 1 1 auto; }
+  #editor header .badge { font: 500 .66rem var(--mono); padding: 2px 8px;
+                          border-radius: 999px; background: var(--accent-tint);
+                          color: var(--accent); white-space: nowrap; }
+  #editor header .badge.dirty { background: #fbe7df; color: var(--danger); }
+  #editor textarea { flex: 1; width: 100%; border: 0; padding: 1rem 1.1rem;
+                     font: 400 .82rem/1.6 var(--mono); resize: none; tab-size: 2;
+                     background: var(--panel); color: var(--ink); outline: 0; }
   #editor footer { display: flex; gap: .5rem; align-items: center;
-                   padding: .5rem .9rem; border-top: 1px solid #f0f0f0;
-                   font-size: .76rem; flex-wrap: wrap; }
+                   padding: .6rem 1rem; border-top: 1px solid var(--line-soft);
+                   font-size: .76rem; flex-wrap: wrap; background: var(--panel-2); }
   #editor footer .spacer { flex: 1; }
-  button { font: inherit; padding: .32rem .75rem; border-radius: 5px;
-           border: 1px solid #d0d0d0; background: #f6f6f6; cursor: pointer; }
-  button:hover:not(:disabled) { background: #ececec; }
-  button:disabled { opacity: .5; cursor: default; }
-  button.primary { border-color: #2563eb; background: #2563eb; color: #fff; }
-  button.primary:hover:not(:disabled) { background: #1d4fd8; }
-  select { font: inherit; padding: .28rem .4rem; border-radius: 5px;
-           border: 1px solid #d0d0d0; background: #fff; }
-  .toast { position: fixed; bottom: 1rem; right: 1rem; background: #1a1a1a;
-           color: #fff; padding: .55rem .85rem; border-radius: 6px;
-           font-size: .8rem; opacity: 0; transition: opacity .2s; }
-  .toast.show { opacity: 1; }
-  .toast.err { background: #b91c1c; }
+  #editor footer label { color: var(--muted); display: flex; gap: .35rem;
+                         align-items: center; }
+  button { font: 500 .76rem var(--sans); padding: .36rem .85rem; border-radius: 7px;
+           border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+           cursor: pointer; transition: background .12s, border-color .12s; }
+  button:hover:not(:disabled) { background: var(--panel-2); border-color: #d6d2c8; }
+  button:disabled { opacity: .45; cursor: default; }
+  button.primary { border-color: var(--accent); background: var(--accent);
+                   color: var(--accent-ink); }
+  button.primary:hover:not(:disabled) { background: #3730a3; border-color: #3730a3; }
+  select { font: 500 .74rem var(--mono); padding: .3rem .45rem; border-radius: 6px;
+           border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+  .toast { position: fixed; bottom: 1.1rem; right: 1.1rem; background: var(--ink);
+           color: #fff; padding: .6rem .9rem; border-radius: 8px;
+           font: 500 .8rem var(--sans); box-shadow: 0 6px 24px rgba(0,0,0,.18);
+           opacity: 0; transform: translateY(6px);
+           transition: opacity .2s, transform .2s; }
+  .toast.show { opacity: 1; transform: none; }
+  .toast.err { background: var(--danger); }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); }
+                    to { opacity: 1; transform: none; } }
 </style>
 
 <div class=topbar>
   <h1>CLAUDE.md tree</h1>
   <span class=proj>__PROJECT__</span>
-  <span class=hint>Click a node to open it · ⌘/Ctrl-S to save</span>
+  <span class=hint>Click a node to open · <kbd>⌘/Ctrl-S</kbd> to save</span>
 </div>
 
 <div class=split>
@@ -847,11 +905,21 @@ window.addEventListener('beforeunload', (e) => {
   if (dirty) { e.preventDefault(); e.returnValue = ''; }
 });
 
+// Render the graph at natural 1:1 size and let the pane scroll, instead of
+// mermaid's default fit-to-width which shrinks node cards to illegibility.
+function sizeGraph() {
+  const svg = document.querySelector('.diagram svg');
+  if (!svg || !svg.viewBox || !svg.viewBox.baseVal.width) return;
+  svg.style.maxWidth = 'none';
+  svg.style.width = svg.viewBox.baseVal.width + 'px';
+  svg.style.height = svg.viewBox.baseVal.height + 'px';
+}
+
 (async () => {
   mermaid.initialize({ startOnLoad: false, theme: 'neutral',
                        securityLevel: 'loose',
                        flowchart: { htmlLabels: true } });
-  try { await mermaid.run(); } catch (e) { console.error('mermaid', e); }
+  try { await mermaid.run(); sizeGraph(); } catch (e) { console.error('mermaid', e); }
   const files = await fetch('/api/files').then(r => r.json());
   files.forEach(f => { filesById[f.id] = f; });
   const initial = files.find(f => f.kind === 'project') || files[0];
