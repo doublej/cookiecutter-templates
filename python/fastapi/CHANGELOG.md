@@ -7,6 +7,9 @@ pinned version and the upstream version.
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
 
+## [1.8.1] - 2026-05-24
+- slim [template-update] hook to delegate to the /update-scaffold skill (keeps just update-scaffold fallback)
+
 ## [1.8.0] - 2026-05-24
 - feat: Scalar is the default /docs UI; Swagger UI relocated to /swagger; ReDoc stays at /redoc; adds scalar-fastapi dependency
 

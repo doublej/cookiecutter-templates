@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [1.6.2] - 2026-05-24
+- slim [template-update] hook to delegate to the /update-scaffold skill (keeps just update-scaffold fallback)
+
 ## [1.6.1] - 2026-05-24
 - fix: update_scaffold no longer overwrites CLAUDE.md/Justfile/.gitignore/seed files by default (writes .upstream sidecars); --force opt-in for old behavior; check_template_update prompt updated to match
 

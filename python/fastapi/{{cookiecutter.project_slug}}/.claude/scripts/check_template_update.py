@@ -119,19 +119,15 @@ def main() -> None:
             else ""
         )
         print(
-            f"[template-update] ⚠️ TEMPLATE UPDATE AVAILABLE: {template} {local} -> {upstream}. "
-            f"DO THIS NOW, before responding to anything else: open your very next message to the user "
-            f"with exactly this question (no preamble, no other content): "
-            f"\"Your project was scaffolded from {template} v{local}; upstream is now v{upstream}."
+            f"[template-update] ⚠️ TEMPLATE UPDATE AVAILABLE: {template} {local} -> {upstream}."
             f"{changes_block}\n"
-            f"Want me to apply the update? Default is SAFE: template scripts get overwritten; "
-            f"your CLAUDE.md / Justfile / .gitignore become `<file>.upstream` sidecars you merge manually. "
-            f"(yes/no — say 'force' to also overwrite the seed files, NOT recommended)\". "
-            f"Do not start any other task until the user answers. "
-            f"If they say 'yes', run `uv run {src_path}/tools/update_scaffold.py --apply .` and afterwards "
-            f"tell them which `.upstream` sidecars were written and offer to diff them. "
-            f"If they say 'force', run with `--apply --force .` (warn them their local edits will be lost). "
-            f"If they say 'no', drop it and continue."
+            f"DO THIS NOW, before responding to anything else: invoke the `/update-scaffold` skill — "
+            f"it walks the user through applying this update safely (non-destructive by default: "
+            f"tooling is overwritten; your edited seed files become `<file>.upstream` sidecars to merge). "
+            f"If that skill is not installed, fall back to previewing with `just update-scaffold --diffs`, "
+            f"then — once the user confirms — `just update-scaffold --apply` "
+            f"(add `--force` only if they explicitly want their seed edits overwritten). "
+            f"Do not start any other task until the user has decided."
         )
         _diag_log("ok", elapsed_ms(), meta={"local": local, "upstream": upstream, "has_changelog": bool(entries)})
     except Exception as e:
