@@ -34,6 +34,12 @@ pyproject.toml      # project config, dependencies
 Justfile            # task runner
 ```
 
+## API docs URLs
+
+- `/docs` — Scalar (default UI, via `scalar-fastapi`)
+- `/swagger` — Swagger UI (manually mounted)
+- `/redoc` — ReDoc (FastAPI default)
+
 ## Conventions
 
 - src/ layout with hatchling build backend

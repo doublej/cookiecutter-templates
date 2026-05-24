@@ -17,6 +17,16 @@ pyproject.toml      # project config, dependencies
 
 The runtime path is `uvicorn → {{ cookiecutter.project_slug.replace('-', '_') }}.main:app → route handlers`. Handlers are `async def` functions decorated with `@app.get` / `@app.post` etc. When `main.py` outgrows itself, extract `APIRouter` modules and include them with `app.include_router(...)`.
 
+## API docs
+
+The scaffold ships three OpenAPI UIs:
+
+- `/docs` — **Scalar** (default, via `scalar-fastapi`)
+- `/swagger` — Swagger UI (manually mounted; `docs_url=None` on `FastAPI(...)` frees `/docs` for Scalar)
+- `/redoc` — ReDoc (FastAPI default)
+
+Enrich docs by adding `summary` / `description` / `responses` to route decorators and `Field(..., description=..., examples=...)` to Pydantic models — all four UIs read from the same `/openapi.json`.
+
 ## Invariants
 
 - `src/` layout with hatchling — do not move code to a top-level package.
