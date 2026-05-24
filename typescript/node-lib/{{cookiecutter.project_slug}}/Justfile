@@ -102,10 +102,18 @@ build:
 clean:
     rm -rf dist/ node_modules/.cache/
 
+# Open this project's CLAUDE.md tree in the project-atlas viewer (atlas-api on :47891)
 [group('docs')]
 claude-tree:
-    python3 .claude/scripts/claude_tree.py
-    @command -v open >/dev/null 2>&1 && open .claude/claude-tree.html || echo 'Open .claude/claude-tree.html manually'
+    #!/usr/bin/env bash
+    set -euo pipefail
+    url="http://localhost:47891/claude-tree?root=$(pwd)"
+    if curl -fsS -o /dev/null --max-time 1 "http://localhost:47891/" 2>/dev/null; then
+        command -v open >/dev/null 2>&1 && open "$url" || echo "Open: $url"
+    else
+        echo "project-atlas isn't running (atlas-api on :47891). Start it, then open:"
+        echo "  $url"
+    fi
 
 [group('scaffold')]
 update-scaffold *ARGS:

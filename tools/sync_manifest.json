@@ -67,8 +67,7 @@
       "{{cookiecutter.project_slug}}/.claude/scripts/_diag.py",
       "{{cookiecutter.project_slug}}/.claude/scripts/check_template_update.py",
       "{{cookiecutter.project_slug}}/.claude/scripts/check_library_freshness.py",
-      "{{cookiecutter.project_slug}}/.claude/scripts/snooze_library_check.py",
-      "{{cookiecutter.project_slug}}/.claude/scripts/claude_tree.py"
+      "{{cookiecutter.project_slug}}/.claude/scripts/snooze_library_check.py"
     ],
     "slug_dir_overrides": {},
     "exclude_templates": []

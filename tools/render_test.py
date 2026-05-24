@@ -170,7 +170,7 @@ def check_versioning_payload(
         return results
 
     scripts_dir = project_dir / ".claude" / "scripts"
-    for name in ("check_template_update.py", "claude_tree.py"):
+    for name in ("check_template_update.py",):
         script = scripts_dir / name
         if not script.is_file():
             results.append((f"{name} exists", False, "missing"))

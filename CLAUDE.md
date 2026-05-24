@@ -65,7 +65,7 @@ Templates are grouped into families (python, typescript, rust, swift). Within a 
 | swift | ios, macos | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `.swiftlint.yml` | default, install, xcode, test, loc-check, dir-check, check, build, build-release, clean, claude-tree |
 | rust | cli | `hooks/pre_gen_project.py`, `.gitignore` | default, lint, fmt, fmt-check, check, test, loc-check, dir-check, build-release, reinstall, claude-tree |
 
-Cross-family, every generated `.claude/scripts/` ships identical helper scripts: `_diag.py` (phone-home), `check_template_update.py`, `check_library_freshness.py`, `snooze_library_check.py`, and `claude_tree.py` (renders `.claude/claude-tree.html` + `.claude/claude-tree.md` covering ancestor + descendant `CLAUDE.md` files; user-invoked via `just claude-tree`).
+Cross-family, every generated `.claude/scripts/` ships identical helper scripts: `_diag.py` (phone-home), `check_template_update.py`, `check_library_freshness.py`, and `snooze_library_check.py`. The `claude-tree` recipe ships no script — it deep-links into the project-atlas viewer (`atlas-api` on :47891) by `pwd`, opening the ancestor + descendant `CLAUDE.md` tree at `/claude-tree?root=$(pwd)`.
 
 **Exceptions** are declared in `sync_manifest.json` under `justfile_exceptions` (e.g. SvelteKit skips `typecheck`/`clean`).
 
