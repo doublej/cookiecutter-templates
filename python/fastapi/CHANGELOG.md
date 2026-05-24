@@ -7,6 +7,9 @@ pinned version and the upstream version.
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
 
+## [1.9.0] - 2026-05-24
+- redesign claude-tree viewer: side-by-side compact graph + single lazy editor, richer node previews (path/title/blurb/section outline/line count)
+
 ## [1.8.1] - 2026-05-24
 - slim [template-update] hook to delegate to the /update-scaffold skill (keeps just update-scaffold fallback)
 

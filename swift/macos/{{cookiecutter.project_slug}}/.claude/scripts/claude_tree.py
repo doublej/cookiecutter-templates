@@ -22,7 +22,6 @@ import html as _html
 import http.server
 import json
 import os
-import re
 import secrets
 import socketserver
 import sys
@@ -128,6 +127,62 @@ def _mermaid_escape(label: str) -> str:
     return label.replace("\\", "\\\\").replace('"', '#quot;').replace("\n", " ")
 
 
+def _mermaid_for_html(mermaid: str) -> str:
+    """Escape a mermaid source for embedding inside ``<pre class=mermaid>``.
+
+    The browser decodes HTML entities into the ``<pre>`` textContent before
+    mermaid parses it, so a plain HTML-escape reproduces the source exactly:
+    node-label tags survive as real angle brackets (htmlLabels), the ``"``
+    delimiters survive, and mermaid's own ``#quot;`` entity stays literal — so a
+    quote character inside a label can't prematurely terminate ``["..."]``.
+    """
+    return _html.escape(mermaid)
+
+
+def _clamp(text: str, n: int) -> str:
+    return text if len(text) <= n else text[: n - 1] + "…"
+
+
+def extract_preview(text: str) -> dict:
+    """Structured preview of a CLAUDE.md: title, blurb, section list, size."""
+    lines = text.splitlines()
+    h1, h1_idx = "", -1
+    for i, ln in enumerate(lines):
+        s = ln.strip()
+        if s.startswith("# ") and not s.startswith("## "):
+            h1, h1_idx = s[2:].strip(), i
+            break
+    sections = [
+        ln.strip()[3:].strip()
+        for ln in lines
+        if ln.strip().startswith("## ") and not ln.strip().startswith("### ")
+    ]
+    blurb = ""
+    for ln in lines[h1_idx + 1:]:
+        s = ln.strip()
+        if not s or s.startswith(("#", ">", "-", "*", "`", "|", "<")):
+            continue
+        blurb = s
+        break
+    return {"h1": h1, "blurb": blurb, "sections": sections, "lines": len(lines)}
+
+
+def make_node_html(path: Path, text: str) -> str:
+    """Rich (but compact) HTML label for a mermaid node: path, title, blurb,
+    section outline, and a line-count footer."""
+    info = extract_preview(text)
+    rows = [f'<span class=cmpath>{_mermaid_escape(short_label(path))}</span>']
+    if info["h1"]:
+        rows.append(f'<b class=cmtitle>{_mermaid_escape(_clamp(info["h1"], 48))}</b>')
+    if info["blurb"]:
+        rows.append(f'<span class=cmblurb>{_mermaid_escape(_clamp(info["blurb"], 96))}</span>')
+    if info["sections"]:
+        chips = " · ".join(info["sections"])
+        rows.append(f'<span class=cmsecs>§ {_mermaid_escape(_clamp(chips, 88))}</span>')
+    rows.append(f'<span class=cmmeta>{info["lines"]} lines</span>')
+    return "<br/>".join(rows)
+
+
 def build_mermaid(project_root: Path, ancestors: list[Path], descendants: list[Path],
                   contents: dict[Path, str]) -> tuple[str, dict[str, str]]:
     """Return (mermaid_source, {node_id: path_str}). Each node label has
@@ -140,9 +195,8 @@ def build_mermaid(project_root: Path, ancestors: list[Path], descendants: list[P
         if p in nodes:
             return nodes[p]
         nid = f"n{len(nodes)}"
-        label = _mermaid_escape(short_label(p))
-        preview = _mermaid_escape(make_preview(contents.get(p, "")))
-        lines.append(f'    {nid}["<b>{label}</b><br/><span class=preview>{preview}</span>"]')
+        label = make_node_html(p, contents.get(p, ""))
+        lines.append(f'    {nid}["{label}"]')
         lines.append(f'    click {nid} call onNodeClick("{nid}")')
         nodes[p] = nid
         id_to_path[nid] = str(p)
@@ -220,9 +274,15 @@ _STATIC_STYLE = """<style>
         background: #fafafa; overflow-x: auto; font-size: 0.85rem;
         line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
   h2 { font-size: 1rem; margin-top: 2rem; }
-  .preview { color: #666; font-weight: 400; font-size: 0.8em; }
   .path { color: #888; font-weight: 400; font-size: 0.75rem; word-break: break-all; }
-  .node b { font-size: 0.85em; }
+  .diagram .nodeLabel { max-width: 230px; white-space: normal; text-align: left;
+                        line-height: 1.3; }
+  .cmpath { color: #9a9a9a; font-size: .62rem; font-family: ui-monospace, Menlo,
+            monospace; word-break: break-all; }
+  .cmtitle { font-size: .82rem; }
+  .cmblurb { color: #666; font-size: .68rem; font-style: italic; }
+  .cmsecs { color: #2f855a; font-size: .64rem; }
+  .cmmeta { color: #aaa; font-size: .6rem; }
 </style>"""
 
 _STATIC_SCRIPT = (
@@ -243,18 +303,20 @@ def render_static_html(project_root: Path, mermaid: str, files: list[Path],
     ts = _dt.datetime.now().isoformat(timespec="seconds")
     blocks = []
     path_to_id = {v: k for k, v in id_to_path.items()}
+    project_cmd = (project_root / "CLAUDE.md").resolve()
     for f in files:
         nid = path_to_id.get(str(f), "")
         label = _html.escape(short_label(f))
         full = _html.escape(str(f))
         body = _html.escape(contents.get(f, ""))
+        open_attr = " open" if f == project_cmd else ""
         blocks.append(
-            f'<details id="editor-{nid}" open><summary><code>{label}</code> '
+            f'<details id="editor-{nid}"{open_attr}><summary><code>{label}</code> '
             f'<span class=path>{full}</span></summary>'
             f'<pre>{body}</pre></details>'
         )
     files_html = "\n".join(blocks)
-    mermaid_safe = _html.escape(mermaid).replace("&quot;", '"').replace("#quot;", "&quot;")
+    mermaid_safe = _mermaid_for_html(mermaid)
     project_safe = _html.escape(str(project_root))
     return (
         "<!doctype html>\n<html lang=en>\n<meta charset=utf-8>\n"
@@ -327,7 +389,7 @@ _STATE = _ServerState()
 
 def _server_html() -> str:
     """Render the live editor HTML. Uses inline template + JS that calls the API."""
-    mermaid_safe = _html.escape(_STATE.mermaid).replace("&quot;", '"').replace("#quot;", "&quot;")
+    mermaid_safe = _mermaid_for_html(_STATE.mermaid)
     project_safe = _html.escape(str(_STATE.project_root))
     return _EDITOR_TEMPLATE.replace("__MERMAID__", mermaid_safe) \
                            .replace("__PROJECT__", project_safe) \
@@ -374,9 +436,20 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         if route == "/":
             self._send_text(200, _server_html(), "text/html")
         elif route == "/api/files":
+            proj = (_STATE.project_root / "CLAUDE.md").resolve()
+
+            def _kind(p: Path) -> str:
+                if p == proj:
+                    return "project"
+                try:
+                    p.relative_to(_STATE.project_root)
+                    return "descendant"
+                except ValueError:
+                    return "ancestor"
+
             payload = [
                 {"id": fid, "path": str(p), "label": short_label(p),
-                 "preview": make_preview(_read_safely(p))}
+                 "kind": _kind(p), "preview": make_preview(_read_safely(p))}
                 for fid, p in _STATE.files.items()
             ]
             self._send_json(200, payload)
@@ -538,47 +611,62 @@ _EDITOR_TEMPLATE = r"""<!doctype html>
 <meta charset=utf-8>
 <title>CLAUDE.md tree — __PROJECT__</title>
 <style>
-  body { font-family: ui-sans-serif, system-ui, sans-serif; max-width: 1180px;
-         margin: 1.5rem auto; padding: 0 1rem; color: #1a1a1a; }
-  h1 { font-size: 1.2rem; margin: 0 0 .25rem; }
-  .meta { color: #666; font-size: .8rem; margin-bottom: 1.25rem; }
-  .diagram { background: #fafafa; border: 1px solid #e8e8e8; border-radius: 8px;
-             padding: .75rem; overflow-x: auto; margin-bottom: 1.5rem; }
-  .diagram .nodeLabel b { font-size: .8em; }
-  .diagram .preview { color: #777; font-size: .72em; font-style: italic; }
-  .node-mine > rect, .node-mine > polygon { stroke-width: 2px !important; }
-  .editor { border: 1px solid #e8e8e8; border-radius: 8px; margin: .9rem 0;
-            background: #fff; scroll-margin-top: 1rem; }
-  .editor header { display: flex; align-items: baseline; gap: .75rem;
-                   padding: .6rem .9rem; border-bottom: 1px solid #f0f0f0;
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { font-family: ui-sans-serif, system-ui, sans-serif; color: #1a1a1a;
+         display: flex; flex-direction: column; }
+  .topbar { display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap;
+            padding: .5rem .9rem; border-bottom: 1px solid #e8e8e8; }
+  .topbar h1 { font-size: .95rem; margin: 0; }
+  .topbar .proj { color: #666; font-size: .74rem;
+                  font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
+  .topbar .hint { color: #aaa; font-size: .72rem; margin-left: auto; }
+  .split { flex: 1; display: flex; min-height: 0; }
+  .graphpane { flex: 0 0 40%; min-width: 240px; max-width: 72%; overflow: auto;
+               resize: horizontal; border-right: 1px solid #e8e8e8;
+               background: #fafafa; padding: .6rem; }
+  .diagram svg { height: auto; }
+  .nodeLabel { max-width: 230px; white-space: normal; text-align: left;
+               line-height: 1.3; }
+  .cmpath { color: #9a9a9a; font-size: .6rem;
+            font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
+  .cmtitle { font-size: .8rem; }
+  .cmblurb { color: #666; font-size: .66rem; font-style: italic; }
+  .cmsecs { color: #2f855a; font-size: .62rem; }
+  .cmmeta { color: #aaa; font-size: .58rem; }
+  g.node.sel > rect, g.node.sel > polygon, g.node.sel > path {
+    stroke: #2563eb !important; stroke-width: 2.5px !important; }
+  .editorpane { flex: 1 1 auto; min-width: 0; display: flex;
+                flex-direction: column; overflow: hidden; }
+  .empty { margin: auto; color: #999; font-size: .85rem; text-align: center;
+           padding: 2rem; }
+  #editor { display: none; flex-direction: column; height: 100%; }
+  #editor.show { display: flex; }
+  #editor header { display: flex; align-items: baseline; gap: .6rem;
+                   padding: .55rem .9rem; border-bottom: 1px solid #f0f0f0;
                    flex-wrap: wrap; }
-  .editor header code { font-size: .9rem; font-weight: 600; }
-  .editor header .path { color: #888; font-size: .72rem; word-break: break-all;
+  #editor header code { font-size: .9rem; font-weight: 600; }
+  #editor header .path { color: #888; font-size: .7rem; word-break: break-all;
                          flex: 1 1 auto; }
-  .editor header .badge { font-size: .68rem; padding: 2px 6px; border-radius: 4px;
-                          background: #eef; color: #335; }
-  .editor header .dirty { background: #fde; color: #833; }
-  .editor textarea { width: 100%; min-height: 12rem; box-sizing: border-box;
-                     border: 0; padding: .8rem .9rem; font-family: ui-monospace,
-                     SFMono-Regular, Menlo, monospace; font-size: .82rem;
-                     line-height: 1.5; resize: vertical; background: #fcfcfc;
-                     outline: 0; }
-  .editor footer { display: flex; gap: .5rem; align-items: center;
-                   padding: .55rem .9rem; border-top: 1px solid #f0f0f0;
-                   font-size: .78rem; flex-wrap: wrap; }
-  .editor footer .spacer { flex: 1; }
-  .editor button { font: inherit; padding: .35rem .8rem; border-radius: 5px;
-                   border: 1px solid #d0d0d0; background: #f6f6f6;
-                   cursor: pointer; }
-  .editor button:hover:not(:disabled) { background: #ececec; }
-  .editor button:disabled { opacity: .5; cursor: default; }
-  .editor button.primary { border-color: #2563eb; background: #2563eb;
-                            color: white; }
-  .editor button.primary:hover:not(:disabled) { background: #1d4fd8; }
-  .editor button.danger { border-color: #b91c1c; color: #b91c1c;
-                          background: #fff; }
-  .editor select { font: inherit; padding: .3rem .4rem; border-radius: 5px;
-                   border: 1px solid #d0d0d0; background: #fff; }
+  #editor header .badge { font-size: .66rem; padding: 2px 6px; border-radius: 4px;
+                          background: #eef; color: #335; white-space: nowrap; }
+  #editor header .badge.dirty { background: #fde; color: #833; }
+  #editor textarea { flex: 1; width: 100%; border: 0; padding: .8rem .9rem;
+                     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+                     font-size: .82rem; line-height: 1.5; resize: none;
+                     background: #fcfcfc; outline: 0; }
+  #editor footer { display: flex; gap: .5rem; align-items: center;
+                   padding: .5rem .9rem; border-top: 1px solid #f0f0f0;
+                   font-size: .76rem; flex-wrap: wrap; }
+  #editor footer .spacer { flex: 1; }
+  button { font: inherit; padding: .32rem .75rem; border-radius: 5px;
+           border: 1px solid #d0d0d0; background: #f6f6f6; cursor: pointer; }
+  button:hover:not(:disabled) { background: #ececec; }
+  button:disabled { opacity: .5; cursor: default; }
+  button.primary { border-color: #2563eb; background: #2563eb; color: #fff; }
+  button.primary:hover:not(:disabled) { background: #1d4fd8; }
+  select { font: inherit; padding: .28rem .4rem; border-radius: 5px;
+           border: 1px solid #d0d0d0; background: #fff; }
   .toast { position: fixed; bottom: 1rem; right: 1rem; background: #1a1a1a;
            color: #fff; padding: .55rem .85rem; border-radius: 6px;
            font-size: .8rem; opacity: 0; transition: opacity .2s; }
@@ -586,52 +674,61 @@ _EDITOR_TEMPLATE = r"""<!doctype html>
   .toast.err { background: #b91c1c; }
 </style>
 
-<h1>CLAUDE.md tree — editor</h1>
-<div class=meta>
-  Project: <code>__PROJECT__</code> ·
-  Edit, then Save / Revert. Each save snapshots prior content to
-  <code>CLAUDE.md.history.jsonl</code>.
+<div class=topbar>
+  <h1>CLAUDE.md tree</h1>
+  <span class=proj>__PROJECT__</span>
+  <span class=hint>Click a node to open it · ⌘/Ctrl-S to save</span>
 </div>
 
-<div class=diagram><pre class=mermaid>__MERMAID__</pre></div>
-
-<div id=editors></div>
+<div class=split>
+  <aside class=graphpane><div class=diagram><pre class=mermaid>__MERMAID__</pre></div></aside>
+  <main class=editorpane>
+    <div class=empty id=empty>Select a CLAUDE.md node on the left to edit it.</div>
+    <section id=editor>
+      <header>
+        <code data-role=label></code>
+        <span class=path data-role=path></span>
+        <span class=badge data-role=status></span>
+      </header>
+      <textarea spellcheck=false data-role=ta></textarea>
+      <footer>
+        <button data-action=save class=primary disabled>Save</button>
+        <button data-action=revert disabled>Revert to last snapshot</button>
+        <span class=spacer></span>
+        <label>History:
+          <select data-role=history><option value="">(latest)</option></select>
+        </label>
+        <button data-action=preview>Preview</button>
+      </footer>
+    </section>
+  </main>
+</div>
 <div id=toast class=toast></div>
 
 <script type=module>
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
 const TOKEN = '__TOKEN__';
-const editors = document.getElementById('editors');
 const toastEl = document.getElementById('toast');
+const emptyEl = document.getElementById('empty');
+const ed = document.getElementById('editor');
+const els = {
+  label: ed.querySelector('[data-role=label]'),
+  path: ed.querySelector('[data-role=path]'),
+  status: ed.querySelector('[data-role=status]'),
+  ta: ed.querySelector('[data-role=ta]'),
+  history: ed.querySelector('[data-role=history]'),
+  save: ed.querySelector('[data-action=save]'),
+  revert: ed.querySelector('[data-action=revert]'),
+  preview: ed.querySelector('[data-action=preview]'),
+};
+const filesById = {};
+let current = null;
+let dirty = false;
 
 function toast(msg, kind) {
   toastEl.textContent = msg;
   toastEl.className = 'toast show' + (kind === 'err' ? ' err' : '');
   setTimeout(() => { toastEl.className = 'toast'; }, 2200);
-}
-
-function buildEditor(file) {
-  const div = document.createElement('section');
-  div.className = 'editor';
-  div.id = 'editor-' + file.id;
-  div.innerHTML = `
-    <header>
-      <code>${file.label}</code>
-      <span class=path>${file.path}</span>
-      <span class=badge data-role=status>loading…</span>
-    </header>
-    <textarea spellcheck=false></textarea>
-    <footer>
-      <button data-action=save class=primary disabled>Save</button>
-      <button data-action=revert>Revert to last snapshot</button>
-      <span class=spacer></span>
-      <label>History:
-        <select data-role=history><option value="">(latest snapshot)</option></select>
-      </label>
-      <button data-action=preview>Preview history</button>
-    </footer>`;
-  editors.appendChild(div);
-  return div;
 }
 
 function api(path, opts = {}) {
@@ -643,98 +740,122 @@ function api(path, opts = {}) {
   });
 }
 
-async function loadContent(file, ed) {
-  const ta = ed.querySelector('textarea');
-  const status = ed.querySelector('[data-role=status]');
-  const r = await fetch('/api/content?id=' + file.id).then(r => r.json());
-  ta.value = r.content;
-  ta.dataset.sha = r.sha;
-  status.textContent = 'sha ' + r.sha;
-  status.classList.remove('dirty');
-  ed.querySelector('[data-action=save]').disabled = true;
-  await refreshHistory(file, ed);
+function setDirty(on) {
+  dirty = on;
+  els.save.disabled = !on;
+  els.status.classList.toggle('dirty', on);
 }
 
-async function refreshHistory(file, ed) {
-  const sel = ed.querySelector('[data-role=history]');
-  const entries = await fetch('/api/history?id=' + file.id).then(r => r.json());
-  sel.innerHTML = '<option value="">(latest snapshot)</option>';
+function highlight(id) {
+  document.querySelectorAll('g.node.sel').forEach(n => n.classList.remove('sel'));
+  const n = document.querySelector('[id^="flowchart-' + id + '-"]');
+  if (n) n.classList.add('sel');
+}
+
+async function refreshHistory() {
+  const entries = await fetch('/api/history?id=' + current.id).then(r => r.json());
+  els.history.innerHTML = '<option value="">(latest)</option>';
   entries.forEach((e, i) => {
     const o = document.createElement('option');
     o.value = i;
     o.textContent = `${e.ts.replace('T', ' ').replace('+00:00', 'Z')} · ${e.sha}`;
-    sel.appendChild(o);
+    els.history.appendChild(o);
   });
-  ed.querySelector('[data-action=revert]').disabled = entries.length === 0;
-  ed.dataset.historyCount = entries.length;
+  els.revert.disabled = entries.length === 0;
 }
 
-function wire(file, ed) {
-  const ta = ed.querySelector('textarea');
-  const status = ed.querySelector('[data-role=status]');
-  const saveBtn = ed.querySelector('[data-action=save]');
-  ta.addEventListener('input', () => {
-    saveBtn.disabled = false;
-    status.classList.add('dirty');
-    status.textContent = 'unsaved';
-  });
-  saveBtn.addEventListener('click', async () => {
-    saveBtn.disabled = true;
-    try {
-      const r = await api('/api/save?id=' + file.id, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({content: ta.value, expected_sha: ta.dataset.sha})
-      });
-      ta.dataset.sha = r.sha;
-      status.textContent = 'sha ' + r.sha;
-      status.classList.remove('dirty');
-      toast('Saved · ' + file.label);
-      await refreshHistory(file, ed);
-    } catch (e) {
-      saveBtn.disabled = false;
-      toast('Save failed: ' + e.message, 'err');
-    }
-  });
-  ed.querySelector('[data-action=revert]').addEventListener('click', async () => {
-    if (!confirm('Revert ' + file.label + ' to last snapshot?')) return;
-    try {
-      await api('/api/revert?id=' + file.id, {method: 'POST'});
-      await loadContent(file, ed);
-      toast('Reverted · ' + file.label);
-    } catch (e) {
-      toast('Revert failed: ' + e.message, 'err');
-    }
-  });
-  ed.querySelector('[data-action=preview]').addEventListener('click', async () => {
-    const sel = ed.querySelector('[data-role=history]');
-    const n = sel.value;
-    if (n === '') return loadContent(file, ed);
-    const txt = await fetch('/api/history/entry?id=' + file.id + '&n=' + n).then(r => r.text());
-    ta.value = txt;
-    status.textContent = 'previewing #' + n + ' (not saved)';
-    status.classList.add('dirty');
-    ed.querySelector('[data-action=save]').disabled = false;
-  });
+async function loadInto(id) {
+  const file = filesById[id];
+  if (!file) return;
+  current = file;
+  emptyEl.style.display = 'none';
+  ed.classList.add('show');
+  els.label.textContent = file.label;
+  els.path.textContent = file.path;
+  els.status.textContent = 'loading…';
+  const r = await fetch('/api/content?id=' + id).then(r => r.json());
+  els.ta.value = r.content;
+  els.ta.dataset.sha = r.sha;
+  els.status.textContent = 'sha ' + r.sha;
+  setDirty(false);
+  highlight(id);
+  await refreshHistory();
 }
 
-window.onNodeClick = function(id) {
-  const el = document.getElementById('editor-' + id);
-  if (!el) return;
-  el.scrollIntoView({behavior: 'smooth', block: 'start'});
-  el.querySelector('textarea').focus({preventScroll: true});
-};
+function open(id) {
+  if (dirty && current && id !== current.id &&
+      !confirm('Discard unsaved changes to ' + current.label + '?')) return;
+  loadInto(id).then(() => els.ta.focus({preventScroll: true}));
+}
+window.onNodeClick = open;
+
+els.ta.addEventListener('input', () => {
+  els.status.textContent = 'unsaved';
+  setDirty(true);
+});
+
+async function save() {
+  if (!current || !dirty) return;
+  els.save.disabled = true;
+  try {
+    const r = await api('/api/save?id=' + current.id, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({content: els.ta.value, expected_sha: els.ta.dataset.sha})
+    });
+    els.ta.dataset.sha = r.sha;
+    els.status.textContent = 'sha ' + r.sha;
+    setDirty(false);
+    toast('Saved · ' + current.label);
+    await refreshHistory();
+  } catch (e) {
+    els.save.disabled = false;
+    toast('Save failed: ' + e.message, 'err');
+  }
+}
+els.save.addEventListener('click', save);
+
+els.revert.addEventListener('click', async () => {
+  if (!current) return;
+  if (!confirm('Revert ' + current.label + ' to last snapshot?')) return;
+  try {
+    await api('/api/revert?id=' + current.id, {method: 'POST'});
+    await loadInto(current.id);
+    toast('Reverted · ' + current.label);
+  } catch (e) {
+    toast('Revert failed: ' + e.message, 'err');
+  }
+});
+
+els.preview.addEventListener('click', async () => {
+  if (!current) return;
+  const n = els.history.value;
+  if (n === '') return loadInto(current.id);
+  const txt = await fetch('/api/history/entry?id=' + current.id + '&n=' + n).then(r => r.text());
+  els.ta.value = txt;
+  els.status.textContent = 'previewing #' + n + ' (unsaved)';
+  setDirty(true);
+});
+
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && (e.key === 's' || e.key === 'S')) {
+    e.preventDefault();
+    save();
+  }
+});
+window.addEventListener('beforeunload', (e) => {
+  if (dirty) { e.preventDefault(); e.returnValue = ''; }
+});
 
 (async () => {
-  mermaid.initialize({ startOnLoad: true, theme: 'neutral',
+  mermaid.initialize({ startOnLoad: false, theme: 'neutral',
                        securityLevel: 'loose',
                        flowchart: { htmlLabels: true } });
+  try { await mermaid.run(); } catch (e) { console.error('mermaid', e); }
   const files = await fetch('/api/files').then(r => r.json());
-  for (const f of files) {
-    const ed = buildEditor(f);
-    wire(f, ed);
-    await loadContent(f, ed);
-  }
+  files.forEach(f => { filesById[f.id] = f; });
+  const initial = files.find(f => f.kind === 'project') || files[0];
+  if (initial) loadInto(initial.id);
 })();
 </script>
 </html>
