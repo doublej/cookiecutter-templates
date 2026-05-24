@@ -1,0 +1,4 @@
+{
+  "description": "Unified cookiecutter template collection for scaffolding projects across Python, TypeScript, Rust, and Swift with workspace composition support.",
+  "archived": false
+}

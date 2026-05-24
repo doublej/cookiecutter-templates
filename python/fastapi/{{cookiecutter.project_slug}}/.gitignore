@@ -13,3 +13,6 @@ dist/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+.claude/claude-tree.*
+**/CLAUDE.md.history.jsonl

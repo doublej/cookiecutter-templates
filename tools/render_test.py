@@ -169,15 +169,17 @@ def check_versioning_payload(
         results.append((".claude/settings.json parses", False, f"{e}"))
         return results
 
-    script = project_dir / ".claude" / "scripts" / "check_template_update.py"
-    if not script.is_file():
-        results.append(("check_template_update.py exists", False, "missing"))
-        return results
-    try:
-        py_compile.compile(str(script), doraise=True)
-    except py_compile.PyCompileError as e:
-        results.append(("check_template_update.py compiles", False, f"{e}"))
-        return results
+    scripts_dir = project_dir / ".claude" / "scripts"
+    for name in ("check_template_update.py", "claude_tree.py"):
+        script = scripts_dir / name
+        if not script.is_file():
+            results.append((f"{name} exists", False, "missing"))
+            return results
+        try:
+            py_compile.compile(str(script), doraise=True)
+        except py_compile.PyCompileError as e:
+            results.append((f"{name} compiles", False, f"{e}"))
+            return results
     results.append((".claude payload", True, ""))
     return results
 

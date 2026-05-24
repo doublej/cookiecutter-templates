@@ -6,6 +6,18 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.5.1] - 2026-05-24
+- fix: update_scaffold no longer overwrites CLAUDE.md/Justfile/.gitignore/seed files by default (writes .upstream sidecars); --force opt-in for old behavior; check_template_update prompt updated to match
+
+## [2.5.0] - 2026-05-24
+- feat: claude_tree.py interactive editor (server mode default; --static keeps old HTML); save/revert with CLAUDE.md.history.jsonl sidecar; node previews wired to editors
+
+## [2.4.1] - 2026-05-24
+- fix: update-scaffold falls back to .template-meta.json path when $COOKIECUTTER_TEMPLATES is unset
+
+## [2.4.0] - 2026-05-24
+- add claude_tree.py (.claude/scripts) and 'just claude-tree' recipe
+
 ## [2.3.0] - 2026-05-21
 - restructure CLAUDE.md as context packet (claude-md-tree)
 

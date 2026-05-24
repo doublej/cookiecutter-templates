@@ -124,9 +124,14 @@ def main() -> None:
             f"with exactly this question (no preamble, no other content): "
             f"\"Your project was scaffolded from {template} v{local}; upstream is now v{upstream}."
             f"{changes_block}\n"
-            f"Want me to run `uv run {src_path}/tools/update_scaffold.py --apply .` to pull the delta? (yes/no)\". "
-            f"Do not start any other task until the user answers. If they say yes, run the command. "
-            f"If they say no, drop it and continue with their original request."
+            f"Want me to apply the update? Default is SAFE: template scripts get overwritten; "
+            f"your CLAUDE.md / Justfile / .gitignore become `<file>.upstream` sidecars you merge manually. "
+            f"(yes/no — say 'force' to also overwrite the seed files, NOT recommended)\". "
+            f"Do not start any other task until the user answers. "
+            f"If they say 'yes', run `uv run {src_path}/tools/update_scaffold.py --apply .` and afterwards "
+            f"tell them which `.upstream` sidecars were written and offer to diff them. "
+            f"If they say 'force', run with `--apply --force .` (warn them their local edits will be lost). "
+            f"If they say 'no', drop it and continue."
         )
         _diag_log("ok", elapsed_ms(), meta={"local": local, "upstream": upstream, "has_changelog": bool(entries)})
     except Exception as e:

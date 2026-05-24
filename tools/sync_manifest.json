@@ -10,7 +10,7 @@
       "justfile_shared_recipes": [
         "default", "install", "lint", "lint-fix", "format", "format-check",
         "typecheck", "test", "loc-check", "dir-check", "just-fmt-check",
-        "check", "clean", "update-scaffold"
+        "check", "clean", "claude-tree", "update-scaffold"
       ]
     },
     "typescript": {
@@ -23,7 +23,7 @@
       "justfile_shared_recipes": [
         "default", "install", "lint", "lint-fix", "test",
         "loc-check", "dir-check", "just-fmt-check", "check", "build", "clean",
-        "update-scaffold"
+        "claude-tree", "update-scaffold"
       ],
       "justfile_exceptions": {
         "typescript/sveltekit": {
@@ -45,7 +45,7 @@
       "justfile_shared_recipes": [
         "default", "install", "xcode", "lint", "lint-fix", "test",
         "loc-check", "dir-check", "just-fmt-check", "check",
-        "build", "build-release", "clean", "update-scaffold"
+        "build", "build-release", "clean", "claude-tree", "update-scaffold"
       ]
     },
     "rust": {
@@ -57,7 +57,7 @@
       "justfile_shared_recipes": [
         "default", "lint", "fmt", "fmt-check", "just-fmt-check",
         "check", "test", "loc-check", "dir-check", "build-release",
-        "reinstall", "update-scaffold"
+        "reinstall", "claude-tree", "update-scaffold"
       ]
     }
   },
@@ -67,7 +67,8 @@
       "{{cookiecutter.project_slug}}/.claude/scripts/_diag.py",
       "{{cookiecutter.project_slug}}/.claude/scripts/check_template_update.py",
       "{{cookiecutter.project_slug}}/.claude/scripts/check_library_freshness.py",
-      "{{cookiecutter.project_slug}}/.claude/scripts/snooze_library_check.py"
+      "{{cookiecutter.project_slug}}/.claude/scripts/snooze_library_check.py",
+      "{{cookiecutter.project_slug}}/.claude/scripts/claude_tree.py"
     ],
     "slug_dir_overrides": {},
     "exclude_templates": []

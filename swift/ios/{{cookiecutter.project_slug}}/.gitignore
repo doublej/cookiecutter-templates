@@ -9,3 +9,6 @@ Thumbs.db
 .swiftpm/
 DerivedData/
 *.xcodeproj
+
+.claude/claude-tree.*
+**/CLAUDE.md.history.jsonl

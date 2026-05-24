@@ -1,0 +1,27 @@
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.local
+.env.*.local
+
+# Android / Gradle
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Generated native
+**/libs/
+**/obj/
+
+# Keystores
+*.jks
+*.keystore
+
+.claude/claude-tree.*
+**/CLAUDE.md.history.jsonl

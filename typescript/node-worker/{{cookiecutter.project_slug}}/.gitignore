@@ -7,3 +7,6 @@ Thumbs.db
 
 node_modules/
 dist/
+
+.claude/claude-tree.*
+**/CLAUDE.md.history.jsonl

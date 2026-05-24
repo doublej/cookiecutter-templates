@@ -8,3 +8,6 @@ Thumbs.db
 node_modules/
 .svelte-kit/
 build/
+
+.claude/claude-tree.*
+**/CLAUDE.md.history.jsonl

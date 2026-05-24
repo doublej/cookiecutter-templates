@@ -115,8 +115,21 @@ clean:
     ./gradlew clean
     rm -rf .gradle/ build/ app/build/ app/.cxx/
 
+[group('docs')]
+claude-tree:
+    python3 .claude/scripts/claude_tree.py
+    @command -v open >/dev/null 2>&1 && open .claude/claude-tree.html || echo 'Open .claude/claude-tree.html manually'
+
 [group('scaffold')]
 update-scaffold *ARGS:
     #!/usr/bin/env zsh
     set -euo pipefail
-    python3 "${COOKIECUTTER_TEMPLATES:?Set COOKIECUTTER_TEMPLATES to the cookiecutter-templates repo}/tools/update_scaffold.py" {% raw %}{{ ARGS }}{% endraw %}
+    repo="${COOKIECUTTER_TEMPLATES:-}"
+    if [[ -z "$repo" && -f .template-meta.json ]]; then
+        repo=$(python3 -c "import json; print(json.load(open('.template-meta.json'))['template_source']['path'])" 2>/dev/null || true)
+    fi
+    if [[ -z "$repo" || ! -d "$repo" ]]; then
+        echo "error: cookiecutter-templates repo not found — set \$COOKIECUTTER_TEMPLATES or fix template_source.path in .template-meta.json" >&2
+        exit 1
+    fi
+    python3 "$repo/tools/update_scaffold.py" {% raw %}{{ ARGS }}{% endraw %}

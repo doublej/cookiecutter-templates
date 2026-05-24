@@ -60,10 +60,12 @@ Templates are grouped into families (python, typescript, rust, swift). Within a 
 
 | Family | Templates | Shared identical files | Shared Justfile recipes |
 |--------|-----------|----------------------|------------------------|
-| python | cli, fastapi, flask | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json` | default, install, lint, lint-fix, format, format-check, typecheck, test, loc-check, dir-check, check, clean |
-| typescript | node-api, node-cli, bun-package, node-lib, node-worker, react, sveltekit | `hooks/pre_gen_project.py` | default, install, lint, lint-fix, test, loc-check, dir-check, check, build, clean |
-| swift | ios, macos | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json` | default, install, xcode, test, loc-check, dir-check, check, build, build-release, clean |
-| rust | cli | `hooks/pre_gen_project.py`, `.gitignore` | default, lint, fmt, fmt-check, check, test, loc-check, dir-check, build-release, reinstall |
+| python | cli, fastapi, flask | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json` | default, install, lint, lint-fix, format, format-check, typecheck, test, loc-check, dir-check, check, clean, claude-tree |
+| typescript | node-api, node-cli, bun-package, node-lib, node-worker, react, sveltekit, nextjs | `hooks/pre_gen_project.py` | default, install, lint, lint-fix, test, loc-check, dir-check, check, build, clean, claude-tree |
+| swift | ios, macos | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `.swiftlint.yml` | default, install, xcode, test, loc-check, dir-check, check, build, build-release, clean, claude-tree |
+| rust | cli | `hooks/pre_gen_project.py`, `.gitignore` | default, lint, fmt, fmt-check, check, test, loc-check, dir-check, build-release, reinstall, claude-tree |
+
+Cross-family, every generated `.claude/scripts/` ships identical helper scripts: `_diag.py` (phone-home), `check_template_update.py`, `check_library_freshness.py`, `snooze_library_check.py`, and `claude_tree.py` (renders `.claude/claude-tree.html` + `.claude/claude-tree.md` covering ancestor + descendant `CLAUDE.md` files; user-invoked via `just claude-tree`).
 
 **Exceptions** are declared in `sync_manifest.json` under `justfile_exceptions` (e.g. SvelteKit skips `typecheck`/`clean`).
 

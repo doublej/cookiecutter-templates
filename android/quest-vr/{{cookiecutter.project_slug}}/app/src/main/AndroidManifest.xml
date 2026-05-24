@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.hardware.vr.headtracking" android:required="true" android:version="1" />
+    <uses-permission android:name="com.oculus.permission.USE_ANCHOR_API" />
+    <uses-permission android:name="com.oculus.permission.USE_SCENE" />
+
+    <application
+        android:allowBackup="false"
+        android:hasCode="false"
+        android:label="{{ cookiecutter.project_name }}">
+
+        <meta-data android:name="com.oculus.supportedDevices" android:value="quest2|quest3|quest3s" />
+
+        <activity
+            android:name="com.google.androidgamesdk.GameActivity"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+            android:launchMode="singleTask"
+            android:screenOrientation="landscape"
+            android:excludeFromRecents="false"
+            android:configChanges="density|keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|uiMode"
+            android:exported="true">
+
+            <meta-data android:name="android.app.lib_name" android:value="{{ cookiecutter.project_slug.replace('-', '_') }}" />
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="com.oculus.intent.category.VR" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
