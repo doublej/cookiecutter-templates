@@ -23,12 +23,20 @@ Project templates organized by language and framework.
 | `typescript/node-worker` | Background worker | `worker_type`, `include_docker` |
 | `typescript/sveltekit` | SvelteKit web app | `include_tracking` |
 | `typescript/react` | React SPA (Vite) | `include_tracking` |
+| `typescript/nextjs` | Next.js app | `include_tracking` |
 
 ### Rust
 
 | Template | Description | Options |
 |----------|-------------|---------|
 | `rust/cli` | CLI tool (clap + anyhow) | -- |
+
+### Go
+
+| Template | Description | Options |
+|----------|-------------|---------|
+| `go/cli` | CLI tool (stdlib `flag`) | -- |
+| `go/api` | HTTP API service (`net/http`) | -- |
 
 ### Swift
 
@@ -54,6 +62,7 @@ cookiecutter python/fastapi
 cookiecutter typescript/node-api
 cookiecutter typescript/bun-package
 cookiecutter rust/cli
+cookiecutter go/api
 cookiecutter swift/macos
 cookiecutter android/quest-vr
 ```
@@ -86,6 +95,14 @@ cargo build
 cargo run -- --help
 ```
 
+### Go
+
+```bash
+cd my-project
+go build ./...
+go run .          # CLI: append `-- --help`; API: serves on :8080
+```
+
 ### Swift (SPM)
 
 ```bash
@@ -103,7 +120,9 @@ All templates share these variables:
 | `project_name` | Human-readable project name | varies |
 | `project_slug` | Directory/package name (auto-derived) | from `project_name` |
 | `description` | Short project description | varies |
-| `author` | Author name | "Your Name" |
+| `author` | Author name | varies (`Your Name`, or `JJ` for rust/go) |
+| `mcp_servers` | MCP server preset (none/minimal/standard/interactive) | `none` |
+| `mcp_scope` | MCP config scope (project/local) | `project` |
 
 ## Template Standards
 
@@ -137,6 +156,8 @@ Opt-out per generated project: `export NO_TEMPLATE_UPDATE_CHECK=1` or `touch .cl
 | `tools/bump_version.py` | Bump `_version` in a template's cookiecutter.json |
 | `tools/update_scaffold.py` | Diff a rendered project against its source template and optionally `--apply` the delta |
 | `tools/test_update_check.py` | Offline test for the SessionStart update-check hook |
+| `tools/test_library_check.py` | Offline test for the SessionStart library-freshness hook |
+| `tools/review_diagnostics.py` | Aggregate phone-home diagnostics from deployed-template hooks |
 | `tools/inject_tracking.py` | Inject Umami tracking into rendered projects |
 
 ## Contributing
