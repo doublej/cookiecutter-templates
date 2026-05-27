@@ -59,6 +59,19 @@
         "check", "test", "loc-check", "dir-check", "build-release",
         "reinstall", "claude-tree", "update-scaffold"
       ]
+    },
+    "go": {
+      "templates": ["go/cli", "go/api"],
+      "identical_files": [
+        "hooks/pre_gen_project.py",
+        "{{cookiecutter.project_slug}}/.gitignore",
+        "{{cookiecutter.project_slug}}/.quality.json"
+      ],
+      "justfile_shared_recipes": [
+        "default", "install", "lint", "fmt", "fmt-check",
+        "test", "loc-check", "dir-check", "just-fmt-check", "check",
+        "build", "build-release", "clean", "claude-tree", "update-scaffold"
+      ]
     }
   },
   "cross_family": {

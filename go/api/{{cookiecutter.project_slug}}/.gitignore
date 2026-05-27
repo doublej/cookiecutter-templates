@@ -1,0 +1,20 @@
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.local
+.env.*.local
+
+# Compiled output
+/bin/
+*.exe
+*.test
+*.out
+
+# Go workspace + coverage
+go.work
+go.work.sum
+coverage.out
+
+.claude/claude-tree.*
+**/CLAUDE.md.history.jsonl

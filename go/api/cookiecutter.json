@@ -1,0 +1,9 @@
+{
+    "_version": "1.0.0",
+    "project_name": "My Go API",
+    "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+    "description": "A Go HTTP API service",
+    "author": "JJ",
+    "mcp_servers": ["none", "minimal", "standard", "interactive"],
+    "mcp_scope": ["project", "local"]
+}

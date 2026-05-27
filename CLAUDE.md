@@ -31,6 +31,7 @@ uv run tools/bump_version.py python/fastapi {major|minor|patch}
 cookiecutter python/fastapi
 cookiecutter typescript/node-api
 cookiecutter rust/cli
+cookiecutter go/api
 cookiecutter swift/macos
 ```
 
@@ -64,6 +65,7 @@ Templates are grouped into families (python, typescript, rust, swift). Within a 
 | typescript | node-api, node-cli, bun-package, node-lib, node-worker, react, sveltekit, nextjs | `hooks/pre_gen_project.py` | default, install, lint, lint-fix, test, loc-check, dir-check, check, build, clean, claude-tree |
 | swift | ios, macos | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `.swiftlint.yml` | default, install, xcode, test, loc-check, dir-check, check, build, build-release, clean, claude-tree |
 | rust | cli | `hooks/pre_gen_project.py`, `.gitignore` | default, lint, fmt, fmt-check, check, test, loc-check, dir-check, build-release, reinstall, claude-tree |
+| go | cli, api | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json` | default, install, lint, fmt, fmt-check, test, loc-check, dir-check, check, build, build-release, clean, claude-tree |
 
 Cross-family, every generated `.claude/scripts/` ships identical helper scripts: `_diag.py` (phone-home), `check_template_update.py`, `check_library_freshness.py`, and `snooze_library_check.py`. The `claude-tree` recipe ships no script — it deep-links into the project-atlas viewer (`atlas-api` on :47891) by `pwd`, opening the ancestor + descendant `CLAUDE.md` tree at `/claude-tree?root=$(pwd)`.
 

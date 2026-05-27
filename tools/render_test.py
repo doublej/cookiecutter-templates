@@ -65,6 +65,14 @@ TEMPLATES: dict[str, list[dict]] = {
         {},
         {"mcp_servers": "standard", "mcp_scope": "project"},
     ],
+    "go/cli": [
+        {},
+        {"mcp_servers": "standard", "mcp_scope": "project"},
+    ],
+    "go/api": [
+        {},
+        {"mcp_servers": "minimal", "mcp_scope": "project"},
+    ],
     "swift/ios": [
         {},
         {"mcp_servers": "standard", "mcp_scope": "project"},
@@ -232,6 +240,23 @@ def smoke_rust(project_dir: Path) -> list[tuple[str, bool, str]]:
     return results
 
 
+def smoke_go(project_dir: Path) -> list[tuple[str, bool, str]]:
+    results = []
+    if not has_command("go"):
+        results.append(("go build", False, "go not found, skipping"))
+        return results
+    for cmd, label in ([sys_go("build"), "go build"], [sys_go("vet"), "go vet"], [sys_go("test"), "go test"]):
+        ok, out = run_smoke(cmd, project_dir)
+        results.append((label, ok, out))
+        if not ok:
+            break
+    return results
+
+
+def sys_go(subcmd: str) -> list[str]:
+    return ["go", subcmd, "./..."]
+
+
 def smoke_swift(project_dir: Path) -> list[tuple[str, bool, str]]:
     results = []
     if not has_command("swift"):
@@ -300,6 +325,8 @@ def get_smoke_fn(template_name: str):
         return smoke_typescript
     if template_name.startswith("rust/"):
         return smoke_rust
+    if template_name.startswith("go/"):
+        return smoke_go
     if template_name.startswith("swift/"):
         return smoke_swift
     if template_name.startswith("android/"):
