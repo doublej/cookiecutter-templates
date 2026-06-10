@@ -91,7 +91,10 @@ Each template follows this structure:
 |--------|---------|
 | `tools/sync_check.py` | SHA256 comparison of identical files; recipe-level Justfile comparison |
 | `tools/render_test.py` | Renders ~50 template variants (defined in `TEMPLATES` dict); runs language-specific smoke tests (compileall, bun install+lint+build+test, cargo build, swift build) |
-| `tools/inject_tracking.py` | Injects Umami analytics into rendered HTML with `<!-- TRACKING_PLACEHOLDER -->` |
+| `tools/inject_tracking.py` | Replaces the tracking placeholder with a Umami `<script>` tag, indentation-preserving — handles both `.html` (`<!-- TRACKING_PLACEHOLDER -->`) and `.tsx` (`{/* TRACKING_PLACEHOLDER */}`) |
+| `tools/umami_register.py` | Creates a website in Umami via `POST /api/websites` and prints the new website id; reads `UMAMI_URL` + `UMAMI_API_KEY` (x-umami-api-key header) from env |
+
+**Tracking flow (sveltekit/react/nextjs).** `include_tracking` is the up-front gate. When `n`, the post-gen hook strips the placeholder. When `y` **and the session is interactive (TTY)**, the hook asks two yes/no questions: (1) register `<slug>` in Umami now (calls `umami_register.py`, captures the website id), and (2) write the tracking script now (calls `inject_tracking.py` with the id). Non-interactive renders (CI, `render_test.py`, which sets `TEMPLATE_RENDER_TEST=1`) skip the prompts and leave the placeholder. Connection comes from env (`onenv prime` → `UMAMI_URL`, `UMAMI_API_KEY`); the network call is best-effort and never fails generation.
 
 ## Conventions
 
