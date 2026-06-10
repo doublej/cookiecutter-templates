@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.2.0] - 2026-06-10
+- include_tracking=y now offers interactive Umami register + script injection during generation (TTY only; reads UMAMI_URL/UMAMI_API_KEY from env via onenv)
+
 ## [2.1.0] - 2026-05-25
 - claude-tree recipe now delegates to the global atlas CLI (atlas tree)
 
