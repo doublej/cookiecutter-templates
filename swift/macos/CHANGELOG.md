@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [3.1.0] - 2026-05-25
+- claude-tree recipe now delegates to the global atlas CLI (atlas tree)
+
 ## [3.0.0] - 2026-05-25
 - remove bundled claude_tree.py; claude-tree recipe now launches the project-atlas viewer
 

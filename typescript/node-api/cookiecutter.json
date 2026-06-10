@@ -1,5 +1,5 @@
 {
-    "_version": "2.0.0",
+    "_version": "2.1.0",
     "project_name": "My API",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "description": "A Node.js API",
