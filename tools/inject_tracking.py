@@ -1,33 +1,48 @@
 #!/usr/bin/env python3
-"""Inject Umami tracking snippet into a rendered project.
+"""Inject the Umami tracking snippet into a rendered project.
 
 Usage:
     python tools/inject_tracking.py <project_dir> <umami_url> <website_id>
 
-The script finds HTML files with <!-- TRACKING_PLACEHOLDER --> and replaces
-the placeholder with the Umami tracking script tag.
+Replaces the tracking placeholder with a Umami <script> tag, preserving the
+placeholder's indentation. Two placeholder forms are recognised:
+
+    HTML  (.html):  <!-- TRACKING_PLACEHOLDER -->
+    JSX   (.tsx):   {/* TRACKING_PLACEHOLDER */}      -> self-closing <script ... />
 """
 import re
 import sys
 from pathlib import Path
 
-PLACEHOLDER_RE = re.compile(r"\s*<!--\s*TRACKING_PLACEHOLDER\s*-->\s*\n?")
+HTML_RE = re.compile(r"(?m)^([ \t]*)<!--\s*TRACKING_PLACEHOLDER\s*-->[ \t]*\n?")
+JSX_RE = re.compile(r"(?m)^([ \t]*)\{/\*\s*TRACKING_PLACEHOLDER\s*\*/\}[ \t]*\n?")
+SKIP_DIRS = {"node_modules", ".git", "dist", "build", ".svelte-kit", ".next"}
+
+
+def _inject_file(path: Path, pattern: re.Pattern, snippet: str, project_dir: Path) -> bool:
+    content = path.read_text()
+    if "TRACKING_PLACEHOLDER" not in content:
+        return False
+    updated = pattern.sub(lambda m: f"{m.group(1)}{snippet}\n", content)
+    if updated == content:
+        return False
+    path.write_text(updated)
+    print(f"  Injected tracking into {path.relative_to(project_dir)}")
+    return True
 
 
 def inject(project_dir: Path, umami_url: str, website_id: str) -> int:
-    snippet = f'<script defer src="{umami_url}/script.js" data-website-id="{website_id}"></script>'
+    src = f"{umami_url}/script.js"
+    html_snippet = f'<script defer src="{src}" data-website-id="{website_id}"></script>'
+    jsx_snippet = f'<script defer src="{src}" data-website-id="{website_id}" />'
     count = 0
-
-    for html_file in project_dir.rglob("*.html"):
-        content = html_file.read_text()
-        if "TRACKING_PLACEHOLDER" not in content:
+    for path in project_dir.rglob("*"):
+        if any(part in SKIP_DIRS for part in path.parts):
             continue
-
-        updated = PLACEHOLDER_RE.sub(f"\n    {snippet}\n", content)
-        html_file.write_text(updated)
-        print(f"  Injected tracking into {html_file.relative_to(project_dir)}")
-        count += 1
-
+        if path.suffix == ".html":
+            count += _inject_file(path, HTML_RE, html_snippet, project_dir)
+        elif path.suffix == ".tsx":
+            count += _inject_file(path, JSX_RE, jsx_snippet, project_dir)
     return count
 
 
@@ -46,7 +61,7 @@ def main():
 
     count = inject(project_dir, umami_url, website_id)
     if count == 0:
-        print("  No TRACKING_PLACEHOLDER found in any HTML files")
+        print("  No TRACKING_PLACEHOLDER found in any HTML/TSX files")
     else:
         print(f"  Injected tracking into {count} file(s)")
 

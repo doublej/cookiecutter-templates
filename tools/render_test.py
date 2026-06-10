@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Render and smoke-test all cookiecutter templates with multiple context variants."""
 import json
+import os
 import platform
 import py_compile
 import shutil
@@ -116,6 +117,10 @@ def load_defaults(template_path: Path) -> dict:
 def render_template(template_path: Path, context: dict, output_dir: Path) -> Path:
     """Render a template with cookiecutter API into output_dir."""
     from cookiecutter.main import cookiecutter
+
+    # Signal post-gen hooks to skip any interactive prompts (e.g. Umami
+    # register/inject), so this non-interactive harness never blocks on input().
+    os.environ["TEMPLATE_RENDER_TEST"] = "1"
 
     result = cookiecutter(
         str(template_path),
