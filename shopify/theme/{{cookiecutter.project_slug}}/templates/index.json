@@ -1,0 +1,8 @@
+{
+  "sections": {
+    "rich_text": {
+      "type": "rich-text"
+    }
+  },
+  "order": ["rich_text"]
+}

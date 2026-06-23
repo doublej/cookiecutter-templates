@@ -1,0 +1,32 @@
+{% doc %}
+  Renders a product card with image, title, and price, linking to the product page.
+
+  @param {object} product - The product to render.
+
+  @example
+  {% render 'product-card', product: product %}
+{% enddoc %}
+
+<div class="product-card">
+  <a href="{{ product.url }}" class="product-card__link">
+    {%- if product.featured_image -%}
+      {%- assign card_alt = product.featured_image.alt | default: product.title | escape -%}
+      {{
+        product.featured_image
+        | image_url: width: 600
+        | image_tag:
+          loading: 'lazy',
+          alt: card_alt,
+          class: 'product-card__image',
+          widths: '300, 400, 600',
+          sizes: '(min-width: 750px) 25vw, 50vw'
+      }}
+    {%- else -%}
+      {{ 'product-1' | placeholder_svg_tag: 'product-card__image placeholder' }}
+    {%- endif -%}
+
+    <h3 class="product-card__title">{{ product.title }}</h3>
+  </a>
+
+  {% render 'price', product: product %}
+</div>

@@ -1,0 +1,18 @@
+# Shopify CLI
+.shopify/
+*.theme.json
+
+# Logs
+*.log
+
+# Node (only if you add asset tooling)
+node_modules/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Secrets — use onenv (1Password), never commit
+.env
+.env.*

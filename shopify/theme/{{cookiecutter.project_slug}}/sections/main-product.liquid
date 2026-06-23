@@ -1,0 +1,99 @@
+<section class="product section">
+  <div class="page-width product__inner">
+    <div class="product__media">
+      {%- if product.featured_image -%}
+        {%- assign product_image_alt = product.featured_image.alt | default: product.title | escape -%}
+        {{
+          product.featured_image
+          | image_url: width: 1200
+          | image_tag:
+            alt: product_image_alt,
+            class: 'product__image',
+            widths: '400, 600, 900, 1200',
+            sizes: '(min-width: 750px) 50vw, 100vw'
+        }}
+      {%- else -%}
+        {{ 'product-1' | placeholder_svg_tag: 'product__image placeholder' }}
+      {%- endif -%}
+    </div>
+
+    <div class="product__details">
+      <h1 class="product__title">{{ product.title }}</h1>
+
+      {%- if product.vendor != blank -%}
+        <p class="product__vendor">{{ product.vendor }}</p>
+      {%- endif -%}
+
+      {% render 'price', product: product %}
+
+      {%- form 'product', product, class: 'product__form' -%}
+        <input
+          type="hidden"
+          name="id"
+          value="{{ product.selected_or_first_available_variant.id }}"
+        >
+
+        <div class="product__quantity">
+          <label for="quantity-{{ section.id }}">{{ 'products.product.quantity' | t }}</label>
+          <input
+            id="quantity-{{ section.id }}"
+            type="number"
+            name="quantity"
+            value="1"
+            min="1"
+            inputmode="numeric"
+          >
+        </div>
+
+        <button
+          type="submit"
+          name="add"
+          class="button product__submit"
+          {% unless product.selected_or_first_available_variant.available %}disabled{% endunless %}
+        >
+          {%- if product.selected_or_first_available_variant.available -%}
+            {{ 'products.product.add_to_cart' | t }}
+          {%- else -%}
+            {{ 'products.product.sold_out' | t }}
+          {%- endif -%}
+        </button>
+      {%- endform -%}
+
+      {%- if product.description != blank -%}
+        <div class="product__description rte">{{ product.description }}</div>
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .product__inner {
+    display: grid;
+    gap: var(--space-lg);
+
+    @media screen and (min-width: 750px) {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .product__title {
+    margin-block-start: 0;
+  }
+
+  .product__quantity {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+    max-width: 8rem;
+    margin-block: var(--space-md);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.main_product.name",
+  "tag": "section",
+  "class": "section-main-product",
+  "settings": []
+}
+{% endschema %}

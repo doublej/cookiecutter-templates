@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-A unified cookiecutter template collection for scaffolding projects across Python, TypeScript, Rust, and Swift, with validation tooling to keep templates consistent.
+A unified cookiecutter template collection for scaffolding projects across Python, TypeScript, Rust, Swift, Go, and Shopify (Liquid themes), with validation tooling to keep templates consistent.
 
 ## Commands
 
@@ -33,6 +33,7 @@ cookiecutter typescript/node-api
 cookiecutter rust/cli
 cookiecutter go/api
 cookiecutter swift/macos
+cookiecutter shopify/theme
 ```
 
 Always run `sync_check.py` then `render_test.py` after changes. CI runs both on push/PR to main.
@@ -57,7 +58,7 @@ Every `cookiecutter.json` carries a private `_version` field (not prompted). Eve
 
 ### Template families
 
-Templates are grouped into families (python, typescript, rust, swift). Within a family, certain files and Justfile recipes **must stay identical** — enforced by `tools/sync_manifest.json` + `tools/sync_check.py`.
+Templates are grouped into families (python, typescript, rust, swift, go, shopify). Within a family, certain files and Justfile recipes **must stay identical** — enforced by `tools/sync_manifest.json` + `tools/sync_check.py`.
 
 | Family | Templates | Shared identical files | Shared Justfile recipes |
 |--------|-----------|----------------------|------------------------|
@@ -66,6 +67,7 @@ Templates are grouped into families (python, typescript, rust, swift). Within a 
 | swift | ios, macos | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `.swiftlint.yml` | default, install, xcode, lint, lint-fix, test, loc-check, dir-check, check, build, build-release, clean, claude-tree |
 | rust | cli | `hooks/pre_gen_project.py`, `.gitignore` | default, lint, fmt, fmt-check, check, test, loc-check, dir-check, build-release, reinstall, claude-tree |
 | go | cli, api | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json` | default, install, lint, fmt, fmt-check, test, loc-check, dir-check, check, build, build-release, clean, claude-tree |
+| shopify | theme | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `.theme-check.yml` | default, dev, share, lint, lint-fix, loc-check, dir-check, check, pull, push, claude-tree |
 
 Cross-family, every generated `.claude/scripts/` ships identical helper scripts: `_diag.py` (phone-home), `check_template_update.py`, `check_library_freshness.py`, and `snooze_library_check.py`. The `claude-tree` recipe ships no script — it deep-links into the project-atlas viewer (`atlas-api` on :47891) by `pwd`, opening the ancestor + descendant `CLAUDE.md` tree at `/claude-tree?root=$(pwd)`.
 

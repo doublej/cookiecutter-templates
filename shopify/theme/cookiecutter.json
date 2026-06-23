@@ -1,0 +1,15 @@
+{
+    "_version": "1.0.0",
+    "project_name": "My Shopify Theme",
+    "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+    "description": "A Shopify Online Store 2.0 theme",
+    "author": "Your Name",
+    "mcp_servers": ["none", "minimal", "standard", "interactive"],
+    "mcp_scope": ["project", "local"],
+    "_copy_without_render": [
+        "*.liquid",
+        "templates/*.json",
+        "locales/*.json",
+        "assets/*"
+    ]
+}

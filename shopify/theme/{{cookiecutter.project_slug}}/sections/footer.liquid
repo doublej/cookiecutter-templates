@@ -1,0 +1,77 @@
+<footer class="footer">
+  <div class="page-width footer__inner">
+    {%- if section.settings.show_newsletter -%}
+      <div class="footer__newsletter">
+        {% form 'customer', class: 'footer__newsletter-form' %}
+          <input type="hidden" name="contact[tags]" value="newsletter">
+          <label for="footer-newsletter" class="visually-hidden">
+            {{ 'general.newsletter.label' | t }}
+          </label>
+          <input
+            id="footer-newsletter"
+            type="email"
+            name="contact[email]"
+            placeholder="{{ 'general.newsletter.placeholder' | t }}"
+            autocomplete="email"
+            required
+          >
+          <button type="submit" class="button">{{ 'general.newsletter.submit' | t }}</button>
+          {%- if form.posted_successfully? -%}
+            <p class="footer__newsletter-success">{{ 'general.newsletter.success' | t }}</p>
+          {%- endif -%}
+        {% endform %}
+      </div>
+    {%- endif -%}
+
+    <p class="footer__copyright">
+      &copy; {{ 'now' | date: '%Y' }}
+      {{ section.settings.copyright_text | default: shop.name }}
+    </p>
+  </div>
+</footer>
+
+{% stylesheet %}
+  .footer {
+    margin-block-start: var(--space-xl);
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .footer__inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding-block: var(--space-lg);
+  }
+
+  .footer__newsletter-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2xs);
+  }
+
+  .footer__copyright {
+    margin: 0;
+    color: var(--color-foreground);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.footer.name",
+  "tag": "footer",
+  "class": "section-footer",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_newsletter",
+      "default": true,
+      "label": "t:sections.footer.settings.show_newsletter.label"
+    },
+    {
+      "type": "text",
+      "id": "copyright_text",
+      "label": "t:sections.footer.settings.copyright_text.label"
+    }
+  ]
+}
+{% endschema %}

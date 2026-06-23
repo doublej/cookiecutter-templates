@@ -1,0 +1,4 @@
+# Theme Check — https://shopify.dev/docs/storefronts/themes/tools/theme-check
+# Runs via `shopify theme check` (just lint) and `--auto-correct` (just lint-fix).
+root: "."
+extends: "theme-check:recommended"

@@ -1,0 +1,104 @@
+<header class="header">
+  <div class="page-width header__inner">
+    <a href="{{ routes.root_url }}" class="header__logo-link">
+      {%- if settings.logo != blank -%}
+        {%- assign logo_alt = shop.name | escape -%}
+        {{
+          settings.logo
+          | image_url: width: 300
+          | image_tag: class: 'header__logo-image', alt: logo_alt, widths: '150, 300'
+        }}
+      {%- else -%}
+        <span class="header__logo-text">{{ shop.name }}</span>
+      {%- endif -%}
+    </a>
+
+    {%- if section.settings.menu != blank -%}
+      <nav class="header__nav" role="navigation" aria-label="{{ shop.name }}">
+        <ul class="header__menu" role="list">
+          {%- for link in section.settings.menu.links -%}
+            <li class="header__menu-item">
+              <a href="{{ link.url }}" class="header__menu-link"
+                {% if link.active %}aria-current="page"{% endif %}>
+                {{ link.title }}
+              </a>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </nav>
+    {%- endif -%}
+
+    <div class="header__actions">
+      <a href="{{ routes.search_url }}" class="header__action-link">
+        {{ 'general.search.search' | t }}
+      </a>
+      {%- if shop.customer_accounts_enabled -%}
+        <a href="{{ routes.account_url }}" class="header__action-link">
+          {{ 'customer.account.title' | t }}
+        </a>
+      {%- endif -%}
+      <a href="{{ routes.cart_url }}" class="header__action-link">
+        {{ 'cart.title' | t }} ({{ cart.item_count }})
+      </a>
+    </div>
+  </div>
+</header>
+
+{% stylesheet %}
+  .header {
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .header__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding-block: var(--space-sm);
+  }
+
+  .header__logo-link {
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .header__menu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .header__menu-link {
+    text-decoration: none;
+  }
+
+  .header__actions {
+    display: flex;
+    gap: var(--space-md);
+  }
+
+  .header__action-link {
+    text-decoration: none;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.header.name",
+  "tag": "header",
+  "class": "section-header",
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "default": "main-menu",
+      "label": "t:sections.header.settings.menu.label"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,71 @@
+<section class="account section">
+  <div class="page-width">
+    <div class="account__header">
+      <h1 class="account__title">{{ 'customer.account.title' | t }}</h1>
+      <a href="{{ routes.account_logout_url }}" class="account__logout">
+        {{ 'customer.account.log_out' | t }}
+      </a>
+    </div>
+
+    <p class="account__welcome">{{ customer.name }}</p>
+
+    <div class="account__links">
+      <a href="{{ routes.account_addresses_url }}">{{ 'customer.account.view_addresses' | t }}</a>
+    </div>
+
+    <h2 class="account__subtitle">{{ 'customer.account.order_history' | t }}</h2>
+
+    {%- if customer.orders.size > 0 -%}
+      <table class="account__orders">
+        <thead>
+          <tr>
+            <th scope="col">{{ 'customer.order.title' | t: name: '' }}</th>
+            <th scope="col">{{ 'customer.order.date' | t: date: '' }}</th>
+            <th scope="col">{{ 'customer.order.total' | t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {%- for order in customer.orders -%}
+            <tr>
+              <td><a href="{{ order.customer_url }}">{{ order.name }}</a></td>
+              <td>{{ order.created_at | date: '%B %d, %Y' }}</td>
+              <td>{{ order.total_net_amount | money }}</td>
+            </tr>
+          {%- endfor -%}
+        </tbody>
+      </table>
+    {%- else -%}
+      <p class="account__no-orders">{{ 'customer.account.no_orders' | t }}</p>
+    {%- endif -%}
+  </div>
+</section>
+
+{% stylesheet %}
+  .account__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-md);
+  }
+
+  .account__orders {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .account__orders th,
+  .account__orders td {
+    padding: var(--space-2xs);
+    border-block-end: 1px solid var(--color-border);
+    text-align: start;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.main_account.name",
+  "tag": "section",
+  "class": "section-main-account",
+  "settings": []
+}
+{% endschema %}

@@ -1,0 +1,49 @@
+<div class="rich-text section">
+  <div class="page-width rich-text__inner">
+    {%- if section.settings.heading != blank -%}
+      <h2 class="rich-text__heading">{{ section.settings.heading }}</h2>
+    {%- endif -%}
+    {%- if section.settings.text != blank -%}
+      <div class="rich-text__body">{{ section.settings.text }}</div>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .rich-text__inner {
+    max-width: 48rem;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .rich-text__heading {
+    margin-block-start: 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.rich_text.name",
+  "tag": "section",
+  "class": "section-rich-text",
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "default": "Talk about your brand",
+      "label": "t:sections.rich_text.settings.heading.label"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "default": "<p>Use this text to share information about your brand with your customers.</p>",
+      "label": "t:sections.rich_text.settings.text.label"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.rich_text.presets.name"
+    }
+  ]
+}
+{% endschema %}

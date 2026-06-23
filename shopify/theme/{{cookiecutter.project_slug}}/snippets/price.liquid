@@ -1,0 +1,32 @@
+{% doc %}
+  Renders a product or variant price, including a compare-at price when on sale.
+
+  @param {object} product - The product or variant whose price to render.
+
+  @example
+  {% render 'price', product: product %}
+{% enddoc %}
+
+{%- liquid
+  assign on_sale = false
+  if product.compare_at_price > product.price
+    assign on_sale = true
+  endif
+-%}
+
+<div class="price{% if on_sale %} price--on-sale{% endif %}">
+  {%- if product.price_varies -%}
+    <span class="price__regular">
+      {{ 'products.product.from_price' | t: price: product.price_min | money }}
+    </span>
+  {%- else -%}
+    {%- if on_sale -%}
+      <s class="price__compare">{{ product.compare_at_price | money }}</s>
+    {%- endif -%}
+    <span class="price__regular">{{ product.price | money }}</span>
+  {%- endif -%}
+
+  {%- if on_sale -%}
+    <span class="price__badge">{{ 'products.product.on_sale' | t }}</span>
+  {%- endif -%}
+</div>

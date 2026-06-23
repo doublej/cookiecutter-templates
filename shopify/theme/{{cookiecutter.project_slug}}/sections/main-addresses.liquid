@@ -1,0 +1,58 @@
+<section class="addresses section">
+  <div class="page-width">
+    <h1 class="addresses__title">{{ 'customer.addresses.title' | t }}</h1>
+
+    <details class="addresses__new">
+      <summary class="button">{{ 'customer.addresses.add' | t }}</summary>
+      {%- form 'customer_address', customer.new_address, class: 'addresses__form' -%}
+        {% render 'address-fields' %}
+        <button type="submit" class="button">{{ 'customer.addresses.save' | t }}</button>
+      {%- endform -%}
+    </details>
+
+    {%- if customer.addresses.size > 0 -%}
+      <ul class="addresses__list" role="list">
+        {%- for address in customer.addresses -%}
+          <li class="addresses__item">
+            {%- if address == customer.default_address -%}
+              <span class="addresses__default">{{ 'customer.addresses.default' | t }}</span>
+            {%- endif -%}
+            <p class="addresses__formatted">{{ address | format_address }}</p>
+
+            <details class="addresses__edit">
+              <summary>{{ 'customer.addresses.edit' | t }}</summary>
+              {%- form 'customer_address', address, class: 'addresses__form' -%}
+                {% render 'address-fields', address: address %}
+                <button type="submit" class="button">{{ 'customer.addresses.save' | t }}</button>
+              {%- endform -%}
+            </details>
+          </li>
+        {%- endfor -%}
+      </ul>
+    {%- else -%}
+      <p class="addresses__none">{{ 'customer.addresses.none' | t }}</p>
+    {%- endif -%}
+  </div>
+</section>
+
+{% stylesheet %}
+  .addresses__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .addresses__item {
+    padding-block: var(--space-md);
+    border-block-end: 1px solid var(--color-border);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.main_addresses.name",
+  "tag": "section",
+  "class": "section-main-addresses",
+  "settings": []
+}
+{% endschema %}

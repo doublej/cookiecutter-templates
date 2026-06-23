@@ -1,0 +1,57 @@
+<section class="activate-account section">
+  <div class="page-width activate-account__inner">
+    <h1 class="activate-account__title">{{ 'customer.activate_account.title' | t }}</h1>
+    <p class="activate-account__subtext">{{ 'customer.activate_account.subtext' | t }}</p>
+
+    {%- form 'activate_customer_password', class: 'activate-account__form' -%}
+      {{ form.errors | default_errors }}
+
+      <div class="field">
+        <label for="activate-password">{{ 'customer.activate_account.password' | t }}</label>
+        <input
+          type="password"
+          name="customer[password]"
+          id="activate-password"
+          autocomplete="new-password"
+          required
+        >
+      </div>
+
+      <div class="field">
+        <label for="activate-password-confirm">
+          {{ 'customer.activate_account.password_confirm' | t }}
+        </label>
+        <input
+          type="password"
+          name="customer[password_confirmation]"
+          id="activate-password-confirm"
+          autocomplete="new-password"
+          required
+        >
+      </div>
+
+      <button type="submit" name="commit" class="button">
+        {{ 'customer.activate_account.submit' | t }}
+      </button>
+      <button type="submit" name="decline" class="button button--secondary">
+        {{ 'customer.activate_account.cancel' | t }}
+      </button>
+    {%- endform -%}
+  </div>
+</section>
+
+{% stylesheet %}
+  .activate-account__inner {
+    max-width: 28rem;
+    margin-inline: auto;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.main_activate_account.name",
+  "tag": "section",
+  "class": "section-main-activate-account",
+  "settings": []
+}
+{% endschema %}

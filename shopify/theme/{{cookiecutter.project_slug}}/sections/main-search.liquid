@@ -1,0 +1,57 @@
+<section class="search section">
+  <div class="page-width">
+    <h1 class="search__title">{{ 'general.search.search' | t }}</h1>
+
+    <search class="search__form-wrapper">
+      <form action="{{ routes.search_url }}" method="get" role="search" class="search__form">
+        <label for="search-input" class="visually-hidden">{{ 'general.search.search' | t }}</label>
+        <input
+          id="search-input"
+          type="search"
+          name="q"
+          value="{{ search.terms | escape }}"
+          placeholder="{{ 'general.search.placeholder' | t }}"
+        >
+        <button type="submit" class="button">{{ 'general.search.submit' | t }}</button>
+      </form>
+    </search>
+
+    {%- if search.performed -%}
+      {%- if search.results.size > 0 -%}
+        <p class="search__count">
+          {{ 'general.search.results_with_count' | t: count: search.results_count }}
+        </p>
+        <ul class="search__results product-grid" role="list">
+          {%- for item in search.results -%}
+            <li class="search__result">
+              {%- if item.object_type == 'product' -%}
+                {% render 'product-card', product: item %}
+              {%- else -%}
+                <a href="{{ item.url }}">{{ item.title }}</a>
+              {%- endif -%}
+            </li>
+          {%- endfor -%}
+        </ul>
+      {%- else -%}
+        <p class="search__empty">{{ 'general.search.no_results' | t: terms: search.terms }}</p>
+      {%- endif -%}
+    {%- endif -%}
+  </div>
+</section>
+
+{% stylesheet %}
+  .search__form {
+    display: flex;
+    gap: var(--space-2xs);
+    margin-block: var(--space-md);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.main_search.name",
+  "tag": "section",
+  "class": "section-main-search",
+  "settings": []
+}
+{% endschema %}

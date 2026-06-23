@@ -1,0 +1,59 @@
+<section class="collection section">
+  <div class="page-width">
+    <h1 class="collection__title">{{ collection.title }}</h1>
+
+    {%- if collection.description != blank -%}
+      <div class="collection__description rte">{{ collection.description }}</div>
+    {%- endif -%}
+
+    {%- paginate collection.products by section.settings.products_per_page -%}
+      {%- if collection.products.size > 0 -%}
+        <ul class="collection__grid product-grid" role="list">
+          {%- for product in collection.products -%}
+            <li class="collection__grid-item">
+              {% render 'product-card', product: product %}
+            </li>
+          {%- endfor -%}
+        </ul>
+
+        {{ paginate | default_pagination }}
+      {%- else -%}
+        <p class="collection__empty">{{ 'collections.general.no_products' | t }}</p>
+      {%- endif -%}
+    {%- endpaginate -%}
+  </div>
+</section>
+
+{% stylesheet %}
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    @media screen and (min-width: 750px) {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.main_collection.name",
+  "tag": "section",
+  "class": "section-main-collection",
+  "settings": [
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "min": 8,
+      "max": 24,
+      "step": 4,
+      "default": 12,
+      "label": "t:sections.main_collection.settings.products_per_page.label"
+    }
+  ]
+}
+{% endschema %}

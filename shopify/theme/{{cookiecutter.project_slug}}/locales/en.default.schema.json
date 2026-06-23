@@ -1,0 +1,139 @@
+{
+  "settings_schema": {
+    "colors": {
+      "name": "Colors",
+      "settings": {
+        "color_background": {
+          "label": "Background"
+        },
+        "color_foreground": {
+          "label": "Text"
+        },
+        "color_accent": {
+          "label": "Accent"
+        }
+      }
+    },
+    "layout": {
+      "name": "Layout",
+      "settings": {
+        "logo": {
+          "label": "Logo"
+        },
+        "favicon": {
+          "label": "Favicon",
+          "info": "Will be scaled down to 32 x 32px"
+        },
+        "page_width": {
+          "label": "Page width",
+          "unit": "rem"
+        }
+      }
+    }
+  },
+  "sections": {
+    "header": {
+      "name": "Header",
+      "settings": {
+        "menu": {
+          "label": "Menu"
+        }
+      }
+    },
+    "footer": {
+      "name": "Footer",
+      "settings": {
+        "show_newsletter": {
+          "label": "Show newsletter signup"
+        },
+        "copyright_text": {
+          "label": "Copyright text"
+        }
+      }
+    },
+    "announcement_bar": {
+      "name": "Announcement bar",
+      "settings": {
+        "text": {
+          "label": "Text"
+        },
+        "link": {
+          "label": "Link"
+        }
+      },
+      "presets": {
+        "name": "Announcement bar"
+      }
+    },
+    "rich_text": {
+      "name": "Rich text",
+      "settings": {
+        "heading": {
+          "label": "Heading"
+        },
+        "text": {
+          "label": "Text"
+        }
+      },
+      "presets": {
+        "name": "Rich text"
+      }
+    },
+    "main_product": {
+      "name": "Product information"
+    },
+    "main_collection": {
+      "name": "Product grid",
+      "settings": {
+        "products_per_page": {
+          "label": "Products per page"
+        }
+      }
+    },
+    "main_list_collections": {
+      "name": "Collections list"
+    },
+    "main_page": {
+      "name": "Page"
+    },
+    "main_blog": {
+      "name": "Blog posts"
+    },
+    "main_article": {
+      "name": "Article"
+    },
+    "main_cart": {
+      "name": "Cart"
+    },
+    "main_search": {
+      "name": "Search results"
+    },
+    "main_404": {
+      "name": "404 page"
+    },
+    "main_password": {
+      "name": "Password"
+    },
+    "main_account": {
+      "name": "Account"
+    },
+    "main_login": {
+      "name": "Login"
+    },
+    "main_register": {
+      "name": "Register"
+    },
+    "main_order": {
+      "name": "Order"
+    },
+    "main_addresses": {
+      "name": "Addresses"
+    },
+    "main_reset_password": {
+      "name": "Reset password"
+    },
+    "main_activate_account": {
+      "name": "Activate account"
+    }
+  }
+}

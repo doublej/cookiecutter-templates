@@ -87,6 +87,10 @@ TEMPLATES: dict[str, list[dict]] = {
         {"graphics_api": "vulkan"},
         {"mcp_servers": "standard", "mcp_scope": "project"},
     ],
+    "shopify/theme": [
+        {},
+        {"mcp_servers": "standard", "mcp_scope": "project"},
+    ],
 }
 
 
@@ -323,6 +327,65 @@ def smoke_android(project_dir: Path) -> list[tuple[str, bool, str]]:
     return results
 
 
+def smoke_shopify(project_dir: Path) -> list[tuple[str, bool, str]]:
+    """File-existence + JSON validity for Shopify Liquid themes.
+
+    A real `shopify theme check` needs the Shopify CLI, which we can't rely on
+    in CI. We verify the rendered theme has the expected layout, that every
+    JSON file parses, and that no Jinja markers leaked through. If the Shopify
+    CLI is present we additionally run Theme Check.
+    """
+    results = []
+    required = [
+        "layout/theme.liquid",
+        "config/settings_schema.json",
+        "config/settings_data.json",
+        "locales/en.default.json",
+        "templates/index.json",
+        "templates/product.json",
+        "templates/collection.json",
+        "templates/page.json",
+        "templates/cart.json",
+        "templates/404.json",
+        "sections/header.liquid",
+        "sections/footer.liquid",
+        ".theme-check.yml",
+    ]
+    missing = [p for p in required if not (project_dir / p).is_file()]
+    if missing:
+        results.append(("files exist", False, "missing: " + ", ".join(missing)))
+        return results
+    results.append(("files exist", True, ""))
+
+    bad_json = []
+    for path in sorted(project_dir.rglob("*.json")):
+        try:
+            json.loads(path.read_text())
+        except Exception as e:
+            bad_json.append(f"{path.relative_to(project_dir)}: {e}")
+    if bad_json:
+        results.append(("json parses", False, "; ".join(bad_json)))
+        return results
+    results.append(("json parses", True, ""))
+
+    for path in project_dir.rglob("*"):
+        if not path.is_file():
+            continue
+        if path.suffix not in {".liquid", ".json", ".md", ".css", ".js", ".yml", ".yaml"}:
+            continue
+        text = path.read_text(errors="ignore")
+        if "{{ cookiecutter." in text or "{% cookiecutter" in text:
+            rel = path.relative_to(project_dir)
+            results.append(("no unrendered jinja", False, f"{rel}"))
+            return results
+    results.append(("no unrendered jinja", True, ""))
+
+    if has_command("shopify"):
+        ok, out = run_smoke(["shopify", "theme", "check"], project_dir)
+        results.append(("shopify theme check", ok, out))
+    return results
+
+
 def get_smoke_fn(template_name: str):
     if template_name.startswith("python/"):
         return smoke_python
@@ -336,6 +399,8 @@ def get_smoke_fn(template_name: str):
         return smoke_swift
     if template_name.startswith("android/"):
         return smoke_android
+    if template_name.startswith("shopify/"):
+        return smoke_shopify
     return lambda _: []
 
 

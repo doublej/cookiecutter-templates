@@ -1,0 +1,56 @@
+<section class="blog section">
+  <div class="page-width">
+    <h1 class="blog__title">{{ blog.title }}</h1>
+
+    {%- paginate blog.articles by 12 -%}
+      <ul class="blog__grid product-grid" role="list">
+        {%- for article in blog.articles -%}
+          <li class="blog__item">
+            <a href="{{ article.url }}" class="blog__link">
+              {%- if article.image -%}
+                {%- assign article_image_alt = article.title | escape -%}
+                {{
+                  article.image
+                  | image_url: width: 600
+                  | image_tag:
+                    loading: 'lazy',
+                    alt: article_image_alt,
+                    widths: '300, 600',
+                    sizes: '(min-width: 750px) 33vw, 100vw'
+                }}
+              {%- endif -%}
+              <h2 class="blog__item-title">{{ article.title }}</h2>
+            </a>
+            <p class="blog__date">{{ article.published_at | date: '%B %d, %Y' }}</p>
+            {%- if article.excerpt != blank -%}
+              <div class="blog__excerpt rte">{{ article.excerpt }}</div>
+            {%- endif -%}
+          </li>
+        {%- endfor -%}
+      </ul>
+
+      {{ paginate | default_pagination }}
+    {%- endpaginate -%}
+  </div>
+</section>
+
+{% stylesheet %}
+  .blog__link {
+    text-decoration: none;
+  }
+
+  .blog__grid {
+    @media screen and (min-width: 750px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.main_blog.name",
+  "tag": "section",
+  "class": "section-main-blog",
+  "settings": []
+}
+{% endschema %}

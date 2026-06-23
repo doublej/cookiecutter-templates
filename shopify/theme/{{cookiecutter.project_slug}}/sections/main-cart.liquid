@@ -1,0 +1,94 @@
+<section class="cart section">
+  <div class="page-width">
+    <h1 class="cart__title">{{ 'cart.title' | t }}</h1>
+
+    {%- if cart.item_count > 0 -%}
+      {%- form 'cart', cart, class: 'cart__form' -%}
+        <table class="cart__table">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'cart.product' | t }}</th>
+              <th scope="col">{{ 'cart.price' | t }}</th>
+              <th scope="col">{{ 'cart.quantity' | t }}</th>
+              <th scope="col">{{ 'cart.total' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {%- for item in cart.items -%}
+              <tr class="cart__row">
+                <td class="cart__cell">
+                  <a href="{{ item.url }}">{{ item.product.title }}</a>
+                  {%- unless item.variant.title contains 'Default' -%}
+                    <p class="cart__variant">{{ item.variant.title }}</p>
+                  {%- endunless -%}
+                </td>
+                <td class="cart__cell">{{ item.original_price | money }}</td>
+                <td class="cart__cell">
+                  <label for="quantity-{{ item.index | plus: 1 }}" class="visually-hidden">
+                    {{ 'cart.quantity' | t }}
+                  </label>
+                  <input
+                    id="quantity-{{ item.index | plus: 1 }}"
+                    type="number"
+                    name="updates[]"
+                    value="{{ item.quantity }}"
+                    min="0"
+                    inputmode="numeric"
+                  >
+                  <a href="{{ item.url_to_remove }}" class="cart__remove">{{ 'cart.remove' | t }}</a>
+                </td>
+                <td class="cart__cell">{{ item.original_line_price | money }}</td>
+              </tr>
+            {%- endfor -%}
+          </tbody>
+        </table>
+
+        <div class="cart__footer">
+          <p class="cart__subtotal">
+            {{ 'cart.subtotal' | t }}: <strong>{{ cart.total_price | money }}</strong>
+          </p>
+          <p class="cart__note">{{ 'cart.taxes_and_shipping_at_checkout' | t }}</p>
+          <div class="cart__actions">
+            <button type="submit" name="update" class="button button--secondary">
+              {{ 'cart.update' | t }}
+            </button>
+            <button type="submit" name="checkout" class="button">{{ 'cart.checkout' | t }}</button>
+          </div>
+        </div>
+      {%- endform -%}
+    {%- else -%}
+      <p class="cart__empty">{{ 'cart.empty' | t }}</p>
+      <a href="{{ routes.all_products_collection_url }}" class="button">
+        {{ 'cart.continue_shopping' | t }}
+      </a>
+    {%- endif -%}
+  </div>
+</section>
+
+{% stylesheet %}
+  .cart__table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .cart__cell {
+    padding: var(--space-2xs);
+    border-block-end: 1px solid var(--color-border);
+    text-align: start;
+    vertical-align: top;
+  }
+
+  .cart__actions {
+    display: flex;
+    gap: var(--space-2xs);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.main_cart.name",
+  "tag": "section",
+  "class": "section-main-cart",
+  "settings": []
+}
+{% endschema %}

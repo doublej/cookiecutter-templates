@@ -1,0 +1,60 @@
+<section class="order section">
+  <div class="page-width">
+    <h1 class="order__title">{{ 'customer.order.title' | t: name: order.name }}</h1>
+    <p class="order__date">{{ 'customer.order.date' | t: date: order.created_at | date: '%B %d, %Y' }}</p>
+
+    <table class="order__table">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'customer.order.product' | t }}</th>
+          <th scope="col">{{ 'customer.order.quantity' | t }}</th>
+          <th scope="col">{{ 'customer.order.price' | t }}</th>
+          <th scope="col">{{ 'customer.order.total' | t }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {%- for line_item in order.line_items -%}
+          <tr>
+            <td>{{ line_item.title }}</td>
+            <td>{{ line_item.quantity }}</td>
+            <td>{{ line_item.price | money }}</td>
+            <td>{{ line_item.final_line_price | money }}</td>
+          </tr>
+        {%- endfor -%}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3">{{ 'customer.order.subtotal' | t }}</td>
+          <td>{{ order.line_items_subtotal_price | money }}</td>
+        </tr>
+        <tr>
+          <td colspan="3">{{ 'customer.order.total' | t }}</td>
+          <td>{{ order.total_net_amount | money }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</section>
+
+{% stylesheet %}
+  .order__table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .order__table th,
+  .order__table td {
+    padding: var(--space-2xs);
+    border-block-end: 1px solid var(--color-border);
+    text-align: start;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.main_order.name",
+  "tag": "section",
+  "class": "section-main-order",
+  "settings": []
+}
+{% endschema %}

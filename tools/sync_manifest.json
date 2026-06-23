@@ -72,6 +72,20 @@
         "test", "loc-check", "dir-check", "just-fmt-check", "check",
         "build", "build-release", "clean", "claude-tree", "update-scaffold"
       ]
+    },
+    "shopify": {
+      "templates": ["shopify/theme"],
+      "identical_files": [
+        "hooks/pre_gen_project.py",
+        "{{cookiecutter.project_slug}}/.gitignore",
+        "{{cookiecutter.project_slug}}/.quality.json",
+        "{{cookiecutter.project_slug}}/.theme-check.yml"
+      ],
+      "justfile_shared_recipes": [
+        "default", "dev", "share", "lint", "lint-fix",
+        "loc-check", "dir-check", "just-fmt-check", "check",
+        "pull", "push", "claude-tree", "update-scaffold"
+      ]
     }
   },
   "cross_family": {

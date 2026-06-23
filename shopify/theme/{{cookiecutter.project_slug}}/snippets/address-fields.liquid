@@ -1,0 +1,55 @@
+{% doc %}
+  Renders the input fields for a customer address form.
+
+  @param {object} [address] - The address being edited, used to prefill values.
+
+  @example
+  {% form 'customer_address', customer.new_address %}
+    {% render 'address-fields', address: customer.new_address %}
+  {% endform %}
+{% enddoc %}
+
+<div class="field">
+  <label for="address-first-name">{{ 'customer.addresses.first_name' | t }}</label>
+  <input type="text" name="address[first_name]" id="address-first-name" value="{{ address.first_name }}" autocomplete="given-name">
+</div>
+
+<div class="field">
+  <label for="address-last-name">{{ 'customer.addresses.last_name' | t }}</label>
+  <input type="text" name="address[last_name]" id="address-last-name" value="{{ address.last_name }}" autocomplete="family-name">
+</div>
+
+<div class="field">
+  <label for="address-company">{{ 'customer.addresses.company' | t }}</label>
+  <input type="text" name="address[company]" id="address-company" value="{{ address.company }}" autocomplete="organization">
+</div>
+
+<div class="field">
+  <label for="address-address1">{{ 'customer.addresses.address1' | t }}</label>
+  <input type="text" name="address[address1]" id="address-address1" value="{{ address.address1 }}" autocomplete="address-line1">
+</div>
+
+<div class="field">
+  <label for="address-address2">{{ 'customer.addresses.address2' | t }}</label>
+  <input type="text" name="address[address2]" id="address-address2" value="{{ address.address2 }}" autocomplete="address-line2">
+</div>
+
+<div class="field">
+  <label for="address-city">{{ 'customer.addresses.city' | t }}</label>
+  <input type="text" name="address[city]" id="address-city" value="{{ address.city }}" autocomplete="address-level2">
+</div>
+
+<div class="field">
+  <label for="address-zip">{{ 'customer.addresses.zip' | t }}</label>
+  <input type="text" name="address[zip]" id="address-zip" value="{{ address.zip }}" autocomplete="postal-code">
+</div>
+
+<div class="field">
+  <label for="address-phone">{{ 'customer.addresses.phone' | t }}</label>
+  <input type="tel" name="address[phone]" id="address-phone" value="{{ address.phone }}" autocomplete="tel">
+</div>
+
+<div class="field field--checkbox">
+  <input type="checkbox" name="address[default]" id="address-default" value="1">
+  <label for="address-default">{{ 'customer.addresses.set_default' | t }}</label>
+</div>

@@ -1,0 +1,22 @@
+<section class="page section">
+  <div class="page-width page__inner">
+    <h1 class="page__title">{{ page.title }}</h1>
+    <div class="page__content rte">{{ page.content }}</div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .page__inner {
+    max-width: 48rem;
+    margin-inline: auto;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.main_page.name",
+  "tag": "section",
+  "class": "section-main-page",
+  "settings": []
+}
+{% endschema %}

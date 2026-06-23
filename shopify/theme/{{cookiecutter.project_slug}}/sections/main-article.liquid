@@ -1,0 +1,47 @@
+<article class="article section">
+  <div class="page-width article__inner">
+    <h1 class="article__title">{{ article.title }}</h1>
+    <p class="article__meta">
+      {{ article.published_at | date: '%B %d, %Y' }}
+      {%- if article.author != blank %} &middot; {{ article.author }}{% endif -%}
+    </p>
+
+    {%- if article.image -%}
+      {%- assign article_image_alt = article.title | escape -%}
+      {{
+        article.image
+        | image_url: width: 1200
+        | image_tag:
+          alt: article_image_alt,
+          class: 'article__image',
+          widths: '600, 900, 1200',
+          sizes: '100vw'
+      }}
+    {%- endif -%}
+
+    <div class="article__content rte">{{ article.content }}</div>
+
+    <a href="{{ blog.url }}" class="article__back">{{ 'blogs.article.back_to_blog' | t }}</a>
+  </div>
+</article>
+
+{% stylesheet %}
+  .article__inner {
+    max-width: 48rem;
+    margin-inline: auto;
+  }
+
+  .article__meta {
+    color: var(--color-foreground);
+    opacity: 0.7;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.main_article.name",
+  "tag": "section",
+  "class": "section-main-article",
+  "settings": []
+}
+{% endschema %}

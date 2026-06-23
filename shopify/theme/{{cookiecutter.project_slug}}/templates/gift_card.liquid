@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="{{ request.locale.iso_code }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {%- assign gift_card_value = gift_card.initial_value | money -%}
+    {%- capture gift_card_heading -%}
+      {{ 'gift_cards.issued.title' | t: value: gift_card_value, shop: shop.name }}
+    {%- endcapture -%}
+    <title>{{ gift_card_heading | strip }}</title>
+    {{ content_for_header }}
+    {{ 'base.css' | asset_url | stylesheet_tag }}
+  </head>
+
+  <body class="template-gift-card">
+    <main id="main-content" class="main gift-card" role="main">
+      <div class="page-width gift-card__inner">
+        <h1 class="gift-card__title">{{ gift_card_heading | strip }}</h1>
+
+        <p class="gift-card__subtext">{{ 'gift_cards.issued.subtext' | t }}</p>
+
+        {%- if gift_card.qr_identifier -%}
+          {{ gift_card | payment_terms }}
+        {%- endif -%}
+
+        <p class="gift-card__balance">{{ gift_card.balance | money }}</p>
+
+        <p class="gift-card__code">
+          {{ 'gift_cards.issued.code' | t }}: <strong>{{ gift_card.code | format_code }}</strong>
+        </p>
+
+        <a href="{{ shop.url }}" class="button">{{ 'gift_cards.issued.shop_link' | t }}</a>
+      </div>
+    </main>
+  </body>
+</html>
