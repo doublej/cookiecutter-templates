@@ -56,13 +56,6 @@ def _strip_placeholder():
         target.write_text(content.replace(TRACKING_PLACEHOLDER_LINE, ""))
 
 
-def _prompt_yes_no(question):
-    try:
-        return input(f"  {question} [y/N] ").strip().lower() in ("y", "yes")
-    except EOFError:
-        return False
-
-
 def _repo_tools_dir():
     try:
         tmpl = Path(TEMPLATE_PATH).resolve()
@@ -75,68 +68,54 @@ def _repo_tools_dir():
 
 
 def setup_tracking():
-    """Strip the placeholder, or interactively register in Umami and inject the
-    script. Non-interactive runs keep the placeholder and print a note."""
+    """Strip the placeholder, or auto-register in Umami and inject the script.
+    umami_register.py resolves credentials itself (env, then the onenv `umami`
+    namespace) — the flow is prompt-free and best-effort: any failure leaves
+    the placeholder and never blocks generation."""
     if INCLUDE_TRACKING != "y":
         _strip_placeholder()
         return
 
-    if not sys.stdin.isatty() or os.environ.get("TEMPLATE_RENDER_TEST"):
+    if os.environ.get("TEMPLATE_RENDER_TEST"):
         print(f"  Note: tracking placeholder left in {TRACKING_TARGET}")
         print("  Run tools/inject_tracking.py to inject Umami tracking")
         return
 
     tools = _repo_tools_dir()
-    umami_url = os.environ.get("UMAMI_URL", "").rstrip("/")
-    website_id = ""
+    register = (tools / "umami_register.py") if tools else None
+    inject = (tools / "inject_tracking.py") if tools else None
+    if not (register and register.exists() and inject and inject.exists()):
+        print("  Umami: skipped (repo tools/ not found)")
+        print(f"  Note: tracking placeholder left in {TRACKING_TARGET}")
+        return
 
-    if _prompt_yes_no(f"Register '{PROJECT_SLUG}' in Umami now?"):
-        register = (tools / "umami_register.py") if tools else None
-        if not register or not register.exists():
-            print("  Umami: skipped (tools/umami_register.py not found)")
-        elif not umami_url or not os.environ.get("UMAMI_API_KEY"):
-            print("  Umami: skipped (UMAMI_URL / UMAMI_API_KEY not set; run `onenv prime`)")
-        else:
-            r = subprocess.run(
-                [sys.executable, str(register), PROJECT_SLUG, PROJECT_SLUG],
-                capture_output=True, text=True,
-            )
-            if r.returncode == 0:
-                website_id = r.stdout.strip()
-                print(f"  Umami: registered '{PROJECT_SLUG}' -> {website_id}")
-            else:
-                print(f"  Umami: register failed: {r.stderr.strip()}")
-
-    if not _prompt_yes_no(f"Write Umami tracking code to {TRACKING_TARGET} now?"):
+    r = subprocess.run(
+        [sys.executable, str(register), PROJECT_SLUG, PROJECT_SLUG, "--json"],
+        capture_output=True, text=True,
+    )
+    website_id = umami_url = ""
+    if r.returncode == 0:
+        try:
+            reg = json.loads(r.stdout)
+            website_id, umami_url = reg["websiteId"], reg["umamiUrl"]
+        except (ValueError, KeyError):
+            pass
+    if not (website_id and umami_url):
+        print(f"  Umami: register failed: {r.stderr.strip() or r.stdout.strip()}")
         print(f"  Note: tracking placeholder left in {TRACKING_TARGET}")
         print("  Run tools/inject_tracking.py to inject it later")
         return
+    print(f"  Umami: registered '{PROJECT_SLUG}' -> {website_id}")
 
-    if not website_id:
-        try:
-            website_id = input("  Umami website id (blank to skip): ").strip()
-        except EOFError:
-            website_id = ""
-    if not umami_url:
-        try:
-            umami_url = input("  Umami URL (e.g. https://umami.example.com): ").strip().rstrip("/")
-        except EOFError:
-            umami_url = ""
-
-    inject = (tools / "inject_tracking.py") if tools else None
-    if website_id and umami_url and inject and inject.exists():
-        r = subprocess.run(
-            [sys.executable, str(inject), str(PROJECT_DIR), umami_url, website_id],
-            capture_output=True, text=True,
-        )
-        out = r.stdout.strip()
-        if out:
-            print("  " + out.replace("\n", "\n  "))
-        if r.returncode != 0:
-            print(f"  Umami: inject failed: {r.stderr.strip()}")
-    else:
-        print(f"  Note: tracking placeholder left in {TRACKING_TARGET} (missing id or URL)")
-        print("  Run tools/inject_tracking.py to inject it later")
+    r = subprocess.run(
+        [sys.executable, str(inject), str(PROJECT_DIR), umami_url, website_id],
+        capture_output=True, text=True,
+    )
+    out = r.stdout.strip()
+    if out:
+        print("  " + out.replace("\n", "\n  "))
+    if r.returncode != 0:
+        print(f"  Umami: inject failed: {r.stderr.strip()}")
 
 
 def resolve_template_source():

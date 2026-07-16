@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.3.0] - 2026-07-16
+- include_tracking=y now auto-registers in Umami and injects the script — prompt-free; credentials resolve from env or the onenv 'umami' namespace (URL + username/password or API key)
+
 ## [2.2.0] - 2026-06-10
 - include_tracking=y now offers interactive Umami register + script injection during generation (TTY only; reads UMAMI_URL/UMAMI_API_KEY from env via onenv)
 
