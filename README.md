@@ -159,7 +159,7 @@ Opt-out per generated project: `export NO_TEMPLATE_UPDATE_CHECK=1` or `touch .cl
 | `tools/test_library_check.py` | Offline test for the SessionStart library-freshness hook |
 | `tools/review_diagnostics.py` | Aggregate phone-home diagnostics from deployed-template hooks |
 | `tools/inject_tracking.py` | Inject the Umami `<script>` tag into a rendered project (`.html` + `.tsx`) |
-| `tools/umami_register.py` | Register a website in Umami and print its id (`UMAMI_URL` + `UMAMI_API_KEY` from env) |
+| `tools/umami_register.py` | Register a website in Umami and print its id (credentials from env or the onenv `umami` namespace) |
 
 ## Contributing
 
