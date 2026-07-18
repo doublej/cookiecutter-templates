@@ -5,7 +5,7 @@
   "author": "{{ cookiecutter.author }}",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port {{ cookiecutter.port }}",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",

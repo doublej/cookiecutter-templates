@@ -4,6 +4,7 @@
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "description": "A React application",
     "author": "Your Name",
+    "port": "5173",
     "include_tracking": ["n", "y"],
     "mcp_servers": ["none", "minimal", "standard", "interactive"],
     "mcp_scope": ["project", "local"]
