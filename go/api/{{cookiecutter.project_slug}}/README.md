@@ -10,10 +10,10 @@
 
 ```bash
 go run .
-curl localhost:8080/healthz
+curl localhost:{{ cookiecutter.port }}/healthz
 ```
 
-Set `PORT` to change the listen address (default `8080`).
+Set `PORT` to change the listen address (default `{{ cookiecutter.port }}`).
 
 ## Endpoints
 

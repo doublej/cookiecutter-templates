@@ -126,6 +126,7 @@ def write_atlas():
         "description": "{{ cookiecutter.description }}",
         "type": ATLAS_TYPE,
         "framework": ATLAS_FRAMEWORK,
+        "port": int("{{ cookiecutter.port }}"),
         "archived": False,
     }
     if atlas_path.is_file():

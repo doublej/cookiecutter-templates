@@ -19,11 +19,11 @@ func main() {
 	}
 }
 
-// addr returns the listen address from $PORT (default 8080).
+// addr returns the listen address from $PORT (default {{ cookiecutter.port }}).
 func addr() string {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "{{ cookiecutter.port }}"
 	}
 	return ":" + port
 }

@@ -23,7 +23,7 @@ The runtime path is `main → run → ListenAndServe`. A goroutine watches the s
 - Go 1.24, stdlib-only. Add a dependency only with a reason (`go get <module>`); keep `go.mod`/`go.sum` committed.
 - `go vet ./...` must be clean — it is the lint bar.
 - `gofmt` is non-negotiable: all `.go` files stay formatted (`just fmt`).
-- The server reads its port from `$PORT` (default `8080`) — keep config env-driven.
+- The server reads its port from `$PORT` (default `{{ cookiecutter.port }}`) — keep config env-driven.
 - Shutdown stays graceful: route registration in `routes`, no `log.Fatal` inside handlers.
 - Errors surface — return them up to `run`/`main`. Handlers write an explicit status; do not `panic` for expected failures.
 - Functions stay small (5–10 lines target, 20 max); ≤3 params.
@@ -46,7 +46,7 @@ Recipe reference:
 - `just lint` — `go vet ./...`
 - `just fmt` / `just fmt-check` — `gofmt -w .` / fail if any file is unformatted
 - `just test` — `go test ./...`
-- `just run` — `go run .` (serves on `$PORT`, default 8080)
+- `just run` — `go run .` (serves on `$PORT`, default {{ cookiecutter.port }})
 - `just build` / `just build-release` — compile all packages / stripped release binary into `bin/`
 - `just loc-check` / `just dir-check` — file-size and per-directory thresholds from `.quality.json`
 - `just just-fmt-check` — verify Justfile formatting

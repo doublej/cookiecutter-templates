@@ -4,6 +4,7 @@
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "description": "A Go HTTP API service",
     "author": "JJ",
+    "port": "8080",
     "mcp_servers": ["none", "minimal", "standard", "interactive"],
     "mcp_scope": ["project", "local"]
 }
