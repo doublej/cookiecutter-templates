@@ -4,6 +4,7 @@
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "description": "A Node.js API",
     "author": "Your Name",
+    "port": "3000",
     "include_docker": ["y", "n"],
     "mcp_servers": ["none", "minimal", "standard", "interactive"],
     "mcp_scope": ["project", "local"]

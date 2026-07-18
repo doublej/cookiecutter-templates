@@ -4,7 +4,7 @@ import { z } from 'zod'
 export const env = createEnv({
   server: {
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-    PORT: z.coerce.number().default(3000),
+    PORT: z.coerce.number().default({{ cookiecutter.port }}),
     HOST: z.string().default('0.0.0.0'),
   },
   runtimeEnv: process.env,
