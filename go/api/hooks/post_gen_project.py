@@ -167,4 +167,4 @@ if __name__ == "__main__":
     print("  Getting started:")
     print(f"    cd {PROJECT_SLUG}")
     print("    go run .")
-    print(f"    curl localhost:8080/healthz\n")
+    print(f"    curl localhost:{{ cookiecutter.port }}/healthz\n")
