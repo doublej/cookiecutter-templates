@@ -12,7 +12,7 @@ install:
 
 [group('develop')]
 dev:
-    uv run uvicorn {{ cookiecutter.project_slug.replace('-', '_') }}.main:app --reload
+    uv run uvicorn {{ cookiecutter.project_slug.replace('-', '_') }}.main:app --reload --port {{ cookiecutter.port }}
 
 [group('quality')]
 lint:
