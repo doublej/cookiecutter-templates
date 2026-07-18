@@ -4,6 +4,7 @@
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "description": "A Next.js application",
     "author": "Your Name",
+    "port": "3000",
     "include_tracking": ["n", "y"],
     "mcp_servers": ["none", "minimal", "standard", "interactive"],
     "mcp_scope": ["project", "local"]

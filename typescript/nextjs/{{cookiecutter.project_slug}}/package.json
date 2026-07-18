@@ -5,7 +5,7 @@
   "author": "{{ cookiecutter.author }}",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack -p {{ cookiecutter.port }}",
     "build": "next build",
     "start": "next start",
     "lint": "biome check . && stylelint '**/*.css'",
