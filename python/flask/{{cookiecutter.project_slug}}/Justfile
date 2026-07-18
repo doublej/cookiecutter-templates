@@ -12,7 +12,7 @@ install:
 
 [group('develop')]
 dev:
-    uv run flask --app {{ cookiecutter.project_slug.replace('-', '_') }}.app run --debug
+    uv run flask --app {{ cookiecutter.project_slug.replace('-', '_') }}.app run --debug --port {{ cookiecutter.port }}
 
 [group('quality')]
 lint:
