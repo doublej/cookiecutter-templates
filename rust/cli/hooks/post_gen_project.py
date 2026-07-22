@@ -158,10 +158,23 @@ def setup_mcp():
         _add_via_claude_cli(server_names)
 
 
+def bootstrap_agent_log():
+    """Seed the shared agent journal (canonical copy: hooks/_agent_log.py)."""
+    hint = "  skipped agent-log bootstrap — run 'atlas agent-log init' later"
+    if not shutil.which("atlas"):
+        print(hint)
+        return
+    try:
+        subprocess.run(["atlas", "agent-log", "init"], timeout=15, check=True)
+    except Exception:
+        print(hint)
+
+
 if __name__ == "__main__":
     write_meta()
     write_atlas()
     setup_mcp()
+    bootstrap_agent_log()
     print(f"\n  Project created: {PROJECT_SLUG}\n")
     print("  Getting started:")
     print(f"    cd {PROJECT_SLUG}")
