@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.4.0] - 2026-07-22
+- gsap installed by default; CLAUDE.md/agent.md name GSAP the default animation tool
+
 ## [2.3.0] - 2026-07-16
 - include_tracking=y now auto-registers in Umami and injects the script — prompt-free; credentials resolve from env or the onenv 'umami' namespace (URL + username/password or API key)
 

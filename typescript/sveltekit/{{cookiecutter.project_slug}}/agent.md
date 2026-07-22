@@ -6,6 +6,7 @@
 
 - TypeScript, bun, Biome, Vitest
 - SvelteKit + Vite
+- GSAP for animations
 
 ## Commands
 
@@ -49,6 +50,7 @@ Justfile                # task runner
 - Biome for linting and formatting (not ESLint/Prettier)
 - SvelteKit file-based routing (`src/routes/`)
 - Shared code in `src/lib/`
+- GSAP for animations (pre-installed) — Svelte `transition:` directives only for trivial enter/leave
 - Keep functions small (5–10 lines target, 20 max)
 - Prefer explicit, readable code over cleverness
 - Handle errors at boundaries; let unexpected errors surface
@@ -80,6 +82,7 @@ Step-by-step alternative:
 - Add a load function: create `+page.ts` or `+page.server.ts` alongside the page
 - Add a shared component: create it in `src/lib/components/`
 - Use the `$lib/` alias for imports from `src/lib/`
+- Add an animation: GSAP inside `$effect`/`onMount` (client-only), kill tweens on teardown
 - Add a dependency: `bun add <package>`
 
 ### Testing

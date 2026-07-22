@@ -32,11 +32,13 @@ The runtime path is `request → src/app/<segment>/page.tsx → server-rendered 
 - Biome is the only linter / formatter — do not add ESLint or Prettier configs.
 - Functions / components stay small (5–10 lines target, 20 max).
 - Errors surface at the boundary; use `error.tsx` for render-time recovery.
+- GSAP is the animation tool (`gsap` + `@gsap/react` ship by default) — don't add framer-motion or other animation libraries.
 - `bun` owns the lockfile. Add deps with `bun add <pkg>`.
 
 ## Common change patterns
 
 - **Add a route** → new folder under `src/app/` with `page.tsx`.
+- **Add an animation** → `"use client"` component with `useGSAP()` from `@gsap/react`; register plugins like `ScrollTrigger` once at module top.
 - **Add a layout** → `layout.tsx` next to the routes it wraps.
 - **Add a server action** → exported `async function` with `"use server"`, called from a client component.
 - **Add an API route** → `route.ts` with `GET` / `POST` / etc. exports.

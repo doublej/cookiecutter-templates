@@ -29,12 +29,14 @@ The runtime path is `index.html → main.tsx → <App/> → component tree`. New
 - Functional components with hooks; no class components.
 - Functions / components stay small (5–10 lines target, 20 max).
 - Errors surface at the boundary; use React error boundaries for render-time recovery, not `try/catch` inside hooks.
+- GSAP is the animation tool (`gsap` + `@gsap/react` ship by default) — don't add framer-motion or other animation libraries.
 - `bun` owns the lockfile. Add deps with `bun add <pkg>`.
 
 ## Common change patterns
 
 - **Add a component** → new `.tsx` file under `src/`, import where it's used.
 - **Add a hook** → new `useThing.ts` co-located with the component(s) that consume it.
+- **Add an animation** → `useGSAP()` from `@gsap/react` inside the component (scoped, auto-cleaned); register plugins like `ScrollTrigger` once at module top.
 - **Add a route** → introduce a router library (e.g. react-router) and split `App.tsx` into route components.
 - **Add a dependency** → `bun add <pkg>` (or `bun add -d <pkg>` for dev).
 

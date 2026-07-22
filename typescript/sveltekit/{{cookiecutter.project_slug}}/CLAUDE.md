@@ -31,11 +31,13 @@ The runtime path is `request → src/routes/<path>/+page(.server).svelte → ren
 - Biome handles `.ts` / `.js` / `.json`; Svelte file formatting follows Svelte / Prettier conventions when needed.
 - Functions stay small (5–10 lines target, 20 max).
 - Errors surface at the boundary; SvelteKit's `+error.svelte` / `hooks.server.ts` translate them to responses.
+- GSAP is the animation tool (`gsap` ships by default) — don't add other animation libraries; Svelte's built-in `transition:` directives are fine for trivial enter/leave only.
 - `bun` owns the lockfile. Add deps with `bun add <pkg>`.
 
 ## Common change patterns
 
 - **Add a route** → new folder under `src/routes/` with a `+page.svelte`.
+- **Add an animation** → GSAP inside `$effect` / `onMount` (client-only — never during SSR), with a teardown that kills the tween/timeline.
 - **Add data loading** → sibling `+page.ts` (universal) or `+page.server.ts` (server-only).
 - **Add an API endpoint** → `+server.ts` with `GET` / `POST` / etc. exports.
 - **Add shared code** → module under `src/lib/`, imported via `$lib/...`.

@@ -6,6 +6,7 @@
 
 - TypeScript, bun, Biome, Vitest
 - React + Vite
+- GSAP (+ `@gsap/react`) for animations
 
 ## Commands
 
@@ -45,6 +46,7 @@ Justfile            # task runner
 - Strict TypeScript config
 - Biome for linting and formatting (not ESLint/Prettier)
 - Functional components with hooks
+- GSAP for animations (pre-installed) — not framer-motion or other animation libs
 - Keep functions small (5–10 lines target, 20 max)
 - Prefer explicit, readable code over cleverness
 - Handle errors at boundaries; let unexpected errors surface
@@ -73,6 +75,7 @@ Step-by-step alternative:
 - Add a hook: create a `use*.ts` file in `src/`
 - Add a route: if using a router, add a route entry and create the page component
 - Add a CSS module: create a `.module.css` file next to the component
+- Add an animation: `useGSAP()` from `@gsap/react` inside the component; register plugins once at module top
 - Add a dependency: `bun add <package>`
 
 ### Testing

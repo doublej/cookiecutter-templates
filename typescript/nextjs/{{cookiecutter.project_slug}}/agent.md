@@ -6,6 +6,7 @@
 
 - TypeScript, bun, Biome, Vitest
 - Next.js 15 (App Router) + React 19
+- GSAP (+ `@gsap/react`) for animations
 
 ## Commands
 
@@ -46,6 +47,7 @@ Justfile                # task runner
 - Server Components by default; add `'use client'` only when needed
 - Biome for linting and formatting (not ESLint/Prettier)
 - Path alias `@/` maps to `src/`
+- GSAP for animations (pre-installed) — not framer-motion or other animation libs
 - Keep functions small (5–10 lines target, 20 max)
 - Prefer explicit, readable code over cleverness
 - Handle errors at boundaries; let unexpected errors surface
@@ -76,6 +78,7 @@ Step-by-step alternative:
 - Add a Server Action: add `'use server'` to a function in a Server Component or separate file
 - Add a Client Component: add `'use client'` at top of file
 - Use path alias: `import { foo } from '@/lib/foo'`
+- Add an animation: `'use client'` component with `useGSAP()` from `@gsap/react`
 - Add a dependency: `bun add <package>`
 
 ### Testing
