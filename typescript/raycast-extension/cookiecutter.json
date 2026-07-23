@@ -1,0 +1,15 @@
+{
+    "_version": "1.0.0",
+    "project_name": "My Extension",
+    "extension_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+    "project_slug": "raycast-ext-{{ cookiecutter.extension_slug }}",
+    "description": "A Raycast extension",
+    "author": "jurre_jan",
+    "mcp_servers": ["none", "minimal", "standard", "interactive"],
+    "mcp_scope": ["project", "local"],
+    "_copy_without_render": [
+        "*.ts",
+        "*.tsx",
+        "assets/*"
+    ]
+}

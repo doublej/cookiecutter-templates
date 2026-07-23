@@ -41,6 +41,10 @@ TEMPLATES: dict[str, list[dict]] = {
         {},
         {"mcp_servers": "standard", "mcp_scope": "project"},
     ],
+    "typescript/raycast-extension": [
+        {},
+        {"mcp_servers": "minimal", "mcp_scope": "project"},
+    ],
     "typescript/node-worker": [
         {"worker_type": "simple"},
         {"worker_type": "cron"},
@@ -239,6 +243,69 @@ def smoke_typescript(project_dir: Path) -> list[tuple[str, bool, str]]:
     return results
 
 
+def smoke_raycast(project_dir: Path) -> list[tuple[str, bool, str]]:
+    """Manifest + toolchain sanity for Raycast extension templates.
+
+    `ray lint`/`ray build` need the Raycast CLI (macOS-only, ships with the
+    app), which the CI matrix can't provide. We verify the rendered scaffold's
+    shape and manifest everywhere, and on macOS with bun available we
+    additionally install deps and typecheck with tsc.
+    """
+    results = []
+    required = [
+        "package.json",
+        "tsconfig.json",
+        ".eslintrc.json",
+        "src/hello.tsx",
+        "src/lib/prefs.ts",
+        "assets/command-icon.png",
+    ]
+    missing = [p for p in required if not (project_dir / p).is_file()]
+    if missing:
+        results.append(("files exist", False, "missing: " + ", ".join(missing)))
+        return results
+    results.append(("files exist", True, ""))
+
+    try:
+        pkg = json.loads((project_dir / "package.json").read_text())
+    except Exception as e:
+        results.append(("package.json parses", False, f"{e}"))
+        return results
+    required_keys = [
+        "name", "title", "description", "icon", "author", "license", "commands",
+    ]
+    missing_keys = [k for k in required_keys if k not in pkg]
+    if missing_keys:
+        results.append(("manifest keys", False, "missing: " + ", ".join(missing_keys)))
+        return results
+    results.append(("manifest keys", True, ""))
+
+    for path in project_dir.rglob("*"):
+        if not path.is_file():
+            continue
+        if path.suffix not in {".ts", ".tsx", ".json", ".md"}:
+            continue
+        text = path.read_text(errors="ignore")
+        if "{{ cookiecutter." in text or "{% cookiecutter" in text:
+            rel = path.relative_to(project_dir)
+            results.append(("no unrendered jinja", False, f"{rel}"))
+            return results
+    results.append(("no unrendered jinja", True, ""))
+
+    if platform.system() != "Darwin":
+        return results
+    if not has_command("bun"):
+        results.append(("bun install", False, "bun not found, skipping"))
+        return results
+    ok, out = run_smoke(["bun", "install"], project_dir)
+    results.append(("bun install", ok, out))
+    if not ok:
+        return results
+    ok, out = run_smoke(["bunx", "tsc", "--noEmit"], project_dir)
+    results.append(("tsc --noEmit", ok, out))
+    return results
+
+
 def smoke_rust(project_dir: Path) -> list[tuple[str, bool, str]]:
     results = []
     if not has_command("cargo"):
@@ -387,6 +454,10 @@ def smoke_shopify(project_dir: Path) -> list[tuple[str, bool, str]]:
 
 
 def get_smoke_fn(template_name: str):
+    # Exact match before the typescript/ prefix: raycast needs its own smoke
+    # (smoke_typescript would run `ray` scripts, unavailable off-macOS).
+    if template_name == "typescript/raycast-extension":
+        return smoke_raycast
     if template_name.startswith("python/"):
         return smoke_python
     if template_name.startswith("typescript/"):

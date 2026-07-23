@@ -24,6 +24,7 @@ Project templates organized by language and framework.
 | `typescript/sveltekit` | SvelteKit web app | `include_tracking` |
 | `typescript/react` | React SPA (Vite) | `include_tracking` |
 | `typescript/nextjs` | Next.js app | `include_tracking` |
+| `typescript/raycast-extension` | Raycast extension (ray CLI, hello view command) | -- |
 
 ### Rust
 
