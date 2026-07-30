@@ -1,0 +1,4 @@
+# Force LF on checkout everywhere: cookiecutter preserves the template file's
+# newlines when rendering, and generated projects lint with Biome (lineEnding=lf),
+# so a CRLF checkout on Windows would render CRLF projects that fail their own lint.
+* text=auto eol=lf
