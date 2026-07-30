@@ -149,10 +149,12 @@ def has_command(cmd: str) -> bool:
 
 def run_smoke(cmd: list[str], cwd: Path) -> tuple[bool, str]:
     """Run a smoke command, return (success, output)."""
-    # CI=1 keeps watch-mode tools (vitest) single-pass in local runs too
+    # CI=1 keeps watch-mode tools (vitest) single-pass in local runs too;
+    # explicit utf-8 so Windows doesn't decode child output as cp1252
     result = subprocess.run(
         cmd, cwd=cwd, capture_output=True, text=True, timeout=120,
         env={**os.environ, "CI": "1"},
+        encoding="utf-8", errors="replace",
     )
     output = result.stdout + result.stderr
     return result.returncode == 0, output
