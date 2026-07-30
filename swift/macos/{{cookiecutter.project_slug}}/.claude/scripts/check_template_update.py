@@ -15,10 +15,16 @@ Opt-out:
 """
 from __future__ import annotations
 
+import sys
+
+# Windows defaults stdout to cp1252, which can't encode the notice's emoji —
+# force utf-8 so the print never lands in the silent catch-all as an error.
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 import json
 import os
 import re
-import sys
 import time
 from pathlib import Path
 
