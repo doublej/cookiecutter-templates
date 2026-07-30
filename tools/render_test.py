@@ -528,7 +528,9 @@ def main():
 
             with tempfile.TemporaryDirectory() as tmp:
                 try:
-                    project_dir = render_template(template_path, context, Path(tmp))
+                    # resolve(): Windows hands out 8.3 short paths (RUNNER~1) for
+                    # temp dirs, which breaks SvelteKit's vite-manifest path checks
+                    project_dir = render_template(template_path, context, Path(tmp).resolve())
                     print(f"  Rendered to: {project_dir.name}")
                 except Exception as e:
                     print(f"  RENDER FAILED: {e}")
