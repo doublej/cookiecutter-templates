@@ -27,9 +27,20 @@ jobs:
       - name: Install bun
         uses: oven-sh/setup-bun@v2
 
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
       - name: Install Swift (Linux)
         if: runner.os == 'Linux'
         uses: swift-actions/setup-swift@v2
+
+      - name: Select Xcode (macOS)
+        if: runner.os == 'macOS'
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
 
       - name: Check template sync
         run: uv run tools/sync_check.py
