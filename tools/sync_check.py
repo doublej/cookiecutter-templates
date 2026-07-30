@@ -162,7 +162,7 @@ def _git_diff_names(base: str) -> list[str]:
     try:
         r = subprocess.run(
             ["git", "diff", "--name-only", f"{base}...HEAD"],
-            capture_output=True, text=True, cwd=ROOT, timeout=10,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=ROOT, timeout=10,
         )
     except Exception as e:
         raise SystemExit(f"error: git diff failed: {e}")
@@ -176,7 +176,7 @@ def _version_in_ref(template: str, ref: str) -> str | None:
     try:
         r = subprocess.run(
             ["git", "show", f"{ref}:{path}"],
-            capture_output=True, text=True, cwd=ROOT, timeout=5,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=ROOT, timeout=5,
         )
     except Exception:
         return None

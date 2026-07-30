@@ -36,7 +36,7 @@ def _onenv_vars() -> dict:
     try:
         r = subprocess.run(
             ["onenv", "export", ONENV_NAMESPACE, "--reveal", "--json"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
         )
         if r.returncode != 0:
             return {}

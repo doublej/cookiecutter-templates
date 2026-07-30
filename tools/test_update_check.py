@@ -63,7 +63,7 @@ def _run(project: Path, env_extra: dict | None = None):
         env.update(env_extra)
     return subprocess.run(
         [sys.executable, ".claude/scripts/check_template_update.py"],
-        cwd=project, capture_output=True, text=True, env=env,
+        cwd=project, capture_output=True, text=True, encoding="utf-8", errors="replace", env=env,
     )
 
 

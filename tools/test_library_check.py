@@ -38,14 +38,14 @@ def _run_check(project: Path, env_extra: dict | None = None) -> subprocess.Compl
         env.update(env_extra)
     return subprocess.run(
         [sys.executable, ".claude/scripts/check_library_freshness.py"],
-        cwd=project, capture_output=True, text=True, env=env,
+        cwd=project, capture_output=True, text=True, encoding="utf-8", errors="replace", env=env,
     )
 
 
 def _run_snooze(project: Path, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         [sys.executable, ".claude/scripts/snooze_library_check.py", *args],
-        cwd=project, capture_output=True, text=True,
+        cwd=project, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
 
 

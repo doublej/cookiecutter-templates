@@ -93,7 +93,7 @@ def render_template(template_dir: Path, context: dict, output_dir: Path) -> Path
     args = [a for k, v in context.items() for a in (f"{k}={v}",)]
     result = subprocess.run(
         ["cookiecutter", str(template_dir), "--no-input", "-o", str(output_dir), *args],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if result.returncode != 0:
         print(f"error: cookiecutter failed: {result.stderr.strip()}", file=sys.stderr)

@@ -360,7 +360,7 @@ def smoke_swift(project_dir: Path) -> list[tuple[str, bool, str]]:
         # iOS-only packages can't build for the macOS host; target the simulator SDK
         sdk = subprocess.run(
             ["xcrun", "--sdk", "iphonesimulator", "--show-sdk-path"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
         ).stdout.strip()
         cmd += ["--sdk", sdk, "--triple", "arm64-apple-ios-simulator"]
     ok, out = run_smoke(cmd, project_dir)
