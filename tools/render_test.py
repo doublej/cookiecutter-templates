@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.12"
+# dependencies = ["cookiecutter"]
+# ///
 """Render and smoke-test all cookiecutter templates with multiple context variants."""
 import json
 import os

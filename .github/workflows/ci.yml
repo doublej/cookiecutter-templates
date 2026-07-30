@@ -24,9 +24,6 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
 
-      - name: Install cookiecutter
-        run: uv tool install cookiecutter
-
       - name: Install bun
         uses: oven-sh/setup-bun@v2
 
