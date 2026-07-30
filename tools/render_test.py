@@ -149,8 +149,10 @@ def has_command(cmd: str) -> bool:
 
 def run_smoke(cmd: list[str], cwd: Path) -> tuple[bool, str]:
     """Run a smoke command, return (success, output)."""
+    # CI=1 keeps watch-mode tools (vitest) single-pass in local runs too
     result = subprocess.run(
-        cmd, cwd=cwd, capture_output=True, text=True, timeout=120
+        cmd, cwd=cwd, capture_output=True, text=True, timeout=120,
+        env={**os.environ, "CI": "1"},
     )
     output = result.stdout + result.stderr
     return result.returncode == 0, output
@@ -231,7 +233,7 @@ def smoke_python(project_dir: Path) -> list[tuple[str, bool, str]]:
 def smoke_typescript(project_dir: Path) -> list[tuple[str, bool, str]]:
     results = []
     if not has_command("bun"):
-        results.append(("bun install", False, "bun not found, skipping"))
+        results.append(("bun install", True, "SKIP: bun not found"))
         return results
     ok, out = run_smoke(["bun", "install"], project_dir)
     results.append(("bun install", ok, out))
@@ -299,7 +301,7 @@ def smoke_raycast(project_dir: Path) -> list[tuple[str, bool, str]]:
     if platform.system() != "Darwin":
         return results
     if not has_command("bun"):
-        results.append(("bun install", False, "bun not found, skipping"))
+        results.append(("bun install", True, "SKIP: bun not found"))
         return results
     ok, out = run_smoke(["bun", "install"], project_dir)
     results.append(("bun install", ok, out))
@@ -313,7 +315,7 @@ def smoke_raycast(project_dir: Path) -> list[tuple[str, bool, str]]:
 def smoke_rust(project_dir: Path) -> list[tuple[str, bool, str]]:
     results = []
     if not has_command("cargo"):
-        results.append(("cargo build", False, "cargo not found, skipping"))
+        results.append(("cargo build", True, "SKIP: cargo not found"))
         return results
     ok, out = run_smoke(["cargo", "build"], project_dir)
     results.append(("cargo build", ok, out))
@@ -323,7 +325,7 @@ def smoke_rust(project_dir: Path) -> list[tuple[str, bool, str]]:
 def smoke_go(project_dir: Path) -> list[tuple[str, bool, str]]:
     results = []
     if not has_command("go"):
-        results.append(("go build", False, "go not found, skipping"))
+        results.append(("go build", True, "SKIP: go not found"))
         return results
     for cmd, label in ([sys_go("build"), "go build"], [sys_go("vet"), "go vet"], [sys_go("test"), "go test"]):
         ok, out = run_smoke(cmd, project_dir)
@@ -340,12 +342,21 @@ def sys_go(subcmd: str) -> list[str]:
 def smoke_swift(project_dir: Path) -> list[tuple[str, bool, str]]:
     results = []
     if not has_command("swift"):
-        results.append(("swift build", False, "swift not found, skipping"))
+        results.append(("swift build", True, "SKIP: swift not found"))
         return results
     if platform.system() != "Darwin":
-        results.append(("swift build", False, "Swift templates require macOS, skipping"))
+        results.append(("swift build", True, "SKIP: Swift templates require macOS"))
         return results
-    ok, out = run_smoke(["swift", "build"], project_dir)
+    cmd = ["swift", "build"]
+    manifest = (project_dir / "Package.swift").read_text(encoding="utf-8")
+    if ".iOS(" in manifest:
+        # iOS-only packages can't build for the macOS host; target the simulator SDK
+        sdk = subprocess.run(
+            ["xcrun", "--sdk", "iphonesimulator", "--show-sdk-path"],
+            capture_output=True, text=True,
+        ).stdout.strip()
+        cmd += ["--sdk", sdk, "--triple", "arm64-apple-ios-simulator"]
+    ok, out = run_smoke(cmd, project_dir)
     results.append(("swift build", ok, out))
     return results
 
@@ -431,7 +442,7 @@ def smoke_shopify(project_dir: Path) -> list[tuple[str, bool, str]]:
     bad_json = []
     for path in sorted(project_dir.rglob("*.json")):
         try:
-            json.loads(path.read_text())
+            json.loads(path.read_text(encoding="utf-8"))
         except Exception as e:
             bad_json.append(f"{path.relative_to(project_dir)}: {e}")
     if bad_json:
