@@ -541,7 +541,7 @@ def main():
                     print(f"  [{status}] {check_name}")
                     if not ok:
                         variant_ok = False
-                        for line in output.strip().splitlines()[-5:]:
+                        for line in output.strip().splitlines()[-30:]:
                             print(f"    {line}")
 
                 if variant_ok:
