@@ -16,6 +16,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
+# Windows defaults stdout to cp1252, which can't encode tool output like
+# Biome's box-drawing diagnostics — force utf-8 so printing never crashes.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 TEMPLATES: dict[str, list[dict]] = {
     "python/fastapi": [
         {},

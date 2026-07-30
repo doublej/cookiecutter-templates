@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.4.2] - 2026-07-30
+- post-gen writes layout.tsx with lf on windows
+
 ## [2.4.1] - 2026-07-30
 - post-gen: collapse body after stripping tracking placeholder to keep biome format
 

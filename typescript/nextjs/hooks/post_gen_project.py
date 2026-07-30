@@ -56,7 +56,9 @@ def _strip_placeholder():
         content = content.replace(TRACKING_PLACEHOLDER_LINE, "")
         # Collapse the now single-child <body> onto one line to match Biome's formatting.
         content = content.replace("      <body>\n        {children}\n      </body>", "      <body>{children}</body>")
-        target.write_text(content)
+        # newline="\n": default platform newlines would write CRLF on Windows,
+        # failing the rendered project's own Biome check (lineEnding=lf).
+        target.write_text(content, newline="\n")
 
 
 def _repo_tools_dir():
