@@ -6,6 +6,10 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.2.0] - 2026-07-30
+- add starter vitest test
+- biome ignore for json config files
+
 ## [2.1.0] - 2026-05-25
 - claude-tree recipe now delegates to the global atlas CLI (atlas tree)
 

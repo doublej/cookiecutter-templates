@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { add, greet } from './index'
+import { add, greet } from './index.js'
 
 describe('greet', () => {
   test('returns a friendly greeting', () => {

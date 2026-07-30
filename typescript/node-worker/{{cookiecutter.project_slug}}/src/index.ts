@@ -1,7 +1,7 @@
 import { env } from './env.js'
 import { logger } from './logger.js'
+{%- if cookiecutter.worker_type == 'simple' %}
 
-{% if cookiecutter.worker_type == 'simple' %}
 async function main() {
   logger.info('Worker starting')
   // Your worker logic here
@@ -12,7 +12,8 @@ main().catch((err) => {
   logger.error(err, 'Worker failed')
   process.exit(1)
 })
-{% elif cookiecutter.worker_type == 'cron' %}
+{%- elif cookiecutter.worker_type == 'cron' %}
+
 const INTERVAL_MS = 60_000
 
 async function tick() {
@@ -30,7 +31,8 @@ main().catch((err) => {
   logger.error(err, 'Worker failed')
   process.exit(1)
 })
-{% else %}
+{%- else %}
+
 async function main() {
   logger.info('Worker starting')
 
@@ -47,4 +49,4 @@ main().catch((err) => {
   logger.error(err, 'Worker failed')
   process.exit(1)
 })
-{% endif %}
+{%- endif %}

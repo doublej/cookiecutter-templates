@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.4.1] - 2026-07-30
+- post-gen: collapse body after stripping tracking placeholder to keep biome format
+
 ## [2.4.0] - 2026-07-22
 - gsap installed by default; CLAUDE.md/agent.md name GSAP the default animation tool
 

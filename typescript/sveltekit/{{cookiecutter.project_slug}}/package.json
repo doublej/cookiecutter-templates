@@ -9,7 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "test": "vitest",
+    "test": "vitest --passWithNoTests",
     "lint": "biome check . && stylelint '**/*.{css,svelte}'",
     "lint:fix": "biome check --write . && stylelint --fix '**/*.{css,svelte}'"
   },

@@ -53,7 +53,10 @@ def _strip_placeholder():
         return
     content = target.read_text()
     if TRACKING_PLACEHOLDER_LINE in content:
-        target.write_text(content.replace(TRACKING_PLACEHOLDER_LINE, ""))
+        content = content.replace(TRACKING_PLACEHOLDER_LINE, "")
+        # Collapse the now single-child <body> onto one line to match Biome's formatting.
+        content = content.replace("      <body>\n        {children}\n      </body>", "      <body>{children}</body>")
+        target.write_text(content)
 
 
 def _repo_tools_dir():

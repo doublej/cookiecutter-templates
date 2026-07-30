@@ -1,14 +1,11 @@
 #!/usr/bin/env node
-import { Command } from 'commander'
 import * as p from '@clack/prompts'
 import chalk from 'chalk'
+import { Command } from 'commander'
 import ora from 'ora'
-import { name, version, greet } from './index.js'
+import { greet, name, version } from './index.js'
 
-const program = new Command()
-  .name(name)
-  .version(version)
-  .description('{{ cookiecutter.description }}')
+const program = new Command().name(name).version(version).description('{{ cookiecutter.description }}')
 
 program
   .command('hello')

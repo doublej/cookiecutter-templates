@@ -8,9 +8,9 @@
     "dev": "vite --port {{ cookiecutter.port }}",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest",
-    "lint": "biome check . && stylelint '**/*.css'",
-    "lint:fix": "biome check --write . && stylelint --fix '**/*.css'"
+    "test": "vitest --passWithNoTests",
+    "lint": "biome check . && stylelint --allow-empty-input '**/*.css'",
+    "lint:fix": "biome check --write . && stylelint --fix --allow-empty-input '**/*.css'"
   },
   "dependencies": {
     "@gsap/react": "^2.1.0",
