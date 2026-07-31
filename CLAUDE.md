@@ -98,6 +98,15 @@ Each template follows this structure:
 
 **Tracking flow (sveltekit/react/nextjs).** `include_tracking` is the up-front gate — and the only question ever asked. When `n`, the post-gen hook strips the placeholder. When `y`, the hook automatically registers `<slug>` in Umami (`umami_register.py --json`) and injects the tracking script (`inject_tracking.py`) — no prompts. Credentials resolve inside `umami_register.py`: env vars first, then the onenv `umami` namespace (`UMAMI_URL` + `UMAMI_USERNAME`/`UMAMI_PASSWORD` for self-hosted login→bearer, or `UMAMI_API_KEY` for Umami Cloud). Test renders (`render_test.py` sets `TEMPLATE_RENDER_TEST=1`) skip the network and leave the placeholder. The whole flow is best-effort and never fails generation.
 
+## Maintenance
+
+**Any maintenance session in this repo MUST include a dependency-freshness pass.** Before other maintenance work, audit every template manifest (`package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `Package.swift`, `*.gradle.kts`) against the live registries (npm, PyPI, crates.io, Go proxy, Google Maven) and upgrade — don't just report:
+
+- Bump pins/floors to current stable; apply any config/source migrations the new majors require (e.g. biome config schema, eslint flat config, vite plugin matrix).
+- Security advisories and EOL toolchains (EOL Go directive, EOL eslint/vite lines) are never left in place.
+- Deliberate holds are allowed (e.g. TypeScript 5.x floor over the 7.x native line, AGP 8.x while render_test has no gradle smoke test) but must be listed in the session's report with the reason.
+- Then run `sync_check.py` + `render_test.py`, and `bump_version.py <template> patch` (minor if files were added) for every changed template.
+
 ## Conventions
 
 - **Project slug**: kebab-case `[a-z][a-z0-9-]*[a-z0-9]`, min 2 chars, validated in pre-gen hooks
