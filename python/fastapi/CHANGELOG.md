@@ -7,6 +7,9 @@ pinned version and the upstream version.
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
 
+## [2.1.1] - 2026-07-31
+- bump dep floors: fastapi 0.141, uvicorn 0.52, scalar-fastapi 1.8, httpx 0.28, pytest 9, ruff 0.16, mypy 2; default python 3.13
+
 ## [2.1.0] - 2026-05-25
 - claude-tree recipe now delegates to the global atlas CLI (atlas tree)
 
