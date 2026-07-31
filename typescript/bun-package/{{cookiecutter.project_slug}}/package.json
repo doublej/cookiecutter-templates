@@ -12,7 +12,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "bun --watch src/index.ts",
@@ -21,9 +23,9 @@
     "lint:fix": "biome check --write ."
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.0",
+    "@biomejs/biome": "^2.5.0",
     "@types/bun": "^1.0.0",
-    "@types/node": "^22.0.0",
-    "typescript": "^5.0.0"
+    "@types/node": "^26.0.0",
+    "typescript": "^5.9.0"
   }
 }

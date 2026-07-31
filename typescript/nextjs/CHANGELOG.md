@@ -6,6 +6,12 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.4.3] - 2026-07-31
+- bump next to ^16.2
+- bump @vitejs/plugin-react to ^6.0.5, vitest to ^4.1, jsdom to ^30
+- bump @biomejs/biome to ^2.5.0 and migrate biome.json to the v2 schema
+- bump stylelint to ^17, @types/node to ^26, typescript floor to ^5.9
+
 ## [2.4.2] - 2026-07-30
 - post-gen writes layout.tsx with lf on windows
 

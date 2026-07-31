@@ -6,6 +6,11 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.4.2] - 2026-07-31
+- bump vite to ^8.2, @sveltejs/vite-plugin-svelte to ^7.2, @sveltejs/adapter-auto to ^7.0.1
+- bump vitest to ^4.1, stylelint to ^17, typescript floor to ^5.9
+- bump @biomejs/biome to ^2.5.0 and migrate biome.json to the v2 schema
+
 ## [2.4.1] - 2026-07-30
 - biome ignore + formatting fixes
 - vitest --passWithNoTests

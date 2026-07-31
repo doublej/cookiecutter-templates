@@ -6,6 +6,12 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.4.2] - 2026-07-31
+- bump react and react-dom to ^19.2 with @types/react(-dom) ^19.2
+- bump vite to ^8.2, @vitejs/plugin-react to ^6.0.5, vitest to ^4.1
+- bump @biomejs/biome to ^2.5.0 and migrate biome.json to the v2 schema
+- bump stylelint to ^17, typescript floor to ^5.9
+
 ## [2.4.1] - 2026-07-30
 - biome ignore + formatting fixes
 - stylelint --allow-empty-input

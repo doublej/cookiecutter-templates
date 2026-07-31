@@ -1,5 +1,5 @@
 {
-    "_version": "1.0.0",
+    "_version": "1.1.0",
     "project_name": "My Extension",
     "extension_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "project_slug": "raycast-ext-{{ cookiecutter.extension_slug }}",

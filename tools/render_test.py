@@ -268,7 +268,7 @@ def smoke_raycast(project_dir: Path) -> list[tuple[str, bool, str]]:
     required = [
         "package.json",
         "tsconfig.json",
-        ".eslintrc.json",
+        "eslint.config.mjs",
         "src/hello.tsx",
         "src/lib/prefs.ts",
         "assets/command-icon.png",

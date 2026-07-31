@@ -6,6 +6,11 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.1.2] - 2026-07-31
+- bump @biomejs/biome to ^2.5.0 and migrate biome.json to the v2 schema
+- bump chalk ^6, commander ^15, ora ^9.4, @clack/prompts ^1.7
+- bump vitest to ^4.1, @types/node to ^26, typescript floor to ^5.9
+
 ## [2.1.1] - 2026-07-30
 - biome ignore for json config files
 - biome fixes in cli.ts
