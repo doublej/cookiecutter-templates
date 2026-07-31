@@ -6,7 +6,7 @@
 
 - Native C++17 Android app (NDK), OpenXR via Khronos loader
 - Graphics API: {{ cookiecutter.graphics_api }}
-- Gradle 8.x + CMake + GameActivity
+- AGP 8.13.2 / Gradle 8.14.3 (wrapper checked in) + CMake + GameActivity
 - Target: Quest 2 / Quest 3 / Quest 3S (arm64-v8a)
 
 ## Commands
@@ -14,7 +14,7 @@
 Use `just` as the task runner:
 
 - `just check` — run all checks (just-fmt-check + loc-check + dir-check + lint + test + build)
-- `just install` — install Gradle wrapper (first run only)
+- `just install` — download the Gradle distribution (first run only)
 - `just lint` — Android lint
 - `just test` — run JVM unit tests
 - `just build` — assembleDebug APK

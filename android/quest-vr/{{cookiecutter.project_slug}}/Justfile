@@ -10,7 +10,7 @@ default:
 install:
     #!/usr/bin/env zsh
     if [[ ! -f ./gradlew ]]; then
-        gradle wrapper --gradle-version 8.5 --distribution-type bin
+        gradle wrapper --gradle-version 8.14.3 --distribution-type bin
     fi
     ./gradlew --version
 

@@ -21,6 +21,7 @@ app/
 build.gradle.kts            # root (plugin versions)
 settings.gradle.kts         # project name, include :app
 gradle.properties           # prefab=true, AndroidX flags
+gradle/wrapper/             # pinned Gradle 8.14.3 wrapper (checked in)
 ```
 
 The runtime path is `Android boot → GameActivity → android_main (main.cpp) → OpenXrApp::run() → instance / session / frame loop`. `openxr_app.cpp` owns the OpenXR lifecycle; rendering hooks attach inside the frame loop.
@@ -51,7 +52,7 @@ Run `just check` after every change. It composes:
 
 Recipe reference:
 
-- `just install` — install the Gradle wrapper (first run only)
+- `just install` — download the Gradle distribution (first run only)
 - `just lint` — Android lint on the debug variant
 - `just test` — unit tests
 - `just build` — assemble debug APK

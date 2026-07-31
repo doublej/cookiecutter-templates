@@ -6,6 +6,12 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.2.0] - 2026-07-31
+- AGP 8.2.2 -> 8.13.2, compileSdk 34 -> 36, targetSdk default 32 -> 36
+- NDK 26.1.10909125 -> 28.2.13676358 (r28c, 16KB page support)
+- openxr_loader_for_android 1.1.36 -> 1.1.61, games-activity 3.0.4 -> 3.0.5
+- add checked-in Gradle 8.14.3 wrapper (gradlew, gradlew.bat, jar, properties)
+
 ## [2.1.0] - 2026-05-25
 - claude-tree recipe now delegates to the global atlas CLI (atlas tree)
 

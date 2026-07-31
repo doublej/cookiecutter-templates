@@ -7,16 +7,16 @@ Author: {{ cookiecutter.author }}
 ## Requirements
 
 - Android SDK with platform {{ cookiecutter.target_sdk_version }}
-- Android NDK 26.1+ (26.1.10909125 recommended)
+- Android NDK 28.2+ (28.2.13676358 recommended)
 - CMake 3.22.1+
-- Gradle 8.5+ (`just install` will create the wrapper)
+- Gradle 8.14.3 (wrapper is checked in; `just install` warms it up)
 - JDK 17
 - A Quest 2, Quest 3, or Quest 3S in developer mode
 
 ## Getting Started
 
 ```bash
-just install        # create gradle wrapper (first run only)
+just install        # download the gradle distribution (first run only)
 just build          # assembleDebug APK
 just install-device # adb install to connected Quest
 just log            # tail logcat for this app
@@ -55,6 +55,7 @@ app/
         └── openxr_app.cpp   # OpenXR instance/session + event loop
 build.gradle.kts             # root plugin versions
 settings.gradle.kts
+gradle/wrapper/              # checked-in Gradle 8.14.3 wrapper
 ```
 
 ## Next Steps

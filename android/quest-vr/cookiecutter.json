@@ -1,5 +1,5 @@
 {
-    "_version": "2.1.0",
+    "_version": "2.2.0",
     "project_name": "My Quest VR App",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "module_name": "{{ cookiecutter.project_name.replace(' ', '').replace('-', '').replace('_', '') }}",
@@ -8,7 +8,8 @@
     "author": "Your Name",
     "graphics_api": ["gles", "vulkan"],
     "min_sdk_version": "29",
-    "target_sdk_version": "32",
+    "target_sdk_version": "36",
     "mcp_servers": ["none", "minimal", "standard", "interactive"],
-    "mcp_scope": ["project", "local"]
+    "mcp_scope": ["project", "local"],
+    "_copy_without_render": ["gradle/wrapper/gradle-wrapper.jar", "gradlew", "gradlew.bat"]
 }

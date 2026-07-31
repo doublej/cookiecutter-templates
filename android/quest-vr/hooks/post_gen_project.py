@@ -186,6 +186,6 @@ if __name__ == "__main__":
     print(f"\n  Project created: {PROJECT_SLUG}\n")
     print("  Getting started:")
     print(f"    cd {PROJECT_SLUG}")
-    print("    just install        # download gradle wrapper + Android SDK deps")
+    print("    just install        # download gradle distribution + Android SDK deps")
     print("    just build          # assembleDebug APK")
     print("    just install-device # adb install on connected Quest\n")

@@ -4,8 +4,8 @@ plugins {
 
 android {
     namespace = "{{ cookiecutter.package_id }}"
-    compileSdk = 34
-    ndkVersion = "26.1.10909125"
+    compileSdk = 36
+    ndkVersion = "28.2.13676358"
 
     defaultConfig {
         applicationId = "{{ cookiecutter.package_id }}"
@@ -55,6 +55,6 @@ android {
 }
 
 dependencies {
-    implementation("org.khronos.openxr:openxr_loader_for_android:1.1.36")
-    implementation("androidx.games:games-activity:3.0.4")
+    implementation("org.khronos.openxr:openxr_loader_for_android:1.1.61")
+    implementation("androidx.games:games-activity:3.0.5")
 }
