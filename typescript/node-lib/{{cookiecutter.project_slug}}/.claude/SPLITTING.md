@@ -33,6 +33,50 @@ means the file has no natural seam yet, and the honest fix is a design change �
 interface, invert a dependency, or move a concern out entirely — before any mechanical
 split. A tool cannot do that for you, and a bad split is harder to undo than a long file.
 
+## When one declaration is the whole file
+
+Rearranging top-level declarations cannot help a file whose single class (or data
+literal) is bigger than `loc.error` on its own. For that case `just loc-fix` switches
+strategy and splits by **members** instead:
+
+**Giant class.** Private instance methods move out as free functions that take the
+instance first — `private endRound(id)` becomes `export function endRound(self: TheClass,
+id)`, and every `this.` inside becomes `self.`. The class stays in the original file as a
+facade: fields, the constructor, public methods, and anything the scanner cannot move
+safely (each is listed with its reason in the proposal). Callers inside the class are
+rewritten from `this.endRound(id)` to `endRound(this, id)`. A method that never touches
+`this` becomes a plain function with no `self` parameter.
+
+Three consequences to review before applying:
+
+- **Widening.** A private member that an extracted function touches loses its `private`
+  modifier — the class type gets wider. The proposal lists every widened name. This is
+  the same trade a hand split makes; the package barrel (`index.ts`) is unchanged either
+  way, so nothing new becomes *package* public.
+- **Support parts.** File-private types and constants the parts need move to `types.ts` /
+  `constants.ts` parts (merged into one `support.ts` when dir-check leaves no room).
+  Anything that must stay in the facade but is needed by a part gets promoted
+  (`export`ed from the facade, still absent from the barrel).
+- **Cycles between method parts are fine here** — unlike the top-level split. The parts
+  contain nothing but hoisted function declarations, so their mutual imports are only
+  dereferenced at call time, never during module evaluation. The class type flows the
+  other way as an `import type`, which is erased.
+
+**Giant data literal.** A `const X: T[] = [...]` splits by elements into part arrays
+(`X_1`, `X_2`, …) and the facade reassembles them: `export const X: T[] = [...X_1, ...X_2]`.
+The parts carry the same `T[]` annotation, so element contextual typing (literal unions,
+excess-property checks) survives. This only works for **annotated arrays** — an
+un-annotated array or an object literal is refused, because re-inferred element types
+widen (`'feature'` becomes `string`) and object spreads evaluate getters.
+
+What stays in the class no matter what: getters/setters, statics, decorated members,
+overload sets, `#private` fields and their users, `super` users, methods that declare
+their own `this` scope (a `function` expression or nested class), methods referenced
+without a call (`this.f.bind(this)`), dynamic imports, and — on an `extends` class —
+any method touching an inherited member (`this.ctx` on a Durable Object, `this.emit` on
+an EventEmitter): the scanner cannot know if it is `protected` upstream. If nothing is
+movable, the tool says so and the fix is a design change, as above.
+
 ## `dir-check` fights `loc-check`
 
 Splitting one file into three siblings adds two files to a directory that `just dir-check`
@@ -89,6 +133,8 @@ It prints the proposal but declines to write when:
 - the file has **top-level statements** outside any declaration (side effects it cannot place);
 - the file has a **default export** (moving it would change the surface subtly);
 - a **target path already exists**;
+- a giant class has **no safely movable member**, a giant array is **un-annotated**, or a
+  giant data literal is an **object literal** (see above);
 - the file has **uncommitted changes** — commit first so `git diff` shows only the split, or
   pass `--force` if you accept the mixed diff.
 
@@ -96,7 +142,8 @@ Each of these is a case where a human decision is cheaper than an automated gues
 
 ## Scope
 
-`.ts` only, top-level declarations only. Decorators, `declare module` blocks, and JSX are
+`.ts` only. Top-level declarations, plus member extraction for one giant class or
+annotated array per file. Decorators, `declare module` blocks, and JSX are
 outside what the scanner handles. Test files are not special-cased — an oversized test file
 usually wants splitting by *scenario*, which the reference graph cannot see, so treat its
 proposal with extra suspicion.
