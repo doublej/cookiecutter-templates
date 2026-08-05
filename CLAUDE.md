@@ -73,6 +73,8 @@ Cross-family, every generated `.claude/scripts/` ships identical helper scripts:
 
 **Exceptions** are declared in `sync_manifest.json` under `justfile_exceptions` (e.g. SvelteKit skips `typecheck`/`clean`).
 
+**`typescript/node-lib` carries a deliberately detached PoC** — `.claude/scripts/split_oversize.py`, `.claude/SPLITTING.md` and the `just loc-fix` recipe (the LOC autofix experiment, covered by `tools/test_loc_split.py`). It is intentionally **absent from `cross_family.identical_files` and `justfile_shared_recipes`**: `sync_check.py` only compares paths and recipe names the manifest lists, so an extra file and an extra recipe are invisible to it. Do not "fix" the asymmetry by copying it to the other 18 templates — rollout waits until the PoC has proven itself on real oversized files. Registering it in the manifest is what makes the rollout mandatory, so that edit is the rollout decision.
+
 ### Template anatomy
 
 Each template follows this structure:
