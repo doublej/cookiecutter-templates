@@ -53,11 +53,13 @@ def _diag_log(status: str, duration_ms: int, meta: dict | None = None, error: Ba
 
 
 TYPE_KINDS = {"interface", "type", "enum"}
+VALUE_KINDS = {"const", "let", "var"}
 DECL_RE = re.compile(
     r"^(?P<export>export\s+)?(?P<default>default\s+)?(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?"
     r"(?P<kind>function|class|const|let|var|interface|type|enum)\b\s*\*?\s*(?P<name>[A-Za-z_$][\w$]*)"
 )
 IMPORT_RE = re.compile(r"^import\b")
+CALLABLE_RE = re.compile(r"=>|=\s*(?:async\s+)?(?:function\b|[(<])")
 IDENT_RE = re.compile(r"[A-Za-z_$][\w$]*")
 IMPORT_NOISE = {"import", "type", "as", "from"}
 CONTINUES_AFTER = set("=+-*/%<>&|^?:,.(")
@@ -73,7 +75,8 @@ EXPORT_TYPE_FMT = "export type { %s } from '%s'"
 class Block:
     """One top-level declaration, including its leading comments/decorators."""
 
-    def __init__(self, name: str, kind: str, start: int, decl: int, end: int, exported: bool, default: bool):
+    def __init__(self, name: str, kind: str, start: int, decl: int, end: int, exported: bool,
+                 default: bool, callable_: bool = False):
         self.name = name
         self.kind = kind
         self.start = start
@@ -81,10 +84,17 @@ class Block:
         self.end = end
         self.exported = exported
         self.default = default
+        # `const f = () => …` is a function wearing a const's clothes; naming must not treat
+        # it as data.
+        self.callable = callable_ or kind == "function"
 
     @property
     def lines(self) -> int:
         return self.end - self.start + 1
+
+    @property
+    def is_data(self) -> bool:
+        return self.kind in VALUE_KINDS and not self.callable
 
 
 # --------------------------------------------------------------------------
@@ -210,6 +220,7 @@ def _parse(lines: list[str]) -> tuple[list[tuple[int, int, set[str]]], list[Bloc
                         end=end,
                         exported=bool(m.group("export")),
                         default=bool(m.group("default")),
+                        callable_=bool(CALLABLE_RE.search(stripped)),
                     )
                 )
             else:
@@ -266,6 +277,24 @@ def _subdivide(group: list[Block], limit: int) -> list[list[Block]]:
     return out or [group]
 
 
+def _merge_leaf_groups(groups: list[list[Block]], refs: dict[str, set[str]]) -> list[list[Block]]:
+    """Fold the pure type/constant groups together — they are leaves, so this cannot cycle."""
+    owner = {b.name: i for i, g in enumerate(groups) for b in g}
+
+    def is_leaf(i: int, g: list[Block], match) -> bool:
+        return all(match(b) for b in g) and all(owner[r] == i for b in g for r in refs[b.name])
+
+    used: set[int] = set()
+    merged: list[list[Block]] = []
+    for match in (lambda b: b.kind in TYPE_KINDS, lambda b: b.is_data):
+        pool = [i for i, g in enumerate(groups) if i not in used and is_leaf(i, g, match)]
+        if len(pool) > 1:
+            merged.append(sorted((b for i in pool for b in groups[i]), key=lambda b: b.start))
+            used.update(pool)
+    rest = [g for i, g in enumerate(groups) if i not in used]
+    return sorted(merged + rest, key=lambda g: g[0].start)
+
+
 def _kebab(name: str) -> str:
     s = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "-", name)
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-") or "part"
@@ -274,6 +303,8 @@ def _kebab(name: str) -> str:
 def _group_name(group: list[Block], taken: set[str]) -> str:
     if all(b.kind in TYPE_KINDS for b in group):
         base = "types"
+    elif all(b.is_data for b in group) and len(group) > 1:
+        base = "constants"
     else:
         lead = next((b for b in group if b.exported), group[0])
         base = _kebab(lead.name)
@@ -322,7 +353,7 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     for comp in _components(blocks, refs):
         total = sum(b.lines for b in comp)
         groups.extend(_subdivide(comp, target) if total > limit else [comp])
-    groups = [g for g in groups if g]
+    groups = _merge_leaf_groups([g for g in groups if g], refs)
     if len(groups) < 2:
         result["blockers"].append(
             "every declaration is in one reference cluster — extract a seam by hand first"
@@ -381,6 +412,15 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
 
     result["layout"] = layout
     result["layout_reason"] = reason
+    for g in result["groups"]:
+        if g["lines"] > limit:
+            biggest = max(g["blocks"], key=lambda b: b["lines"])
+            result["blockers"].append(
+                f"{g['path']} would still be {g['lines']} lines (max {limit}) — "
+                f"`{biggest['kind']} {biggest['name']}` is {biggest['lines']} lines on its own, so no "
+                f"rearranging of top-level declarations can fix this file. Extract members by hand "
+                f"(.claude/SPLITTING.md)"
+            )
     result["barrel"] = sorted(b.name for b in blocks if b.exported)
     result["cycles"] = _find_cycle(named, refs, owner)
     if result["cycles"]:
