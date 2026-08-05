@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.3.1] - 2026-08-05
+- split_oversize: skip regex literals when tracking brace depth; keep overload sets and merged declarations together
+
 ## [2.3.0] - 2026-08-05
 - add 'just loc-fix' + .claude/scripts/split_oversize.py: propose (and optionally apply) a reference-graph split for files over loc.error, dir-check aware, barrel keeps the public surface unchanged
 - add .claude/SPLITTING.md doctrine
