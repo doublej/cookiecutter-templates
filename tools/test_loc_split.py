@@ -138,16 +138,122 @@ export function useOverload(s: Shape): string {
 }
 """
 
-# One oversized class — the common real-world case a mechanical split cannot fix.
+# One oversized class of PUBLIC methods — member extraction must refuse (removing
+# a public method from the class would change the instance API).
 GIANT_CLASS = "const TAG = 'giant'\n\nexport class Giant {\n" + "".join(
     f"  step{i}(): string {{\n    return `${{TAG}}-{i}`\n  }}\n" for i in range(12)
 ) + "}\n"
+
+# One oversized class dominated by PRIVATE methods — the member splitter's home turf.
+# Covers: this -> self in bodies and template literals, this.x() -> x(this, ...),
+# a no-`this` method that gets no self parameter, constructor parameter properties,
+# and de-privatized fields.
+MEMBER_CLASS = """import { readFileSync } from 'node:fs'
+
+interface Job {
+  id: string
+  tries: number
+}
+
+const MAX_TRIES = 3
+
+export class Engine {
+  private jobs: Job[] = []
+  private counter = 0
+
+  constructor(private readonly label: string) {}
+
+  run(id: string): string {
+    this.enqueue(id)
+    return this.describe()
+  }
+
+  private enqueue(id: string) {
+    const job: Job = { id: this.stamp(id), tries: 0 }
+    this.jobs.push(job)
+    this.bump()
+  }
+
+  private stamp(id: string): string {
+    return id.toUpperCase()
+  }
+
+  private bump() {
+    this.counter++
+    if (this.counter > MAX_TRIES) {
+      this.reset()
+    }
+  }
+
+  private reset() {
+    this.counter = 0
+    this.jobs = []
+  }
+
+  private describe(): string {
+    return `${this.label}: ${this.jobs.length} jobs (${readFileSync('/dev/null', 'utf8')})`
+  }
+}
+"""
+
+# A class where nothing is safely movable: a getter, a nested `this` scope,
+# and inherited member access on an `extends` class.
+UNSAFE_CLASS = """class Base {
+  protected shared = 1
+}
+
+export class Stuck extends Base {
+  private total = 0
+
+  get sum(): number {
+    return this.total
+  }
+
+  private tick(): number {
+    this.total += this.shared
+    return this.total
+  }
+
+  private legacy(): number {
+    const f = function (this: Stuck): number {
+      return this.total
+    }
+    return f.call(this)
+  }
+
+  private handler(): number {
+    return this.shared + this.legacy()
+  }
+}
+"""
+
+# A giant annotated array literal — the data sub-case.
+DATA_ARRAY = """export interface Row {
+  id: string
+  label: string
+}
+
+export const ROWS: Row[] = [
+""" + "".join(
+    f"  {{\n    id: 'r{i}',\n    label: 'row {i}',\n  }},\n" for i in range(6)
+) + """]
+
+export function findRow(id: string): Row | undefined {
+  return ROWS.find((r) => r.id === id)
+}
+"""
+
+# The same array without an annotation — parts would re-infer element types.
+DATA_NO_ANNOTATION = "export const BIG = [\n" + "".join(
+    f"  {{\n    id: 'r{i}',\n    label: 'row {i}',\n  }},\n" for i in range(6)
+) + "]\n"
 
 
 def _project(root: Path, name: str, files: dict[str, str], quality: dict | None = QUALITY) -> Path:
     project = root / name
     (project / ".claude" / "scripts").mkdir(parents=True)
     shutil.copy(SRC, project / ".claude" / "scripts" / "split_oversize.py")
+    shutil.copy(SRC.parent / "split_members.py", project / ".claude" / "scripts" / "split_members.py")
     shutil.copy(SRC.parent / "_diag.py", project / ".claude" / "scripts" / "_diag.py")
     if quality is not None:
         (project / ".quality.json").write_text(json.dumps(quality))
@@ -333,6 +439,73 @@ def main() -> None:
         part = next(q for q in (p / "src").glob("ov-*.ts") if "overload" in q.read_text())
         check(part.read_text().count("export function overload") == 3,
               "14: overload signatures did not travel together")
+
+        # 15. Giant private-method class -> member extraction proposal and apply.
+        member_quality = {"loc": {"warn": 22, "error": 30}, "dir": {"max_files": 6},
+                          "globs": ["src/**/*.ts"]}
+        p = _project(tmp_path, "members", {"src/engine.ts": MEMBER_CLASS}, quality=member_quality)
+        r = _run(p)
+        check("strategy: member extraction" in r.stdout, f"15: no member strategy: {r.stdout!r}")
+        check("kept in class: run — public API" in r.stdout, f"15: public method not kept: {r.stdout!r}")
+        r = _run(p, "--json")
+        entry = json.loads(r.stdout)["files"][0]
+        check(entry.get("strategy") == "members", f"15: json strategy wrong: {entry.get('strategy')}")
+        check("_internal" not in entry, "15: internal state leaked into --json")
+        check("facade" in entry and entry["facade"]["lines"] <= 30, f"15: facade sizing: {entry.get('facade')}")
+        r = _run(p, "--apply", "src/engine.ts")
+        check("modules + facade" in r.stdout, f"15: apply did not report a facade: {r.stdout!r}")
+        facade = (p / "src" / "engine.ts").read_text()
+        check("export class Engine" in facade, "15: class lost from the facade")
+        check("enqueue(this, id)" in facade, f"15: facade call not rewritten: {facade!r}")
+        check("describe(this)" in facade, "15: facade call to describe not rewritten")
+        check("public readonly label" in facade, "15: constructor parameter property not widened")
+        check("private jobs" not in facade, "15: touched field kept its private modifier")
+        parts = "\n".join(q.read_text() for q in (p / "src").glob("engine-*.ts"))
+        check("export function enqueue(self: Engine" in parts, f"15: no self-taking function: {parts!r}")
+        check("id: stamp(id)" in parts, "15: no-this method call should not pass self")
+        check("stamp(self" not in parts, "15: no-this method wrongly given self")
+        check("bump(self)" in parts, "15: sibling call not rewritten to bump(self)")
+        check("self.label" in parts, "15: template-literal `this` not rewritten to self")
+        check("import type { Engine } from './engine.js'" in parts, "15: class type import missing")
+        r = _run(p)
+        check("nothing to split" in r.stdout, f"15: applied output still oversized: {r.stdout!r}")
+
+        # 16. Nothing safely movable -> honest refusal, nothing written.
+        p = _project(tmp_path, "unsafe", {"src/stuck.ts": UNSAFE_CLASS},
+                     quality={"loc": {"warn": 12, "error": 18}, "dir": {"max_files": 6},
+                              "globs": ["src/**/*.ts"]})
+        r = _run(p, "--apply", "src/stuck.ts")
+        check("none of its members can be extracted safely" in r.stdout,
+              f"16: unsafe class not refused: {r.stdout!r}")
+        check("not applied" in r.stdout, f"16: applied an unsafe class: {r.stdout!r}")
+        check(not list((p / "src").glob("stuck-*.ts")) and not (p / "src" / "stuck").exists(),
+              "16: wrote files despite refusal")
+
+        # 17. Giant annotated array -> element split with spread reassembly.
+        data_quality = {"loc": {"warn": 16, "error": 24}, "dir": {"max_files": 6},
+                        "globs": ["src/**/*.ts"]}
+        p = _project(tmp_path, "data", {"src/rows.ts": DATA_ARRAY}, quality=data_quality)
+        r = _run(p)
+        check("strategy: data extraction" in r.stdout, f"17: no data strategy: {r.stdout!r}")
+        r = _run(p, "--apply", "src/rows.ts")
+        check("modules + facade" in r.stdout, f"17: apply failed: {r.stdout!r}")
+        facade = (p / "src" / "rows.ts").read_text()
+        check("export const ROWS: Row[] = [" in facade, f"17: reassembly lost annotation: {facade!r}")
+        check("...ROWS_1," in facade, "17: spread reassembly missing")
+        check("export function findRow" in facade, "17: helper lost from the facade")
+        parts = sorted((p / "src").glob("rows-data-*.ts")) or sorted((p / "src" / "rows").glob("*.ts"))
+        check(len(parts) >= 2, f"17: expected data parts, got {parts}")
+        bodies = "\n".join(q.read_text() for q in parts)
+        check("export const ROWS_1: Row[] = [" in bodies, f"17: part lost element typing: {bodies!r}")
+        check("import type { Row }" in bodies, "17: part missing the element type import")
+        r = _run(p)
+        check("nothing to split" in r.stdout, f"17: applied data still oversized: {r.stdout!r}")
+
+        # 18. Un-annotated giant array -> refused (element literal types would widen).
+        p = _project(tmp_path, "data-noann", {"src/big.ts": DATA_NO_ANNOTATION}, quality=data_quality)
+        r = _run(p, "--apply", "src/big.ts")
+        check("annotation" in r.stdout, f"18: missing annotation not flagged: {r.stdout!r}")
+        check("not applied" in r.stdout, f"18: applied without annotation: {r.stdout!r}")
 
     if f:
         print("FAIL")
