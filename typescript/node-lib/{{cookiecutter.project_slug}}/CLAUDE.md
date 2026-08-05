@@ -48,6 +48,7 @@ Recipe reference:
 - `just test` — Vitest
 - `just build` — compile TypeScript
 - `just loc-check` / `just dir-check` — file-size and per-directory thresholds from `.quality.json`
+- `just loc-fix` — propose how to split the files `loc-check` rejected (advisory, writes nothing)
 - `just just-fmt-check` — verify Justfile formatting
 - `just clean` — remove build artifacts
 - `just update-scaffold` — pull updates from the cookiecutter template
@@ -55,6 +56,7 @@ Recipe reference:
 ## Related context
 
 - [agent.md](agent.md) — verify loop, auto-fix commands, common tasks, boundaries
+- [.claude/SPLITTING.md](.claude/SPLITTING.md) — how to split a file `loc-check` rejected without widening the public surface
 - `.claude/` — Claude Code settings, scaffold-update hook, library-freshness hook, diagnostic logging
 - `.quality.json` — loc / dir thresholds (single source of truth)
 - As this project grows past a single `index.ts`, add nested `CLAUDE.md` files in high-value subfolders (subpackages, integrations) following the `claude-md-tree` skill's context-packet pattern.

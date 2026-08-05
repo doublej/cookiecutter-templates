@@ -19,6 +19,7 @@ Use `just` as the task runner:
 - `just build` — compile TypeScript
 - `just loc-check` — check file lengths (thresholds in `.quality.json`)
 - `just dir-check` — check files per directory (thresholds in `.quality.json`)
+- `just loc-fix` — propose a split for each file `loc-check` rejected (advisory, writes nothing)
 - `just just-fmt-check` — verify Justfile formatting
 - `just clean` — remove build artifacts
 - `just update-scaffold` — pull updates from the cookiecutter template
@@ -74,6 +75,13 @@ Step-by-step alternative:
 - Framework: Vitest
 - Test the public API surface (what's exported from `index.ts`)
 - Run a single test: `bun run vitest run src/foo.test.ts`
+
+### Splitting an oversized file
+
+`loc-check` failing means the file has more than one job — never trim it to fit. Run
+`just loc-fix` for a proposed split, then read [.claude/SPLITTING.md](.claude/SPLITTING.md)
+before accepting it: it covers seam selection, the `dir-check` interaction, and the rule that
+a split must not add anything to the public surface.
 
 ### Boundaries
 
