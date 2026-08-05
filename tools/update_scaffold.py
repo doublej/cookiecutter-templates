@@ -37,6 +37,8 @@ MANIFEST = TEMPLATES_ROOT / "tools" / "sync_manifest.json"
 # match wins. Patterns use fnmatch (POSIX-style globs, *, **, ?).
 TEMPLATE_MANAGED_PATTERNS = [
     ".claude/scripts/*.py",
+    # Pure doctrine, never user-edited — inert for templates that don't ship it.
+    ".claude/SPLITTING.md",
 ]
 
 SEED_FILE_PATTERNS = [
