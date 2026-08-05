@@ -821,7 +821,7 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
                            "owner": owner, "named": named, "paths": paths, "orphans": orphans,
                            "code": code, "name_of": name_of, "kinds": kinds,
                            "barrel_needs": barrel_needs, "call_bins": call_bins,
-                           "call_paths": call_paths}
+                           "call_paths": call_paths, "src_dir": path.parent}
     # Size each part from the text that would actually be written, not an estimate.
     for idx, g in enumerate(result["groups"]):
         if idx < len(named):
@@ -907,6 +907,28 @@ def _module_specifier(module_path: Path, from_path: Path) -> str:
     return rel if rel.startswith(".") else f"./{rel}"
 
 
+def _adjust_relative_imports(line: str, src_dir: Path, dest_dir: Path) -> str:
+    """Repoint ./ and ../ specifiers when a copied import lands in another directory.
+
+    Parts only ever land one directory below the original file, so the rewrite is
+    a single `../` prefix — which also keeps the original path segments intact."""
+    if src_dir.resolve() == dest_dir.resolve():
+        return line
+
+    def fix(m: re.Match) -> str:
+        quote, spec = m.group(1), m.group(2)
+        if dest_dir.resolve().parent == src_dir.resolve():
+            new = "../" + (spec[2:] if spec.startswith("./") else spec)
+        else:  # unexpected layout: fall back to a canonical relative path
+            target = (src_dir / spec).resolve()
+            new = os.path.relpath(target, dest_dir.resolve()).replace(os.sep, "/")
+            if not new.startswith("."):
+                new = "./" + new
+        return f"{quote}{new}{quote}"
+
+    return re.sub(r"(['\"])(\.\.?/[^'\"]*)\1", fix, line)
+
+
 def _render_module(idx: int, analysis: dict) -> str:
     internal = analysis["_internal"]
     lines, blocks, refs, owner, named, paths = (
@@ -919,12 +941,14 @@ def _render_module(idx: int, analysis: dict) -> str:
     kinds = {b.name: b.kind for b in blocks}
     block_by_name = {b.name: b for b in blocks}
 
+    my_path = Path(str(paths[idx]).format(gname))
+    src_dir = internal["src_dir"]
     out: list[str] = []
     for start, end, bindings in internal["imports"]:
         if not bindings or bindings & set(re.findall(r"[A-Za-z_$][\w$]*", body_text)):
-            out.extend(lines[start : end + 1])
+            out.extend(_adjust_relative_imports(ln, src_dir, my_path.parent)
+                       for ln in lines[start : end + 1])
 
-    my_path = Path(str(paths[idx]).format(gname))
     grouped: dict[int, set[str]] = {}
     for b in group:
         for r in refs[b.name]:
@@ -1043,7 +1067,8 @@ def _render_call_part(idx: int, analysis: dict) -> str:
     out: list[str] = []
     for start, end, bindings in internal["imports"]:
         if not bindings or bindings & idents:
-            out.extend(lines[start : end + 1])
+            out.extend(_adjust_relative_imports(ln, internal["src_dir"], my_path.parent)
+                       for ln in lines[start : end + 1])
     by_part: dict[int, tuple[list[str], list[str]]] = {}
     for ident in sorted(idents):
         primary = name_of.get(ident)

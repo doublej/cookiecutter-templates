@@ -507,17 +507,23 @@ def _rewrite_line(raw: str, mask: str, extracted: dict[str, bool], receiver: str
 
 
 def _adjust_relative_imports(line: str, src_dir: Path, dest_dir: Path) -> str:
-    """Repoint ./ and ../ specifiers when a copied import lands in another directory."""
+    """Repoint ./ and ../ specifiers when a copied import lands in another directory.
+
+    Parts only ever land one directory below the original file, so the rewrite is
+    a single `../` prefix — which also keeps the original path segments intact."""
     if src_dir.resolve() == dest_dir.resolve():
         return line
 
     def fix(m: re.Match) -> str:
         quote, spec = m.group(1), m.group(2)
-        target = (src_dir / spec).resolve()
-        rel = os.path.relpath(target, dest_dir.resolve()).replace(os.sep, "/")
-        if not rel.startswith("."):
-            rel = "./" + rel
-        return "%s%s%s" % (quote, rel, quote)
+        if dest_dir.resolve().parent == src_dir.resolve():
+            new = "../" + (spec[2:] if spec.startswith("./") else spec)
+        else:  # unexpected layout: fall back to a canonical relative path
+            target = (src_dir / spec).resolve()
+            new = os.path.relpath(target, dest_dir.resolve()).replace(os.sep, "/")
+            if not new.startswith("."):
+                new = "./" + new
+        return "%s%s%s" % (quote, new, quote)
 
     return re.sub(r"(['\"])(\.\.?/[^'\"]*)\1", fix, line)
 
