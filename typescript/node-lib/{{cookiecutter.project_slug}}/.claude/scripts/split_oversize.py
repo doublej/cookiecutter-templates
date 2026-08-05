@@ -63,8 +63,12 @@ DECL_RE = re.compile(
     r"^(?P<export>export\s+)?(?P<default>default\s+)?(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?"
     r"(?P<kind>function|class|const|let|var|interface|type|enum)\b\s*\*?\s*(?P<name>[A-Za-z_$][\w$]*)"
 )
-IMPORT_RE = re.compile(r"^import\b")
+IMPORT_RE = re.compile(r"^import\b(?!\s*\()")
 AMBIENT_RE = re.compile(r"^(?:export\s+)?declare\s+(?:module|global)\b")
+# A movable top-level statement: a bare call (or tagged template) like `describe(...)`.
+CALL_STMT_RE = re.compile(r"^[A-Za-z_$][\w$]*(?:\.[\w$]+)*\s*[(`]")
+# Mock hoisting (vitest/jest) is file-scoped; moving any statement would break it.
+MOCK_RE = re.compile(r"\b(?:vi|jest)\.mock\s*\(")
 # Simple destructuring declarations only: one flat pattern, no nesting or defaults.
 DESTRUCT_RE = re.compile(
     r"^(?P<export>export\s+)?(?:declare\s+)?(?P<kind>const|let|var)\s*"
@@ -144,35 +148,51 @@ def _scan_line(line: str, state: dict) -> str:
                 i += 2
             elif c == "`":
                 state["stack"].pop()
+                out.append("`")
                 i += 1
             elif line.startswith("${", i):
                 state["stack"].append("{")
                 i += 2
             else:
+                if line.startswith("/*", i) or line.startswith("*/", i):
+                    state["marker_in_string"] = True
                 i += 1
             continue
         if line.startswith("//", i):
+            if "/*" in line[i + 2 :] or "*/" in line[i + 2 :]:
+                state["marker_in_string"] = True
             break
         if line.startswith("/*", i):
             state["comment"] = True
             i += 2
             continue
         if c in "'\"":
+            # Keep the delimiters: a line ending in `= 'x'` must not look like a
+            # dangling `=` continuation once the string body is stripped.
+            out.append(c)
             i += 1
             while i < n and line[i] != c:
+                if line.startswith("/*", i) or line.startswith("*/", i):
+                    state["marker_in_string"] = True
                 i += 2 if line[i] == "\\" else 1
+            if i < n:
+                out.append(c)
             i += 1
             continue
         if c == "`":
             state["stack"].append("`")
+            out.append(c)
             i += 1
             continue
         if c == "/" and _starts_regex(out):
             # A regex literal's braces are not code braces: /{/ would corrupt the depth.
+            out.append(c)
             i += 1
             in_class = False
             while i < n:
                 ch = line[i]
+                if line.startswith("*/", i):
+                    state["marker_in_string"] = True
                 if ch == "\\":
                     i += 2
                     continue
@@ -181,6 +201,7 @@ def _scan_line(line: str, state: dict) -> str:
                 elif ch == "]":
                     in_class = False
                 elif ch == "/" and not in_class:
+                    out.append(ch)
                     i += 1
                     break
                 i += 1
@@ -194,14 +215,16 @@ def _scan_line(line: str, state: dict) -> str:
     return "".join(out)
 
 
-def _scan(lines: list[str]) -> tuple[list[str], list[bool]]:
-    """Return per-line code-only text and whether each line starts at top level."""
-    state: dict = {"stack": [], "comment": False}
-    code, at_top = [], []
+def _scan(lines: list[str]) -> tuple[list[str], list[bool], list[bool], bool]:
+    """Per-line code-only text, whether each line starts at top level, whether it
+    starts inside a template literal, and whether any string embeds /* or */."""
+    state: dict = {"stack": [], "comment": False, "marker_in_string": False}
+    code, at_top, in_template = [], [], []
     for line in lines:
         at_top.append(not state["stack"] and not state["comment"])
+        in_template.append("`" in state["stack"])
         code.append(_scan_line(line, state))
-    return code, at_top
+    return code, at_top, in_template, state["marker_in_string"]
 
 
 def _statement_end(start: int, code: list[str], at_top: list[bool]) -> int:
@@ -244,7 +267,7 @@ def _parse(
 ) -> tuple[list[tuple[int, int, set[str]]], list[Block], list[tuple[int, int]], list[tuple[int, int]]]:
     """Split a file into header imports, top-level blocks, ambient declare-blocks,
     and remaining top-level statements (as line ranges)."""
-    code, at_top = _scan(lines)
+    code, at_top, _, _ = _scan(lines)
     imports: list[tuple[int, int, set[str]]] = []
     blocks: list[Block] = []
     ambients: list[tuple[int, int]] = []
@@ -256,7 +279,8 @@ def _parse(
             i += 1
             continue
         end = _statement_end(i, code, at_top)
-        if IMPORT_RE.match(stripped) and not blocks:
+        # Imports are hoisted, so they count as header imports wherever they appear.
+        if IMPORT_RE.match(stripped):
             imports.append((i, end, _import_bindings(lines, i, end)))
         else:
             m = DECL_RE.match(stripped)
@@ -523,7 +547,7 @@ def _count_dir_files(root: Path, directory: Path, globs: list[str]) -> int:
 
 def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     lines = path.read_text(encoding="utf-8").splitlines()
-    code, _ = _scan(lines)
+    code, _, in_template, marker_in_string = _scan(lines)
     imports, blocks, ambients, statements = _parse(lines)
     limit = cfg["loc"]["error"]
     target = cfg["loc"].get("warn", limit)
@@ -534,8 +558,29 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
         "blockers": [],
         "groups": [],
     }
-    if not blocks:
+    if not blocks and not statements:
         result["blockers"].append("no top-level declarations found — split by hand")
+        return result
+
+    # Code generators embed module-source text inside template literals; a line
+    # scanner cannot split those with confidence, and naive tooling reading the
+    # result would see a changed surface.
+    embedded = next(
+        (i for i, t in enumerate(in_template)
+         if t and re.match(r"\s*(?:export|import)\b", lines[i])),
+        None,
+    )
+    if embedded is not None:
+        result["blockers"].append(
+            f"a template literal embeds module-source text (line {embedded + 1}) — "
+            f"code-generator files must be split by hand"
+        )
+        return result
+    if marker_in_string:
+        result["blockers"].append(
+            "a string or regex literal contains block-comment syntax (/* or */) — "
+            "comment-aware tooling mis-reads reordered output; split by hand"
+        )
         return result
 
     name_of = {nm: b.name for b in blocks for nm in b.all_names}
@@ -552,15 +597,15 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     overhead = sum(end - start + 1 for start, end, _ in imports) + 2
     # One declaration bigger than any module can hold: no regrouping of top-level
     # declarations can help, so hand over to the member-level splitter.
-    biggest_block = max(blocks, key=lambda b: b.lines)
-    if split_members is not None and biggest_block.lines + overhead + 1 > limit:
+    biggest_block = max(blocks, key=lambda b: b.lines) if blocks else None
+    if blocks and split_members is not None and biggest_block.lines + overhead + 1 > limit:
         return split_members.analyze(root, path, cfg, lines, imports, blocks, biggest_block)
 
     # Statements between declarations cannot move without reordering side effects.
     # Statements after the last declaration stay in the barrel: the parts (its
     # imports) evaluate first, exactly as the declarations did in the original.
     # Ambient declare-module/global blocks are position-independent and also stay.
-    last_block_end = max(b.end for b in blocks)
+    last_block_end = max((b.end for b in blocks), default=-1)
     interleaved = [(s, e) for s, e in statements if s <= last_block_end]
     if interleaved:
         first = interleaved[0][0] + 1
@@ -580,36 +625,84 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
             f"top-level statements outside any declaration reassign {', '.join(mutated)} — "
             f"a moved `let` cannot be written through an import binding"
         )
+    meta_block = next(
+        (b for b in blocks if "import.meta" in "\n".join(code[b.start : b.end + 1])), None
+    )
+    if meta_block is not None:
+        result["blockers"].append(
+            f"`{meta_block.name}` references import.meta — its meaning changes in a moved "
+            f"module; split by hand"
+        )
     barrel_needs = {name_of[n] for n in set(IDENT_RE.findall(kept_code)) if n in name_of}
 
-    groups = _pack(_sccs(blocks, refs), max(target - overhead, 1))
+    # When what trails is too big to stay in the barrel, move a prefix of it out as
+    # side-effect parts — bare call statements only (`describe(...)`, `run()`), in
+    # original order, imported by the barrel in that same order. `vi.mock` hoisting
+    # and `import.meta` are per-module semantics that must not change files.
+    trailing = [(s, e) for s, e in statements if s > last_block_end]
+    call_bins: list[list[tuple[int, int]]] = []
+    trailing_total = sum(e - s + 1 for s, e in trailing)
+    if trailing and (not blocks or trailing_total > max(limit - 40, 1)) \
+            and not MOCK_RE.search("\n".join(code)):
+        movable: list[tuple[int, int]] = []
+        for s, e in trailing:
+            text = "\n".join(code[s : e + 1])
+            if not CALL_STMT_RE.match(code[s].strip()) or "import.meta" in text:
+                break
+            start = s  # bring the statement's leading comments along
+            while start > last_block_end + 1:
+                if lines[start - 1].strip() and not code[start - 1].strip():
+                    start -= 1
+                else:
+                    break
+            movable.append((start, e))
+        cap = max(target - overhead, 1)
+        cur: list[tuple[int, int]] = []
+        cur_size = 0
+        for s, e in movable:
+            n_l = e - s + 1
+            if cur and cur_size + n_l > cap:
+                call_bins.append(cur)
+                cur, cur_size = [], 0
+            cur.append((s, e))
+            cur_size += n_l
+        if cur:
+            call_bins.append(cur)
+
+    groups = _pack(_sccs(blocks, refs), max(target - overhead, 1)) if blocks else []
     groups = _merge_leaf_groups([g for g in groups if g], refs)
-    if len(groups) < 2:
+    if len(groups) + len(call_bins) < 2:
         result["blockers"].append(
+            "no top-level declarations found — split by hand" if not blocks else
             "every declaration is in one reference cluster — extract a seam by hand first"
         )
         return result
 
     # Placement: satisfy dir-check as well as loc-check.
+    n_parts = len(groups) + len(call_bins)
     max_files = cfg["dir"]["max_files"]
     directory = path.parent
     current = _count_dir_files(root, directory, cfg["globs"])
     stem = path.stem
-    if current + len(groups) <= max_files:
+    if current + n_parts <= max_files:
         layout = "siblings"
-        reason = f"{directory.relative_to(root)}/ holds {current} files, max {max_files} — room for {len(groups)} more"
+        reason = f"{directory.relative_to(root)}/ holds {current} files, max {max_files} — room for {n_parts} more"
         paths = [directory / (stem + "-{}.ts") for _ in groups]
+        call_tpl = directory / (stem + "-{}.ts")
     else:
         layout = "subdirectory"
         reason = (
             f"{directory.relative_to(root)}/ holds {current} files, max {max_files} — "
-            f"no room for {len(groups)} siblings, so nest them and keep {path.name} as the barrel"
+            f"no room for {n_parts} siblings, so nest them and keep {path.name} as the barrel"
         )
         paths = [directory / stem / "{}.ts" for _ in groups]
-        if len(groups) > max_files:
-            result["blockers"].append(f"{len(groups)} parts exceed dir.max_files ({max_files}) on their own")
+        call_tpl = directory / stem / "{}.ts"
+        if n_parts > max_files:
+            result["blockers"].append(f"{n_parts} parts exceed dir.max_files ({max_files}) on their own")
+    call_names = [f"calls-{i + 1}" for i in range(len(call_bins))]
+    call_paths = [Path(str(call_tpl).format(nm)) for nm in call_names]
 
-    taken: set[str] = set()
+    taken: set[str] = set(call_names)
     owner: dict[str, int] = {}
     named = []
     for idx, g in enumerate(groups):
@@ -643,9 +736,28 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
             }
         )
 
+    for i, bin_ in enumerate(call_bins):
+        first_code = next((code[k].strip() for s, e in bin_ for k in range(s, e + 1)
+                           if code[k].strip()), "statements")
+        callee = IDENT_RE.match(first_code)
+        result["groups"].append(
+            {
+                "name": call_names[i],
+                "path": str(call_paths[i].relative_to(root)),
+                "lines": sum(e - s + 1 for s, e in bin_),
+                "blocks": [
+                    {"name": (callee.group() if callee else "statements") + "(…)",
+                     "kind": "statements",
+                     "lines": sum(e - s + 1 for s, e in bin_), "exported": False}
+                ],
+                "imports_from_siblings": [],
+                "promoted": [],
+            }
+        )
+
     result["layout"] = layout
     result["layout_reason"] = reason
-    result["barrel"] = sorted({b.name for b in blocks if b.exported})
+    result["barrel"] = sorted({nm for b in blocks if b.exported for nm in b.all_names})
     cycle = _find_cycle(named, refs, owner)
     if cycle:
         # A cycle confined to parts holding only hoisted declarations (functions,
@@ -665,25 +777,35 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     existing = [g["path"] for g in result["groups"] if (root / g["path"]).exists()]
     if existing:
         result["blockers"].append(f"target path already exists: {', '.join(existing)}")
-    orphans = _orphan_lines(lines, imports, blocks)
+    moved_set = {i for bin_ in call_bins for s, e in bin_ for i in range(s, e + 1)}
+    orphans = [i for i in _orphan_lines(lines, imports, blocks) if i not in moved_set]
     if orphans:
         result["orphan_comments"] = len(orphans)
     kinds = {nm: b.kind for b in blocks for nm in b.all_names}
     result["_internal"] = {"lines": lines, "imports": imports, "blocks": blocks, "refs": refs,
                            "owner": owner, "named": named, "paths": paths, "orphans": orphans,
                            "code": code, "name_of": name_of, "kinds": kinds,
-                           "barrel_needs": barrel_needs, "first_decl": min(b.start for b in blocks)}
+                           "barrel_needs": barrel_needs, "call_bins": call_bins,
+                           "call_paths": call_paths}
     # Size each part from the text that would actually be written, not an estimate.
     for idx, g in enumerate(result["groups"]):
-        g["lines"] = _render_module(idx, result).count("\n")
-        if g["lines"] > limit:
-            biggest = max(g["blocks"], key=lambda b: b["lines"])
-            result["blockers"].append(
-                f"{g['path']} would still be {g['lines']} lines (max {limit}) — "
-                f"`{biggest['kind']} {biggest['name']}` is {biggest['lines']} lines on its own, so no "
-                f"rearranging of top-level declarations can fix this file. Extract members by hand "
-                f"(.claude/SPLITTING.md)"
-            )
+        if idx < len(named):
+            g["lines"] = _render_module(idx, result).count("\n")
+            if g["lines"] > limit:
+                biggest = max(g["blocks"], key=lambda b: b["lines"])
+                result["blockers"].append(
+                    f"{g['path']} would still be {g['lines']} lines (max {limit}) — "
+                    f"`{biggest['kind']} {biggest['name']}` is {biggest['lines']} lines on its own, so no "
+                    f"rearranging of top-level declarations can fix this file. Extract members by hand "
+                    f"(.claude/SPLITTING.md)"
+                )
+        else:
+            g["lines"] = _render_call_part(idx - len(named), result).count("\n")
+            if g["lines"] > limit:
+                result["blockers"].append(
+                    f"{g['path']} would still be {g['lines']} lines (max {limit}) — one statement "
+                    f"block is too big on its own; split inside it by hand"
+                )
     # The barrel itself must obey the limit — trailing statements and ambient
     # blocks it keeps count against it.
     barrel_size = _render_barrel(result, path).count("\n")
@@ -815,9 +937,22 @@ def _render_barrel(analysis: dict, path: Path) -> str:
 
     # Content the barrel keeps (trailing statements, ambient blocks) may reference
     # moved declarations — a re-export does not bind locally, so import them too.
+    # It may equally reference the file's original imports, so keep those; and an
+    # import no part claimed (unused binding) must survive here rather than vanish.
     kept_idents: set[str] = set()
     for i in orphans:
         kept_idents.update(IDENT_RE.findall(code[i]))
+    claimed: set[str] = set()
+    for _, g in named:
+        for b in g:
+            claimed.update(IDENT_RE.findall("\n".join(code[b.start : b.end + 1])))
+    for bin_ in internal.get("call_bins", []):
+        for s, e in bin_:
+            for k in range(s, e + 1):
+                claimed.update(IDENT_RE.findall(code[k]))
+    for start, end, bindings in internal["imports"]:
+        if bindings and (bindings & kept_idents or not bindings & claimed):
+            out.extend(lines[k] for k in range(start, end + 1))
     by_part: dict[int, tuple[list[str], list[str]]] = {}
     for ident in sorted(kept_idents):
         primary = name_of.get(ident)
@@ -843,10 +978,58 @@ def _render_barrel(analysis: dict, path: Path) -> str:
             out.append(EXPORT_FMT % (", ".join(values), spec))
         if types:
             out.append(EXPORT_TYPE_FMT % (", ".join(types), spec))
+    # Side-effect imports: the moved statement parts, in original order, after the
+    # declaration parts above — so everything still runs in source order.
+    for cp in internal.get("call_paths", []):
+        out.append("import '%s'" % _module_specifier(cp, path))
     trailing = [lines[i] for i in orphans if i >= first_decl]
     if trailing:
         out.append("")
         out.extend(trailing)
+    return "\n".join(out) + "\n"
+
+
+def _render_call_part(idx: int, analysis: dict) -> str:
+    """A module holding a run of moved top-level statements, imported for effect."""
+    internal = analysis["_internal"]
+    lines, code = internal["lines"], internal["code"]
+    blocks = internal["blocks"]
+    name_of, kinds, owner = internal["name_of"], internal["kinds"], internal["owner"]
+    named, paths = internal["named"], internal["paths"]
+    bin_ = internal["call_bins"][idx]
+    my_path = internal["call_paths"][idx]
+
+    idents: set[str] = set()
+    for s, e in bin_:
+        for i in range(s, e + 1):
+            idents.update(IDENT_RE.findall(code[i]))
+
+    out: list[str] = []
+    for start, end, bindings in internal["imports"]:
+        if not bindings or bindings & idents:
+            out.extend(lines[start : end + 1])
+    by_part: dict[int, tuple[list[str], list[str]]] = {}
+    for ident in sorted(idents):
+        primary = name_of.get(ident)
+        if primary is None:
+            continue
+        types, values = by_part.setdefault(owner[primary], ([], []))
+        (types if kinds[ident] in TYPE_KINDS else values).append(ident)
+    for oidx in sorted(by_part):
+        gname = named[oidx][0]
+        spec = _module_specifier(Path(str(paths[oidx]).format(gname)), my_path)
+        types, values = by_part[oidx]
+        if types:
+            out.append(IMPORT_TYPE_FMT % (", ".join(dict.fromkeys(types)), spec))
+        if values:
+            out.append(IMPORT_FMT % (", ".join(dict.fromkeys(values)), spec))
+    if out:
+        out.append("")
+    for s, e in bin_:
+        out.extend(lines[s : e + 1])
+        out.append("")
+    while out and not out[-1].strip():
+        out.pop()
     return "\n".join(out) + "\n"
 
 
@@ -872,6 +1055,10 @@ def _apply(root: Path, path: Path, analysis: dict) -> list[str]:
         target = Path(str(internal["paths"][idx]).format(gname))
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(_render_module(idx, analysis), encoding="utf-8")
+        written.append(str(target.relative_to(root)))
+    for idx, target in enumerate(internal.get("call_paths", [])):
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(_render_call_part(idx, analysis), encoding="utf-8")
         written.append(str(target.relative_to(root)))
     path.write_text(_render_barrel(analysis, path), encoding="utf-8")
     written.append(str(path.relative_to(root)))
