@@ -6,6 +6,12 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.5.0] - 2026-08-05
+- loc-fix: public methods extract behind delegating stubs when the facade stays too big
+- loc-fix: import.meta blocks pin to the barrel instead of refusing the file
+- loc-fix: adjacent groups fuse when parts would exceed dir.max_files
+- loc-fix: relative imports copied into subdirectory parts are repointed
+
 ## [2.4.0] - 2026-08-05
 - loc-fix: member-level splits for giant classes (self-taking free functions + facade) and annotated data arrays (spread reassembly)
 
