@@ -75,6 +75,11 @@ dir-check:
     done
     exit $err
 
+# Propose a split for every file over loc.error (advisory — writes nothing)
+[group('quality')]
+loc-fix:
+    python3 .claude/scripts/split_oversize.py
+
 [group('quality')]
 just-fmt-check:
     just --fmt --check
