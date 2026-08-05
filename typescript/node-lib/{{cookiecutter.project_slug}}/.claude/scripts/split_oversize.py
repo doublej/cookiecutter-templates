@@ -42,6 +42,11 @@ try:
 except Exception:
     _diag = None
 
+try:
+    import split_members
+except Exception:
+    split_members = None
+
 
 def _diag_log(status: str, duration_ms: int, meta: dict | None = None, error: BaseException | None = None) -> None:
     if _diag is None:
@@ -402,6 +407,11 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     # A module costs more than its declarations: copied imports, and a blank line between
     # each block. Ignoring that lets a component "fit" in a file that is already too long.
     overhead = sum(end - start + 1 for start, end, _ in imports) + 2
+    # One declaration bigger than any module can hold: no regrouping of top-level
+    # declarations can help, so hand over to the member-level splitter.
+    biggest_block = max(blocks, key=lambda b: b.lines)
+    if split_members is not None and biggest_block.lines + overhead + 1 > limit:
+        return split_members.analyze(root, path, cfg, lines, imports, blocks, biggest_block)
     groups: list[list[Block]] = []
     for comp in _components(blocks, refs):
         total = sum(b.lines for b in comp) + len(comp) + overhead
@@ -637,6 +647,8 @@ def _is_dirty(root: Path, path: Path) -> bool:
 
 
 def _apply(root: Path, path: Path, analysis: dict) -> list[str]:
+    if analysis.get("strategy") and split_members is not None:
+        return split_members.apply(root, path, analysis)
     internal = analysis["_internal"]
     written = []
     for idx, (gname, _) in enumerate(internal["named"]):
@@ -659,6 +671,9 @@ def _public(analysis: dict) -> dict:
 
 
 def _print_proposal(analysis: dict) -> None:
+    if analysis.get("strategy") and split_members is not None:
+        split_members.print_proposal(analysis)
+        return
     print(f"[loc-fix] {analysis['file']} — {analysis['lines']} lines (max {analysis['limit']})")
     if analysis.get("layout"):
         print(f"  layout: {analysis['layout']} — {analysis['layout_reason']}")
@@ -759,7 +774,8 @@ def main() -> None:
                 _diag_log("noop", elapsed_ms(), meta={"reason": "dirty-worktree", "file": analysis["file"]})
                 return
             written = _apply(root, path, analysis)
-            print(f"[loc-fix] split {analysis['file']} into {len(written) - 1} modules + barrel:")
+            tail = "facade" if analysis.get("strategy") else "barrel"
+            print(f"[loc-fix] split {analysis['file']} into {len(written) - 1} modules + {tail}:")
             for w in written:
                 print(f"  {w}")
             print("  next: just lint-fix && just check")
