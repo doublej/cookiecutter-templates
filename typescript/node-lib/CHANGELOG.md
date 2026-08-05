@@ -6,6 +6,10 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.3.0] - 2026-08-05
+- add 'just loc-fix' + .claude/scripts/split_oversize.py: propose (and optionally apply) a reference-graph split for files over loc.error, dir-check aware, barrel keeps the public surface unchanged
+- add .claude/SPLITTING.md doctrine
+
 ## [2.2.1] - 2026-07-31
 - bump @biomejs/biome to ^2.5.0 and migrate biome.json to the v2 schema
 - bump vitest to ^4.1, @types/node to ^26, typescript floor to ^5.9
