@@ -89,6 +89,55 @@ export function delta(s: Shared): string {
 }
 """
 
+# A regex literal holding an unbalanced brace: naive depth counting swallows the rest of
+# the file and reports one big cluster.
+REGEX_BRACE = """export function alpha(text: string): string {
+  return text.replace(/{/g, '')
+}
+
+export function beta(text: string): string {
+  return alpha(text).trim()
+}
+
+export function gamma(text: string): string {
+  return beta(text).toUpperCase()
+}
+
+export function delta(text: string): string {
+  return gamma(text).padEnd(4)
+}
+
+export function epsilon(text: string): string {
+  return delta(text).slice(0, 3)
+}
+"""
+
+# An overload set is one symbol spelled across several declarations.
+OVERLOADS = """export interface Shape {
+  kind: string
+}
+
+const BRACE_RE = /[{}]/g
+
+export function strip(text: string): string {
+  return text.replace(BRACE_RE, '')
+}
+
+export function pad(text: string): string {
+  return ` ${strip(text)} `
+}
+
+export function overload(value: string): string
+export function overload(value: number): number
+export function overload(value: string | number): string | number {
+  return value
+}
+
+export function useOverload(s: Shape): string {
+  return `${s.kind}${overload('x')}`
+}
+"""
+
 # One oversized class — the common real-world case a mechanical split cannot fix.
 GIANT_CLASS = "const TAG = 'giant'\n\nexport class Giant {\n" + "".join(
     f"  step{i}(): string {{\n    return `${{TAG}}-{i}`\n  }}\n" for i in range(12)
@@ -259,6 +308,31 @@ def main() -> None:
             before = logs[0].read_text().count("\n")
             _run(p)  # _run sets NO_TEMPLATE_DIAG=1
             check(logs[0].read_text().count("\n") == before, "12: NO_TEMPLATE_DIAG did not suppress logging")
+
+        # 13. A regex literal's braces are not code braces.
+        p = _project(tmp_path, "regex", {"src/re.ts": REGEX_BRACE},
+                     quality={"loc": {"warn": 12, "error": 18}, "dir": {"max_files": 6},
+                              "globs": ["src/**/*.ts"]})
+        r = _run(p)
+        check("one reference cluster" not in r.stdout, f"13: regex swallowed the file: {r.stdout!r}")
+        check("layout:" in r.stdout, f"13: no proposal produced: {r.stdout!r}")
+
+        # 14. An overload set stays whole and is exported exactly once.
+        p = _project(tmp_path, "overloads", {"src/ov.ts": OVERLOADS},
+                     quality={"loc": {"warn": 12, "error": 18}, "dir": {"max_files": 6},
+                              "globs": ["src/**/*.ts"]})
+        r = _run(p, "--json")
+        entry = json.loads(r.stdout)["files"][0]
+        check(entry["barrel"].count("overload") == 1,
+              f"14: overload exported {entry['barrel'].count('overload')}x: {entry['barrel']}")
+        homes = [g["path"] for g in entry["groups"] if any(b["name"] == "overload" for b in g["blocks"])]
+        check(len(homes) == 1, f"14: overload split across parts: {homes}")
+        r = _run(p, "--apply", "src/ov.ts")
+        barrel = (p / "src" / "ov.ts").read_text()
+        check(barrel.count("overload") == 1, f"14: barrel repeats overload: {barrel!r}")
+        part = next(q for q in (p / "src").glob("ov-*.ts") if "overload" in q.read_text())
+        check(part.read_text().count("export function overload") == 3,
+              "14: overload signatures did not travel together")
 
     if f:
         print("FAIL")

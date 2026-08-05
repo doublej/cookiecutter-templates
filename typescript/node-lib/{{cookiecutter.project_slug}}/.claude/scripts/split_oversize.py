@@ -62,6 +62,7 @@ IMPORT_RE = re.compile(r"^import\b")
 CALLABLE_RE = re.compile(r"=>|=\s*(?:async\s+)?(?:function\b|[(<])")
 IDENT_RE = re.compile(r"[A-Za-z_$][\w$]*")
 IMPORT_NOISE = {"import", "type", "as", "from"}
+REGEX_PRECEDERS = set("=(,:[!&|?{};+-*%<>~^")
 CONTINUES_AFTER = set("=+-*/%<>&|^?:,.(")
 CONTINUES_BEFORE = set("|&?:.,+)]}")
 
@@ -100,6 +101,12 @@ class Block:
 # --------------------------------------------------------------------------
 # Scanning: strip strings/comments, track bracket depth
 # --------------------------------------------------------------------------
+
+
+def _starts_regex(code_so_far: list[str]) -> bool:
+    """Distinguish a regex literal from a division, by what precedes the slash."""
+    prev = next((ch for ch in reversed(code_so_far) if not ch.isspace()), "")
+    return prev == "" or prev in REGEX_PRECEDERS
 
 
 def _scan_line(line: str, state: dict) -> str:
@@ -142,6 +149,24 @@ def _scan_line(line: str, state: dict) -> str:
         if c == "`":
             state["stack"].append("`")
             i += 1
+            continue
+        if c == "/" and _starts_regex(out):
+            # A regex literal's braces are not code braces: /{/ would corrupt the depth.
+            i += 1
+            in_class = False
+            while i < n:
+                ch = line[i]
+                if ch == "\\":
+                    i += 2
+                    continue
+                if ch == "[":
+                    in_class = True
+                elif ch == "]":
+                    in_class = False
+                elif ch == "/" and not in_class:
+                    i += 1
+                    break
+                i += 1
             continue
         if c in "{([":
             state["stack"].append(c)
@@ -226,7 +251,26 @@ def _parse(lines: list[str]) -> tuple[list[tuple[int, int, set[str]]], list[Bloc
             else:
                 leftovers.extend(range(i, end + 1))
         i = end + 1
-    return imports, blocks, leftovers
+    return imports, _coalesce(blocks), leftovers
+
+
+def _coalesce(blocks: list[Block]) -> list[Block]:
+    """Fuse adjacent same-name declarations — overload sets, interface+namespace merging.
+
+    They are one symbol: splitting them across modules would both break the type and
+    emit the name twice in the barrel.
+    """
+    out: list[Block] = []
+    for b in blocks:
+        if out and out[-1].name == b.name:
+            prev = out[-1]
+            prev.end = b.end
+            prev.exported = prev.exported or b.exported
+            prev.default = prev.default or b.default
+            prev.callable = prev.callable or b.callable
+            continue
+        out.append(b)
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -348,6 +392,12 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
         return result
 
     names = [b.name for b in blocks]
+    repeated = sorted({n for n in names if names.count(n) > 1})
+    if repeated:
+        result["blockers"].append(
+            f"the same name is declared in more than one place ({', '.join(repeated)}) — "
+            f"move the merged declarations next to each other first"
+        )
     refs = {b.name: _references(b, code, names) for b in blocks}
     # A module costs more than its declarations: copied imports, and a blank line between
     # each block. Ignoring that lets a component "fit" in a file that is already too long.
@@ -415,7 +465,7 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
 
     result["layout"] = layout
     result["layout_reason"] = reason
-    result["barrel"] = sorted(b.name for b in blocks if b.exported)
+    result["barrel"] = sorted({b.name for b in blocks if b.exported})
     result["cycles"] = _find_cycle(named, refs, owner)
     if result["cycles"]:
         result["blockers"].append(f"reference cycle between parts: {' -> '.join(result['cycles'])}")
@@ -560,8 +610,8 @@ def _render_barrel(analysis: dict, path: Path) -> str:
     for idx, (gname, _) in enumerate(named):
         spec = _module_specifier(Path(str(paths[idx]).format(gname)), path)
         exported = [b for b in blocks if b.exported and owner[b.name] == idx]
-        types = [b.name for b in exported if b.kind in TYPE_KINDS]
-        values = [b.name for b in exported if b.kind not in TYPE_KINDS]
+        types = list(dict.fromkeys(b.name for b in exported if b.kind in TYPE_KINDS))
+        values = list(dict.fromkeys(b.name for b in exported if b.kind not in TYPE_KINDS))
         if values:
             out.append(EXPORT_FMT % (", ".join(values), spec))
         if types:
