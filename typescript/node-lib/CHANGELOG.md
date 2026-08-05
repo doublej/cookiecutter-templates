@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.4.0] - 2026-08-05
+- loc-fix: member-level splits for giant classes (self-taking free functions + facade) and annotated data arrays (spread reassembly)
+
 ## [2.3.1] - 2026-08-05
 - split_oversize: skip regex literals when tracking brace depth; keep overload sets and merged declarations together
 
