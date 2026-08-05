@@ -55,6 +55,9 @@ jobs:
       - name: Test update-check hook
         run: uv run tools/test_update_check.py
 
+      - name: Test loc-split PoC
+        run: uv run tools/test_loc_split.py
+
       - name: Upload rendered projects on failure
         if: failure()
         uses: actions/upload-artifact@v4
