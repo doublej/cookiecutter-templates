@@ -64,6 +64,12 @@ DECL_RE = re.compile(
     r"(?P<kind>function|class|const|let|var|interface|type|enum)\b\s*\*?\s*(?P<name>[A-Za-z_$][\w$]*)"
 )
 IMPORT_RE = re.compile(r"^import\b")
+AMBIENT_RE = re.compile(r"^(?:export\s+)?declare\s+(?:module|global)\b")
+# Simple destructuring declarations only: one flat pattern, no nesting or defaults.
+DESTRUCT_RE = re.compile(
+    r"^(?P<export>export\s+)?(?:declare\s+)?(?P<kind>const|let|var)\s*"
+    r"(?P<pat>\{[^{}\[\]()=]*\}|\[[^{}\[\]()=]*\])\s*="
+)
 CALLABLE_RE = re.compile(r"=>|=\s*(?:async\s+)?(?:function\b|[(<])")
 IDENT_RE = re.compile(r"[A-Za-z_$][\w$]*")
 IMPORT_NOISE = {"import", "type", "as", "from"}
@@ -82,7 +88,7 @@ class Block:
     """One top-level declaration, including its leading comments/decorators."""
 
     def __init__(self, name: str, kind: str, start: int, decl: int, end: int, exported: bool,
-                 default: bool, callable_: bool = False):
+                 default: bool, callable_: bool = False, aliases: list[str] | None = None):
         self.name = name
         self.kind = kind
         self.start = start
@@ -90,9 +96,15 @@ class Block:
         self.end = end
         self.exported = exported
         self.default = default
+        # A destructuring declaration binds several names; `name` is the first one.
+        self.aliases = aliases or []
         # `const f = () => …` is a function wearing a const's clothes; naming must not treat
         # it as data.
         self.callable = callable_ or kind == "function"
+
+    @property
+    def all_names(self) -> list[str]:
+        return [self.name] + self.aliases
 
     @property
     def lines(self) -> int:
@@ -216,12 +228,27 @@ def _import_bindings(lines: list[str], start: int, end: int) -> set[str]:
     return {m.group() for m in IDENT_RE.finditer(head)} - IMPORT_NOISE
 
 
-def _parse(lines: list[str]) -> tuple[list[tuple[int, int, set[str]]], list[Block], list[int]]:
-    """Split a file into header imports, top-level blocks and unassigned lines."""
+def _destructured_names(pattern: str) -> list[str]:
+    """Names bound by a flat destructuring pattern: `{ a, b: c, ...rest }` -> a, c, rest.
+    An identifier immediately followed by `:` is a source key, not a binding."""
+    out: list[str] = []
+    for m in IDENT_RE.finditer(pattern):
+        rest = pattern[m.end():].lstrip()
+        if not rest.startswith(":"):
+            out.append(m.group())
+    return out
+
+
+def _parse(
+    lines: list[str],
+) -> tuple[list[tuple[int, int, set[str]]], list[Block], list[tuple[int, int]], list[tuple[int, int]]]:
+    """Split a file into header imports, top-level blocks, ambient declare-blocks,
+    and remaining top-level statements (as line ranges)."""
     code, at_top = _scan(lines)
     imports: list[tuple[int, int, set[str]]] = []
     blocks: list[Block] = []
-    leftovers: list[int] = []
+    ambients: list[tuple[int, int]] = []
+    statements: list[tuple[int, int]] = []
     i, n = 0, len(lines)
     while i < n:
         stripped = code[i].strip()
@@ -233,7 +260,8 @@ def _parse(lines: list[str]) -> tuple[list[tuple[int, int, set[str]]], list[Bloc
             imports.append((i, end, _import_bindings(lines, i, end)))
         else:
             m = DECL_RE.match(stripped)
-            if m:
+            d = DESTRUCT_RE.match(stripped) if not m else None
+            if m or d:
                 start = i
                 while start > 0:
                     prev_raw, prev_code = lines[start - 1].strip(), code[start - 1].strip()
@@ -241,22 +269,42 @@ def _parse(lines: list[str]) -> tuple[list[tuple[int, int, set[str]]], list[Bloc
                         start -= 1
                     else:
                         break
-                blocks.append(
-                    Block(
-                        name=m.group("name"),
-                        kind=m.group("kind"),
-                        start=start,
-                        decl=i,
-                        end=end,
-                        exported=bool(m.group("export")),
-                        default=bool(m.group("default")),
-                        callable_=bool(CALLABLE_RE.search(stripped)),
+                if m:
+                    blocks.append(
+                        Block(
+                            name=m.group("name"),
+                            kind=m.group("kind"),
+                            start=start,
+                            decl=i,
+                            end=end,
+                            exported=bool(m.group("export")),
+                            default=bool(m.group("default")),
+                            callable_=bool(CALLABLE_RE.search(stripped)),
+                        )
                     )
-                )
+                else:
+                    bound = _destructured_names(d.group("pat"))
+                    if bound:
+                        blocks.append(
+                            Block(
+                                name=bound[0],
+                                kind=d.group("kind"),
+                                start=start,
+                                decl=i,
+                                end=end,
+                                exported=bool(d.group("export")),
+                                default=False,
+                                aliases=bound[1:],
+                            )
+                        )
+                    else:
+                        statements.append((i, end))
+            elif AMBIENT_RE.match(stripped):
+                ambients.append((i, end))
             else:
-                leftovers.extend(range(i, end + 1))
+                statements.append((i, end))
         i = end + 1
-    return imports, _coalesce(blocks), leftovers
+    return imports, _coalesce(blocks), ambients, statements
 
 
 def _coalesce(blocks: list[Block]) -> list[Block]:
@@ -283,47 +331,141 @@ def _coalesce(blocks: list[Block]) -> list[Block]:
 # --------------------------------------------------------------------------
 
 
-def _references(block: Block, code: list[str], names: list[str]) -> set[str]:
+def _references(block: Block, code: list[str], names: list[str], name_of: dict[str, str]) -> set[str]:
+    """Primary names of the blocks this block's body mentions (via any bound name)."""
     body = "\n".join(code[block.start : block.end + 1])
-    return {n for n in names if n != block.name and re.search(rf"\b{re.escape(n)}\b", body)}
+    return {
+        name_of[n] for n in names
+        if name_of[n] != block.name and re.search(rf"\b{re.escape(n)}\b", body)
+    }
 
 
-def _components(blocks: list[Block], refs: dict[str, set[str]]) -> list[list[Block]]:
-    parent = {b.name: b.name for b in blocks}
+def _sccs(blocks: list[Block], refs: dict[str, set[str]]) -> list[list[Block]]:
+    """Strongly connected components of the *directed* reference graph, returned in
+    dependency-first topological order (ties broken by source position).
 
-    def find(x: str) -> str:
-        while parent[x] != x:
-            parent[x] = parent[parent[x]]
-            x = parent[x]
-        return x
+    A shared type referenced by everything no longer fuses the whole file into one
+    component — only genuine mutual recursion stays together. Packing contiguous
+    runs of this order cannot produce an import cycle between parts, because every
+    cross-part edge points at an earlier part.
+    """
+    by_name = {b.name: b for b in blocks}
+    order = [b.name for b in blocks]
+    index: dict[str, int] = {}
+    low: dict[str, int] = {}
+    on_stack: set[str] = set()
+    stack: list[str] = []
+    sccs: list[list[str]] = []
+    counter = 0
 
-    for b in blocks:
-        for r in refs[b.name]:
-            ra, rb = find(b.name), find(r)
-            if ra != rb:
-                parent[ra] = rb
-    buckets: dict[str, list[Block]] = {}
-    for b in blocks:
-        buckets.setdefault(find(b.name), []).append(b)
-    return sorted(buckets.values(), key=lambda g: g[0].start)
+    for root in order:
+        if root in index:
+            continue
+        work = [(root, iter(sorted(refs[root])))]
+        index[root] = low[root] = counter
+        counter += 1
+        stack.append(root)
+        on_stack.add(root)
+        while work:
+            node, it = work[-1]
+            advanced = False
+            for nxt in it:
+                if nxt not in index:
+                    index[nxt] = low[nxt] = counter
+                    counter += 1
+                    stack.append(nxt)
+                    on_stack.add(nxt)
+                    work.append((nxt, iter(sorted(refs[nxt]))))
+                    advanced = True
+                    break
+                if nxt in on_stack:
+                    low[node] = min(low[node], index[nxt])
+            if advanced:
+                continue
+            work.pop()
+            if work:
+                parent = work[-1][0]
+                low[parent] = min(low[parent], low[node])
+            if low[node] == index[node]:
+                comp = []
+                while True:
+                    w = stack.pop()
+                    on_stack.discard(w)
+                    comp.append(w)
+                    if w == node:
+                        break
+                sccs.append(comp)
+
+    # Condense and topo-sort so every SCC comes after everything it references.
+    comp_of = {n: i for i, comp in enumerate(sccs) for n in comp}
+    out_edges: list[set[int]] = [set() for _ in sccs]
+    for i, comp in enumerate(sccs):
+        for n in comp:
+            for r in refs[n]:
+                if comp_of[r] != i:
+                    out_edges[i].add(comp_of[r])
+    remaining = {i: len(out_edges[i]) for i in range(len(sccs))}
+    dependents: list[set[int]] = [set() for _ in sccs]
+    for i, deps in enumerate(out_edges):
+        for d in deps:
+            dependents[d].add(i)
+    import heapq
+
+    pos = {i: min(by_name[n].start for n in comp) for i, comp in enumerate(sccs)}
+    ready = [(pos[i], i) for i in remaining if remaining[i] == 0]
+    heapq.heapify(ready)
+    ordered: list[list[Block]] = []
+    while ready:
+        _, i = heapq.heappop(ready)
+        ordered.append(sorted((by_name[n] for n in sccs[i]), key=lambda b: b.start))
+        for dep in dependents[i]:
+            remaining[dep] -= 1
+            if remaining[dep] == 0:
+                heapq.heappush(ready, (pos[dep], dep))
+    return ordered
 
 
-def _subdivide(group: list[Block], limit: int) -> list[list[Block]]:
-    """Break a component that is still too large: types first, then size-balanced bins."""
-    types = [b for b in group if b.kind in TYPE_KINDS]
-    rest = [b for b in group if b.kind not in TYPE_KINDS]
-    out = [types] if types else []
+def _pack(sccs: list[list[Block]], cap: int) -> list[list[Block]]:
+    """Pack contiguous runs of topo-ordered SCCs into bins of at most `cap` lines.
+
+    An SCC bigger than cap is mutual recursion: if it is functions only it can be
+    size-binned (hoisted declarations make the resulting import cycle harmless);
+    anything else stays whole and gets flagged by the per-part size check.
+    """
+    groups: list[list[Block]] = []
     bin_: list[Block] = []
     size = 0
-    for b in rest:
-        if bin_ and size + b.lines > limit:
-            out.append(bin_)
+
+    def flush() -> None:
+        nonlocal bin_, size
+        if bin_:
+            groups.append(bin_)
             bin_, size = [], 0
-        bin_.append(b)
-        size += b.lines
-    if bin_:
-        out.append(bin_)
-    return out or [group]
+
+    for scc in sccs:
+        scc_size = sum(b.lines + 1 for b in scc)
+        if scc_size > cap:
+            flush()
+            if all(b.kind == "function" for b in scc):
+                cur: list[Block] = []
+                cur_size = 0
+                for b in scc:
+                    if cur and cur_size + b.lines + 1 > cap:
+                        groups.append(cur)
+                        cur, cur_size = [], 0
+                    cur.append(b)
+                    cur_size += b.lines + 1
+                if cur:
+                    groups.append(cur)
+            else:
+                groups.append(list(scc))
+            continue
+        if bin_ and size + scc_size > cap:
+            flush()
+        bin_.extend(scc)
+        size += scc_size
+    flush()
+    return [sorted(g, key=lambda b: b.start) for g in groups]
 
 
 def _merge_leaf_groups(groups: list[list[Block]], refs: dict[str, set[str]]) -> list[list[Block]]:
@@ -382,7 +524,7 @@ def _count_dir_files(root: Path, directory: Path, globs: list[str]) -> int:
 def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     lines = path.read_text(encoding="utf-8").splitlines()
     code, _ = _scan(lines)
-    imports, blocks, leftovers = _parse(lines)
+    imports, blocks, ambients, statements = _parse(lines)
     limit = cfg["loc"]["error"]
     target = cfg["loc"].get("warn", limit)
     result: dict = {
@@ -396,14 +538,15 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
         result["blockers"].append("no top-level declarations found — split by hand")
         return result
 
-    names = [b.name for b in blocks]
-    repeated = sorted({n for n in names if names.count(n) > 1})
+    name_of = {nm: b.name for b in blocks for nm in b.all_names}
+    all_bound = [nm for b in blocks for nm in b.all_names]
+    repeated = sorted({n for n in all_bound if all_bound.count(n) > 1})
     if repeated:
         result["blockers"].append(
             f"the same name is declared in more than one place ({', '.join(repeated)}) — "
             f"move the merged declarations next to each other first"
         )
-    refs = {b.name: _references(b, code, names) for b in blocks}
+    refs = {b.name: _references(b, code, all_bound, name_of) for b in blocks}
     # A module costs more than its declarations: copied imports, and a blank line between
     # each block. Ignoring that lets a component "fit" in a file that is already too long.
     overhead = sum(end - start + 1 for start, end, _ in imports) + 2
@@ -412,10 +555,34 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     biggest_block = max(blocks, key=lambda b: b.lines)
     if split_members is not None and biggest_block.lines + overhead + 1 > limit:
         return split_members.analyze(root, path, cfg, lines, imports, blocks, biggest_block)
-    groups: list[list[Block]] = []
-    for comp in _components(blocks, refs):
-        total = sum(b.lines for b in comp) + len(comp) + overhead
-        groups.extend(_subdivide(comp, max(target - overhead, 1)) if total > limit else [comp])
+
+    # Statements between declarations cannot move without reordering side effects.
+    # Statements after the last declaration stay in the barrel: the parts (its
+    # imports) evaluate first, exactly as the declarations did in the original.
+    # Ambient declare-module/global blocks are position-independent and also stay.
+    last_block_end = max(b.end for b in blocks)
+    interleaved = [(s, e) for s, e in statements if s <= last_block_end]
+    if interleaved:
+        first = interleaved[0][0] + 1
+        result["blockers"].append(
+            f"top-level statements outside any declaration (line {first}) cannot be placed automatically"
+        )
+    kept_code = "\n".join(
+        code[i] for s, e in statements + ambients for i in range(s, e + 1)
+    )
+    mutated = sorted({
+        nm for b in blocks if b.kind in ("let", "var")
+        for nm in b.all_names
+        if re.search(rf"\b{re.escape(nm)}\s*(?:=(?![=>])|\+\+|--|[-+*/%&|^]=)", kept_code)
+    })
+    if mutated:
+        result["blockers"].append(
+            f"top-level statements outside any declaration reassign {', '.join(mutated)} — "
+            f"a moved `let` cannot be written through an import binding"
+        )
+    barrel_needs = {name_of[n] for n in set(IDENT_RE.findall(kept_code)) if n in name_of}
+
+    groups = _pack(_sccs(blocks, refs), max(target - overhead, 1))
     groups = _merge_leaf_groups([g for g in groups if g], refs)
     if len(groups) < 2:
         result["blockers"].append(
@@ -468,7 +635,10 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
                 "promoted": sorted(
                     b.name
                     for b in g
-                    if not b.exported and any(b.name in refs[o.name] for o in blocks if owner[o.name] != idx)
+                    if not b.exported and (
+                        b.name in barrel_needs
+                        or any(b.name in refs[o.name] for o in blocks if owner[o.name] != idx)
+                    )
                 ),
             }
         )
@@ -476,14 +646,20 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     result["layout"] = layout
     result["layout_reason"] = reason
     result["barrel"] = sorted({b.name for b in blocks if b.exported})
-    result["cycles"] = _find_cycle(named, refs, owner)
+    cycle = _find_cycle(named, refs, owner)
+    if cycle:
+        # A cycle confined to parts holding only hoisted declarations (functions,
+        # types) is harmless: nothing dereferences an import during module
+        # evaluation. Anything else on the cycle keeps blocking.
+        by_gname = dict(named)
+        if all(
+            b.kind == "function" or b.kind in TYPE_KINDS
+            for gname in set(cycle) for b in by_gname[gname]
+        ):
+            cycle = []
+    result["cycles"] = cycle
     if result["cycles"]:
         result["blockers"].append(f"reference cycle between parts: {' -> '.join(result['cycles'])}")
-    if leftovers:
-        first = min(leftovers) + 1
-        result["blockers"].append(
-            f"top-level statements outside any declaration (line {first}) cannot be placed automatically"
-        )
     if any(b.default for b in blocks):
         result["blockers"].append("file has a default export — move it by hand to keep the surface stable")
     existing = [g["path"] for g in result["groups"] if (root / g["path"]).exists()]
@@ -492,8 +668,11 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     orphans = _orphan_lines(lines, imports, blocks)
     if orphans:
         result["orphan_comments"] = len(orphans)
+    kinds = {nm: b.kind for b in blocks for nm in b.all_names}
     result["_internal"] = {"lines": lines, "imports": imports, "blocks": blocks, "refs": refs,
-                           "owner": owner, "named": named, "paths": paths, "orphans": orphans}
+                           "owner": owner, "named": named, "paths": paths, "orphans": orphans,
+                           "code": code, "name_of": name_of, "kinds": kinds,
+                           "barrel_needs": barrel_needs, "first_decl": min(b.start for b in blocks)}
     # Size each part from the text that would actually be written, not an estimate.
     for idx, g in enumerate(result["groups"]):
         g["lines"] = _render_module(idx, result).count("\n")
@@ -505,6 +684,15 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
                 f"rearranging of top-level declarations can fix this file. Extract members by hand "
                 f"(.claude/SPLITTING.md)"
             )
+    # The barrel itself must obey the limit — trailing statements and ambient
+    # blocks it keeps count against it.
+    barrel_size = _render_barrel(result, path).count("\n")
+    result["barrel_lines"] = barrel_size
+    if barrel_size > limit:
+        result["blockers"].append(
+            f"{result['file']} would still be {barrel_size} lines (max {limit}) as the barrel — "
+            f"what it keeps (trailing statements, ambient declarations) is too big to stay"
+        )
     return result
 
 
@@ -571,6 +759,7 @@ def _render_module(idx: int, analysis: dict) -> str:
     body_names = {b.name for b in group}
     body_text = "\n".join("\n".join(lines[b.start : b.end + 1]) for b in group)
     kinds = {b.name: b.kind for b in blocks}
+    block_by_name = {b.name: b for b in blocks}
 
     out: list[str] = []
     for start, end, bindings in internal["imports"]:
@@ -586,17 +775,22 @@ def _render_module(idx: int, analysis: dict) -> str:
     for other in sorted(grouped):
         other_name = named[other][0]
         spec = _module_specifier(Path(str(paths[other]).format(other_name)), my_path)
-        wanted = sorted(grouped[other])
-        types = [n for n in wanted if kinds[n] in TYPE_KINDS]
-        values = [n for n in wanted if kinds[n] not in TYPE_KINDS]
+        types: list[str] = []
+        values: list[str] = []
+        for r in sorted(grouped[other]):
+            blk = block_by_name[r]
+            # A destructuring block binds several names; import only the ones used here.
+            used = [nm for nm in blk.all_names if re.search(rf"\b{re.escape(nm)}\b", body_text)] or [r]
+            (types if blk.kind in TYPE_KINDS else values).extend(used)
         if types:
-            out.append(IMPORT_TYPE_FMT % (", ".join(types), spec))
+            out.append(IMPORT_TYPE_FMT % (", ".join(dict.fromkeys(types)), spec))
         if values:
-            out.append(IMPORT_FMT % (", ".join(values), spec))
+            out.append(IMPORT_FMT % (", ".join(dict.fromkeys(values)), spec))
     if out:
         out.append("")
 
     consumed = {r for i, (_, g) in enumerate(named) if i != idx for b in g for r in refs[b.name]}
+    consumed |= internal["barrel_needs"]
     for b in group:
         chunk = list(lines[b.start : b.end + 1])
         if not b.exported and b.name in consumed and b.name in body_names:
@@ -612,16 +806,39 @@ def _render_module(idx: int, analysis: dict) -> str:
 def _render_barrel(analysis: dict, path: Path) -> str:
     internal = analysis["_internal"]
     blocks, owner, named, paths = internal["blocks"], internal["owner"], internal["named"], internal["paths"]
-    lines, orphans = internal["lines"], internal["orphans"]
+    lines, orphans, code = internal["lines"], internal["orphans"], internal["code"]
+    name_of, kinds = internal["name_of"], internal["kinds"]
     first_decl = min((b.start for b in blocks), default=0)
     out: list[str] = [lines[i] for i in orphans if i < first_decl]
     if out:
         out.append("")
+
+    # Content the barrel keeps (trailing statements, ambient blocks) may reference
+    # moved declarations — a re-export does not bind locally, so import them too.
+    kept_idents: set[str] = set()
+    for i in orphans:
+        kept_idents.update(IDENT_RE.findall(code[i]))
+    by_part: dict[int, tuple[list[str], list[str]]] = {}
+    for ident in sorted(kept_idents):
+        primary = name_of.get(ident)
+        if primary is None:
+            continue
+        types, values = by_part.setdefault(owner[primary], ([], []))
+        (types if kinds[ident] in TYPE_KINDS else values).append(ident)
+    for idx in sorted(by_part):
+        gname = named[idx][0]
+        spec = _module_specifier(Path(str(paths[idx]).format(gname)), path)
+        types, values = by_part[idx]
+        if types:
+            out.append(IMPORT_TYPE_FMT % (", ".join(dict.fromkeys(types)), spec))
+        if values:
+            out.append(IMPORT_FMT % (", ".join(dict.fromkeys(values)), spec))
+
     for idx, (gname, _) in enumerate(named):
         spec = _module_specifier(Path(str(paths[idx]).format(gname)), path)
         exported = [b for b in blocks if b.exported and owner[b.name] == idx]
-        types = list(dict.fromkeys(b.name for b in exported if b.kind in TYPE_KINDS))
-        values = list(dict.fromkeys(b.name for b in exported if b.kind not in TYPE_KINDS))
+        types = list(dict.fromkeys(nm for b in exported if b.kind in TYPE_KINDS for nm in b.all_names))
+        values = list(dict.fromkeys(nm for b in exported if b.kind not in TYPE_KINDS for nm in b.all_names))
         if values:
             out.append(EXPORT_FMT % (", ".join(values), spec))
         if types:

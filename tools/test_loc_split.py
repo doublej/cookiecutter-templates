@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -58,8 +59,8 @@ export class Runner {
 }
 """
 
-# One cluster too big for loc.error, so it gets binned — and ping <-> pong straddle the
-# bin boundary, which is the only way two parts can end up importing each other.
+# ping <-> pong are mutually recursive functions: SCC grouping must keep them in one
+# part, so the file splits cleanly instead of refusing on a part cycle.
 CYCLIC = """export interface Shared {
   depth: number
 }
@@ -86,6 +87,34 @@ export function pong(s: Shared): string {
 
 export function delta(s: Shared): string {
   return pong(s)
+}
+"""
+
+# Mutual recursion between a const arrow and a function, too big for one part: a
+# const's initializer runs at module evaluation, so this cycle cannot be split and
+# cannot be exempted — the tool must refuse.
+MIXED_CYCLE = """export interface Shared {
+  depth: number
+}
+
+export const ping = (s: Shared): string => {
+  if (s.depth <= 0) {
+    return 'done'
+  }
+  return pong({ depth: s.depth - 1 })
+}
+
+export function pong(s: Shared): string {
+  if (s.depth <= 0) {
+    return 'done'
+  }
+  if (s.depth > 100) {
+    return 'far'
+  }
+  if (s.depth > 50) {
+    return 'mid'
+  }
+  return ping({ depth: s.depth - 1 })
 }
 """
 
@@ -366,12 +395,23 @@ def main() -> None:
         r = _run(p)
         check("nothing to split" in r.stdout, f"8: split output still oversized: {r.stdout!r}")
 
-        # 9. Cyclic groups refuse to apply.
+        # 9a. Mutually recursive functions are one SCC: same part, applies cleanly.
         p = _project(tmp_path, "cyclic", {"src/cyc.ts": CYCLIC})
+        r = _run(p, "--json")
+        entry = json.loads(r.stdout)["files"][0]
+        check(not entry["blockers"], f"9a: function recursion should not block: {entry['blockers']}")
+        homes = [g["path"] for g in entry["groups"]
+                 if any(b["name"] in ("ping", "pong") for b in g["blocks"])]
+        check(len(set(homes)) == 1, f"9a: ping/pong split across parts: {homes}")
         r = _run(p, "--apply", "src/cyc.ts")
-        check("reference cycle" in r.stdout, f"9: cycle not detected: {r.stdout!r}")
-        check("not applied" in r.stdout, f"9: applied despite cycle: {r.stdout!r}")
-        check(not list((p / "src").glob("cyc-*.ts")), "9: wrote files despite the cycle")
+        check("split src/cyc.ts" in r.stdout, f"9a: did not apply: {r.stdout!r}")
+
+        # 9b. Mutual recursion involving a const arrow cannot be split or exempted.
+        p = _project(tmp_path, "mixed-cycle", {"src/mix.ts": MIXED_CYCLE})
+        r = _run(p, "--apply", "src/mix.ts")
+        check("would still be" in r.stdout, f"9b: mixed cycle not refused: {r.stdout!r}")
+        check("not applied" in r.stdout, f"9b: applied a mixed cycle: {r.stdout!r}")
+        check(not list((p / "src").glob("mix-*.ts")), "9b: wrote files despite refusal")
 
         # 10. A part that would still bust loc.error refuses to apply.
         p = _project(tmp_path, "giant", {"src/giant.ts": GIANT_CLASS})
@@ -435,7 +475,9 @@ def main() -> None:
         check(len(homes) == 1, f"14: overload split across parts: {homes}")
         r = _run(p, "--apply", "src/ov.ts")
         barrel = (p / "src" / "ov.ts").read_text()
-        check(barrel.count("overload") == 1, f"14: barrel repeats overload: {barrel!r}")
+        barrel_names = [n.strip() for grp in re.findall(r"export (?:type )?\{([^}]*)\}", barrel)
+                        for n in grp.split(",")]
+        check(barrel_names.count("overload") == 1, f"14: barrel repeats overload: {barrel!r}")
         part = next(q for q in (p / "src").glob("ov-*.ts") if "overload" in q.read_text())
         check(part.read_text().count("export function overload") == 3,
               "14: overload signatures did not travel together")
