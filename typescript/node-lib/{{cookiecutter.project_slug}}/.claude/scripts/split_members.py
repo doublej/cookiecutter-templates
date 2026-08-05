@@ -179,6 +179,7 @@ class Member:
         self.uses_this = False
         self.refs: set[str] = set()
         self.keep_reason: str | None = None
+        self.stub = False  # public method extracted behind a delegating stub
 
     @property
     def lines(self) -> int:
@@ -285,7 +286,7 @@ def _ctor_param_props(members: list[Member], masked: list[str]) -> dict[str, str
 
 
 def _keep_reason(m: Member, class_extends: bool, declared: set[str], class_name: str,
-                 masked_body: str, taken_names: set[str]) -> str | None:
+                 masked_body: str, taken_names: set[str], allow_public: bool = False) -> str | None:
     if m.kind != "method":
         return "field" if m.kind == "field" else "constructor"
     if m.decorated:
@@ -298,7 +299,7 @@ def _keep_reason(m: Member, class_extends: bool, declared: set[str], class_name:
         return "static"
     if m.name.startswith("#") or m.name.startswith("["):
         return "#private or computed name"
-    if m.visible:
+    if m.visible and not allow_public:
         return "public API"
     if re.search(r"\bsuper\b", masked_body):
         return "uses super"
@@ -321,6 +322,79 @@ def _keep_reason(m: Member, class_extends: bool, declared: set[str], class_name:
             if r not in declared:
                 return "touches inherited member `%s`" % r
     return None
+
+
+def _split_params(text: str) -> list[str]:
+    parts: list[str] = []
+    depth = angle = 0
+    cur: list[str] = []
+    for i, c in enumerate(text):
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        elif c == "<":
+            angle += 1
+        elif c == ">" and angle and text[i - 1] != "=":
+            angle -= 1
+        elif c == "," and depth == 0 and angle == 0:
+            parts.append("".join(cur))
+            cur = []
+            continue
+        cur.append(c)
+    if cur:
+        parts.append("".join(cur))
+    return parts
+
+
+def _stub_plan(member: Member, lines: list[str], masked: list[str]) -> tuple[list[str], list[str]] | None:
+    """(signature lines, forwarded argument names) when the method body can be
+    replaced by `return name(this, ...args)` — every parameter must be a plain
+    (optionally rest/optional/defaulted) identifier so the stub can forward it."""
+    sig_end = None
+    for k in range(member.decl, member.end + 1):
+        if masked[k].rstrip().endswith("{"):
+            sig_end = k
+            break
+    if sig_end is None:
+        return None
+    sig_mask = "\n".join(masked[member.decl : sig_end + 1])
+    stripped = sig_mask.lstrip()
+    mm = MEMBER_RE.match(stripped)
+    if not mm:
+        return None
+    offset = len(sig_mask) - len(stripped)
+    paren = _param_paren(sig_mask, offset + mm.end("name"))
+    if paren is None:
+        return None
+    depth, close = 0, None
+    for i in range(paren, len(sig_mask)):
+        c = sig_mask[i]
+        if c == "(":
+            depth += 1
+        elif c == ")":
+            depth -= 1
+            if depth == 0:
+                close = i
+                break
+    if close is None:
+        return None
+    params = sig_mask[paren + 1 : close]
+    ret = sig_mask[close + 1 :]
+    if re.search(r"\bthis\b", params) or re.search(r"\bthis\b", ret):
+        return None  # this-typed parameter or `this` in the return type
+    args: list[str] = []
+    for p in _split_params(params):
+        p = p.strip()
+        if not p:
+            continue
+        if p[0] in "{[":
+            return None  # destructured parameter — no single name to forward
+        pm = re.match(r"^(\.\.\.)?\s*([A-Za-z_$][\w$]*)", p)
+        if not pm:
+            return None
+        args.append((pm.group(1) or "") + pm.group(2))
+    return [lines[k] for k in range(member.decl, sig_end + 1)], args
 
 
 # --------------------------------------------------------------------------
@@ -607,164 +681,190 @@ def _analyze_class(root, path, cfg, lines, imports, blocks, giant, result, limit
     import_bound = set().union(*(b[2] for b in imports)) if imports else set()
     taken = {b.name for b in blocks if b is not giant} | import_bound | {giant.name}
 
-    for m in members:
-        body = "\n".join(masked[m.decl : m.end + 1])
-        m.keep_reason = _keep_reason(m, class_extends, declared, giant.name, body, taken)
+    def attempt(allow_public: bool) -> dict:
+        res: dict = {**result, "blockers": list(result["blockers"]), "groups": []}
+        for m in members:
+            m.stub = False
+            body = "\n".join(masked[m.decl : m.end + 1])
+            m.keep_reason = _keep_reason(m, class_extends, declared, giant.name, body, taken,
+                                         allow_public)
+        stub_plans: dict[int, tuple[list[str], list[str]]] = {}
+        if allow_public:
+            for m in members:
+                if m.kind == "method" and m.visible and m.keep_reason is None:
+                    plan = _stub_plan(m, lines, masked)
+                    if plan is None:
+                        m.keep_reason = "public API with parameters a stub cannot forward"
+                    else:
+                        m.stub = True
+                        stub_plans[id(m)] = plan
 
-    # A name is pinned when some member references it other than as a direct call,
-    # or calls it from inside a nested `this` scope the rewrite cannot see through.
-    class_mask = "\n".join(masked[giant.decl : giant.end + 1])
-    pinned: dict[str, str] = {}
-    for m in members:
-        if m.keep_reason is None and re.search(
-            r"\bthis\s*\.\s*%s\b(?!\s*\()" % re.escape(m.name), class_mask
-        ):
-            pinned[m.name] = "referenced without a call"
-    for m in members:
-        body = "\n".join(masked[m.decl : m.end + 1])
-        if m.uses_this and re.search(r"\b(function|class)\b", body):
+        # A name is pinned when some member references it other than as a direct call,
+        # or calls it from inside a nested `this` scope the rewrite cannot see through.
+        class_mask = "\n".join(masked[giant.decl : giant.end + 1])
+        pinned: dict[str, str] = {}
+        for m in members:
+            if m.keep_reason is None and not m.stub and re.search(
+                r"\bthis\s*\.\s*%s\b(?!\s*\()" % re.escape(m.name), class_mask
+            ):
+                pinned[m.name] = "referenced without a call"
+        for m in members:
+            body = "\n".join(masked[m.decl : m.end + 1])
+            if m.uses_this and re.search(r"\b(function|class)\b", body):
+                for r in m.refs:
+                    pinned.setdefault(r, "called from a nested `this` scope in %s" % m.name)
+        # Stubbed members are immune to pinning: the property stays on the
+        # class, so un-called references and nested-`this` calls still resolve.
+        for m in members:
+            if m.keep_reason is None and not m.stub and m.name in pinned:
+                m.keep_reason = pinned[m.name]
+
+        extractable = [m for m in members if m.keep_reason is None]
+        if not extractable:
+            reasons = sorted({m.keep_reason for m in members if m.kind == "method" and m.keep_reason})
+            res["blockers"].append(
+                "%s would still be %d lines (max %d) — `%s %s` is %d lines and none of its members "
+                "can be extracted safely (%s). Split it by hand (.claude/SPLITTING.md)"
+                % (res["file"], res["lines"], limit, giant.kind, giant.name, giant.lines,
+                   "; ".join(reasons) or "no methods found")
+            )
+            return res
+
+        takes_self = {m.name: m.uses_this for m in extractable}
+
+        # Widen kept private/protected members the parts touch.
+        kept = [m for m in members if m.keep_reason is not None]
+        kept_by_name = {m.name: m for m in kept}
+        widen: set[str] = set()
+        for m in extractable:
             for r in m.refs:
-                pinned.setdefault(r, "called from a nested `this` scope in %s" % m.name)
-    for m in members:
-        if m.keep_reason is None and m.name in pinned:
-            m.keep_reason = pinned[m.name]
+                k = kept_by_name.get(r)
+                if k is not None and not k.visible:
+                    widen.add(r)
+                elif k is None and param_props.get(r, "public") != "public":
+                    widen.add(r)
 
-    extractable = [m for m in members if m.keep_reason is None]
-    if not extractable:
-        reasons = sorted({m.keep_reason for m in members if m.kind == "method" and m.keep_reason})
-        result["blockers"].append(
-            "%s would still be %d lines (max %d) — `%s %s` is %d lines and none of its members "
-            "can be extracted safely (%s). Split it by hand (.claude/SPLITTING.md)"
-            % (result["file"], result["lines"], limit, giant.kind, giant.name, giant.lines,
-               "; ".join(reasons) or "no methods found")
-        )
-        return result
+        # File-private types/constants the parts need move to support parts; other
+        # needed blocks are promoted (exported from the facade, absent from the barrel).
+        part_idents = set()
+        for m in extractable:
+            part_idents.update(IDENT_RE.findall("\n".join(masked[m.start : m.end + 1])))
+        needed_top = [b for b in blocks if b is not giant and b.name in part_idents]
+        movable_types = [b for b in needed_top if b.kind in TYPE_KINDS and not b.exported]
+        const_candidates = [b for b in needed_top if b.is_data and not b.exported]
+        movable_set = {b.name for b in movable_types} | {b.name for b in const_candidates}
+        facade_resident = {b.name for b in blocks if b is not giant} - movable_set
+        movable_consts, promoted = [], []
+        for b in const_candidates:
+            init_idents = set(IDENT_RE.findall("\n".join(masked[b.start : b.end + 1]))) - {b.name}
+            if init_idents & facade_resident:
+                promoted.append(b)  # initializer runs at import time; keep it in the facade
+            else:
+                movable_consts.append(b)
+        promoted += [b for b in needed_top if not b.exported
+                     and b not in movable_types and b not in movable_consts and b not in promoted]
 
-    takes_self = {m.name: m.uses_this for m in extractable}
+        overhead = sum(end - start + 1 for start, end, _ in imports) + 8
+        cap = max(target - overhead, 20)
 
-    # Widen kept private/protected members the parts touch.
-    kept = [m for m in members if m.keep_reason is not None]
-    kept_by_name = {m.name: m for m in kept}
-    widen: set[str] = set()
-    for m in extractable:
-        for r in m.refs:
-            k = kept_by_name.get(r)
-            if k is not None and not k.visible:
-                widen.add(r)
-            elif k is None and param_props.get(r, "public") != "public":
-                widen.add(r)
+        def build_named(method_groups: list[list[Member]], merge_support: bool) -> list[tuple[str, str, list]]:
+            taken_names: set[str] = set()
+            built: list[tuple[str, str, list]] = []
+            if merge_support:
+                if movable_types or movable_consts:
+                    built.append((_unique("support", taken_names), "support", movable_types + movable_consts))
+            else:
+                if movable_types:
+                    built.append((_unique("types", taken_names), "support", movable_types))
+                if movable_consts:
+                    built.append((_unique("constants", taken_names), "support", movable_consts))
+            for g in method_groups:
+                built.append((_unique(_kebab(g[0].name), taken_names), "methods", g))
+            return built
 
-    # File-private types/constants the parts need move to support parts; other
-    # needed blocks are promoted (exported from the facade, absent from the barrel).
-    part_idents = set()
-    for m in extractable:
-        part_idents.update(IDENT_RE.findall("\n".join(masked[m.start : m.end + 1])))
-    needed_top = [b for b in blocks if b is not giant and b.name in part_idents]
-    movable_types = [b for b in needed_top if b.kind in TYPE_KINDS and not b.exported]
-    const_candidates = [b for b in needed_top if b.is_data and not b.exported]
-    movable_set = {b.name for b in movable_types} | {b.name for b in const_candidates}
-    facade_resident = {b.name for b in blocks if b is not giant} - movable_set
-    movable_consts, promoted = [], []
-    for b in const_candidates:
-        init_idents = set(IDENT_RE.findall("\n".join(masked[b.start : b.end + 1]))) - {b.name}
-        if init_idents & facade_resident:
-            promoted.append(b)  # initializer runs at import time; keep it in the facade
-        else:
-            movable_consts.append(b)
-    promoted += [b for b in needed_top if not b.exported
-                 and b not in movable_types and b not in movable_consts and b not in promoted]
+        # Fewer, fuller parts when the file count would break dir-check on its own.
+        max_files = cfg["dir"]["max_files"]
+        named = build_named(_group_methods(extractable, cap), False)
+        if len(named) > max_files:
+            named = build_named(_group_methods(extractable, cap), True)
+        if len(named) > max_files:
+            big_cap = max(limit - overhead - 8, cap)
+            named = build_named(_group_methods(extractable, big_cap), True)
 
-    overhead = sum(end - start + 1 for start, end, _ in imports) + 8
-    cap = max(target - overhead, 20)
-
-    def build_named(method_groups: list[list[Member]], merge_support: bool) -> list[tuple[str, str, list]]:
-        taken_names: set[str] = set()
-        built: list[tuple[str, str, list]] = []
-        if merge_support:
-            if movable_types or movable_consts:
-                built.append((_unique("support", taken_names), "support", movable_types + movable_consts))
-        else:
-            if movable_types:
-                built.append((_unique("types", taken_names), "support", movable_types))
-            if movable_consts:
-                built.append((_unique("constants", taken_names), "support", movable_consts))
-        for g in method_groups:
-            built.append((_unique(_kebab(g[0].name), taken_names), "methods", g))
-        return built
-
-    # Fewer, fuller parts when the file count would break dir-check on its own.
-    max_files = cfg["dir"]["max_files"]
-    named = build_named(_group_methods(extractable, cap), False)
-    if len(named) > max_files:
-        named = build_named(_group_methods(extractable, cap), True)
-    if len(named) > max_files:
-        big_cap = max(limit - overhead - 8, cap)
-        named = build_named(_group_methods(extractable, big_cap), True)
-
-    path_templates = _placement(root, path, cfg, len(named), result)
-    part_paths = [Path(str(path_templates[i]) % name) for i, (name, _, _) in enumerate(named)]
-    existing = [p for p in part_paths if p.exists()]
-    if existing:
-        result["blockers"].append(
-            "target path already exists: %s" % ", ".join(str(p.relative_to(root)) for p in existing)
-        )
-
-    owner: dict[str, int] = {}
-    for idx, (_, _, payload) in enumerate(named):
-        for item in payload:
-            owner[item.name] = idx
-
-    internal = {
-        "lines": lines, "masked": masked, "in_template": in_template,
-        "imports": imports, "blocks": blocks, "giant": giant,
-        "members": members, "extractable": extractable, "kept": kept,
-        "takes_self": takes_self, "widen": widen, "param_props": param_props,
-        "moved_types": movable_types, "moved_consts": movable_consts,
-        "promoted": promoted, "named": named, "paths": part_paths, "owner": owner,
-        "header_end": header_end, "class_name": giant.name,
-        "facade_path": path, "src_dir": path.parent,
-    }
-    result["_internal"] = internal
-    result["widened"] = sorted(widen)
-    result["promoted"] = sorted(b.name for b in promoted)
-    result["kept"] = [
-        {"name": m.name, "reason": m.keep_reason} for m in kept if m.kind == "method"
-    ]
-
-    for idx, (name, _, payload) in enumerate(named):
-        text = _render_part(idx, internal)
-        n_lines = text.count("\n")
-        result["groups"].append({
-            "name": name,
-            "path": str(part_paths[idx].relative_to(root)),
-            "lines": n_lines,
-            "blocks": [
-                {"name": item.name, "kind": getattr(item, "kind", "method"),
-                 "lines": item.lines, "exported": False}
-                for item in payload
-            ],
-            "imports_from_siblings": sorted(
-                r for item in payload for r in getattr(item, "refs", set())
-                if r in owner and owner[r] != idx
-            ),
-        })
-        if n_lines > limit:
-            biggest = max(payload, key=lambda item: item.lines)
-            result["blockers"].append(
-                "%s would still be %d lines (max %d) — `%s` is %d lines on its own; split "
-                "that member by hand first (.claude/SPLITTING.md)"
-                % (part_paths[idx].relative_to(root), n_lines, limit, biggest.name, biggest.lines)
+        path_templates = _placement(root, path, cfg, len(named), res)
+        part_paths = [Path(str(path_templates[i]) % name) for i, (name, _, _) in enumerate(named)]
+        existing = [p for p in part_paths if p.exists()]
+        if existing:
+            res["blockers"].append(
+                "target path already exists: %s" % ", ".join(str(p.relative_to(root)) for p in existing)
             )
 
-    facade_lines = _render_facade(internal, path).count("\n")
-    result["facade"] = {"path": result["file"], "lines": facade_lines}
-    if facade_lines > limit:
-        result["blockers"].append(
-            "%s would still be %d lines (max %d) after extraction — what remains is public API "
-            "and members a line scanner cannot move; restructure by hand (.claude/SPLITTING.md)"
-            % (result["file"], facade_lines, limit)
-        )
-    return result
+        owner: dict[str, int] = {}
+        for idx, (_, _, payload) in enumerate(named):
+            for item in payload:
+                owner[item.name] = idx
+
+        internal = {
+            "lines": lines, "masked": masked, "in_template": in_template,
+            "imports": imports, "blocks": blocks, "giant": giant,
+            "members": members, "extractable": extractable, "kept": kept,
+            "takes_self": takes_self, "widen": widen, "param_props": param_props,
+            "moved_types": movable_types, "moved_consts": movable_consts,
+            "promoted": promoted, "named": named, "paths": part_paths, "owner": owner,
+            "header_end": header_end, "class_name": giant.name,
+            "facade_path": path, "src_dir": path.parent, "stub_plans": stub_plans,
+        }
+        res["_internal"] = internal
+        res["widened"] = sorted(widen)
+        res["promoted"] = sorted(b.name for b in promoted)
+        res["stubbed"] = sorted(m.name for m in extractable if m.stub)
+        res["kept"] = [
+            {"name": m.name, "reason": m.keep_reason} for m in kept if m.kind == "method"
+        ]
+
+        for idx, (name, _, payload) in enumerate(named):
+            text = _render_part(idx, internal)
+            n_lines = text.count("\n")
+            res["groups"].append({
+                "name": name,
+                "path": str(part_paths[idx].relative_to(root)),
+                "lines": n_lines,
+                "blocks": [
+                    {"name": item.name, "kind": getattr(item, "kind", "method"),
+                     "lines": item.lines, "exported": False}
+                    for item in payload
+                ],
+                "imports_from_siblings": sorted(
+                    r for item in payload for r in getattr(item, "refs", set())
+                    if r in owner and owner[r] != idx
+                ),
+            })
+            if n_lines > limit:
+                biggest = max(payload, key=lambda item: item.lines)
+                res["blockers"].append(
+                    "%s would still be %d lines (max %d) — `%s` is %d lines on its own; split "
+                    "that member by hand first (.claude/SPLITTING.md)"
+                    % (part_paths[idx].relative_to(root), n_lines, limit, biggest.name, biggest.lines)
+                )
+
+        facade_lines = _render_facade(internal, path).count("\n")
+        res["facade"] = {"path": res["file"], "lines": facade_lines}
+        if facade_lines > limit:
+            res["blockers"].append(
+                "%s would still be %d lines (max %d) after extraction — what remains is public API "
+                "and members a line scanner cannot move; restructure by hand (.claude/SPLITTING.md)"
+                % (res["file"], facade_lines, limit)
+            )
+        return res
+
+    first = attempt(False)
+    if first["blockers"] and any("after extraction" in b or "public API" in b for b in first["blockers"]):
+        # The facade is what is too big: public method bodies can still move behind
+        # thin delegating stubs, which keep the class type surface identical.
+        second = attempt(True)
+        if not second["blockers"]:
+            return second
+    return first
 
 
 # --------------------------------------------------------------------------
@@ -872,7 +972,10 @@ def _render_facade(internal: dict, path: Path) -> str:
     giant = internal["giant"]
     owner = internal["owner"]
     widen = internal["widen"]
-    extracted = dict(internal["takes_self"])
+    # Calls to stubbed methods stay as `this.foo(...)` — the stub delegates, so
+    # no rewrite is needed (or safe: nested `this` scopes may call them too).
+    stub_names = {m.name for m in internal["extractable"] if m.stub}
+    extracted = {k: v for k, v in internal["takes_self"].items() if k not in stub_names}
     moved_ranges = [(b.start, b.end) for b in internal["moved_types"] + internal["moved_consts"]]
     promoted_decls = {b.decl for b in internal["promoted"]}
 
@@ -897,7 +1000,7 @@ def _render_facade(internal: dict, path: Path) -> str:
                 blk = next(b for b in opayload if b.name == oname)
                 slot = by_part.setdefault(oidx, {"types": set(), "values": set()})
                 (slot["types"] if blk.kind in TYPE_KINDS else slot["values"]).add(oname)
-        elif oname in facade_calls:
+        elif oname in facade_calls or oname in stub_names:
             by_part.setdefault(oidx, {"types": set(), "values": set()})["values"].add(oname)
     for oidx in sorted(by_part):
         spec = _module_specifier(internal["paths"][oidx], path)
@@ -933,12 +1036,26 @@ def _render_facade(internal: dict, path: Path) -> str:
     return text.rstrip("\n") + "\n"
 
 
+def _emit_stub(member: Member, plan: tuple[list[str], list[str]], takes_self: bool) -> list[str]:
+    """The original signature with the body replaced by a delegating call —
+    the class type surface is unchanged, the real body lives in a part."""
+    sig_lines, args = plan
+    out = [line.rstrip() for line in sig_lines]
+    indent = len(sig_lines[0]) - len(sig_lines[0].lstrip())
+    recv = ["this"] if takes_self else []
+    out.append(" " * (indent + 2) + "return %s(%s)" % (member.name, ", ".join(recv + args)))
+    out.append(" " * indent + "}")
+    return out
+
+
 def _render_facade_class(internal: dict, extracted: dict[str, bool], widen: set[str]) -> list[str]:
     lines, masked = internal["lines"], internal["masked"]
     giant = internal["giant"]
     header_end = internal["header_end"]
     param_props = internal["param_props"]
     kept_ids = {id(m) for m in internal["kept"]}
+    stub_plans = internal["stub_plans"]
+    takes_self = internal["takes_self"]
 
     covered: dict[int, Member] = {}
     for m in internal["members"]:
@@ -954,6 +1071,12 @@ def _render_facade_class(internal: dict, extracted: dict[str, bool], widen: set[
             i += 1
             continue
         if id(m) not in kept_ids:
+            plan = stub_plans.get(id(m))
+            if plan is not None:
+                out.extend(lines[k].rstrip() for k in range(m.start, m.decl))
+                out.extend(_emit_stub(m, plan, takes_self[m.name]))
+                i = m.end + 1
+                continue  # keep the blank line that follows
             i = m.end + 1
             while i < giant.end and not lines[i].strip():
                 i += 1
@@ -1232,6 +1355,11 @@ def print_proposal(analysis: dict) -> None:
         )
     for k in analysis.get("kept", []):
         print("    kept in class: %s — %s" % (k["name"], k["reason"]))
+    if analysis.get("stubbed"):
+        print(
+            "  stubbed: %s — public bodies move to parts; delegating stubs keep the class "
+            "type surface identical" % ", ".join(analysis["stubbed"])
+        )
     if analysis.get("widened"):
         print(
             "  widened: private -> public on %s (the parts need them; the package barrel is unchanged)"
