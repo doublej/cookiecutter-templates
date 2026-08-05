@@ -27,7 +27,7 @@ def _inject_file(path: Path, pattern: re.Pattern, snippet: str, project_dir: Pat
     if updated == content:
         return False
     path.write_text(updated)
-    print(f"  Injected tracking into {path.relative_to(project_dir)}")
+    print(f"Umami: injected tracking into {path.relative_to(project_dir)}")
     return True
 
 
@@ -61,9 +61,7 @@ def main():
 
     count = inject(project_dir, umami_url, website_id)
     if count == 0:
-        print("  No TRACKING_PLACEHOLDER found in any HTML/TSX files")
-    else:
-        print(f"  Injected tracking into {count} file(s)")
+        print("Umami: no TRACKING_PLACEHOLDER found in any HTML/TSX files")
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 
-SKIP_HINT = "  skipped agent-log bootstrap — run 'atlas agent-log init' later"
+SKIP_HINT = "  agent-log: skipped — run 'atlas agent-log init' later"
 
 
 def bootstrap_agent_log() -> None:
@@ -23,6 +23,12 @@ def bootstrap_agent_log() -> None:
         print(SKIP_HINT)
         return
     try:
-        subprocess.run(["atlas", "agent-log", "init"], timeout=15, check=True)
+        r = subprocess.run(
+            ["atlas", "agent-log", "init"],
+            timeout=15, check=True, capture_output=True, text=True,
+        )
+        out = r.stdout.strip()
+        if out:
+            print("  " + out.replace("\n", "\n  "))
     except Exception:
         print(SKIP_HINT)

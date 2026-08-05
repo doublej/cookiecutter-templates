@@ -161,12 +161,18 @@ def setup_mcp():
 
 def bootstrap_agent_log():
     """Seed the shared agent journal (canonical copy: hooks/_agent_log.py)."""
-    hint = "  skipped agent-log bootstrap — run 'atlas agent-log init' later"
+    hint = "  agent-log: skipped — run 'atlas agent-log init' later"
     if not shutil.which("atlas"):
         print(hint)
         return
     try:
-        subprocess.run(["atlas", "agent-log", "init"], timeout=15, check=True)
+        r = subprocess.run(
+            ["atlas", "agent-log", "init"],
+            timeout=15, check=True, capture_output=True, text=True,
+        )
+        out = r.stdout.strip()
+        if out:
+            print("  " + out.replace("\n", "\n  "))
     except Exception:
         print(hint)
 
@@ -178,7 +184,8 @@ def main():
     bootstrap_agent_log()
     print(f"\n  Project created: {PROJECT_SLUG}\n")
     print("  Getting started:")
-    print(f"    cd {PROJECT_SLUG}")
+    if not os.environ.get("ATLAS_CD_FILE"):  # the atlas zsh wrapper cds there itself
+        print(f"    cd {PROJECT_SLUG}")
     print("    shopify theme dev --store your-store.myshopify.com\n")
     print("  (install the Shopify CLI first: npm i -g @shopify/cli)\n")
 

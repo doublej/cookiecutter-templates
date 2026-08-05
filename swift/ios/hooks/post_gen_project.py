@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Post-generation hook: write meta file, set up MCP, print instructions."""
 import json
+import os
 import shutil
 import subprocess
 from datetime import datetime, timezone
@@ -163,12 +164,18 @@ def setup_mcp():
 
 def bootstrap_agent_log():
     """Seed the shared agent journal (canonical copy: hooks/_agent_log.py)."""
-    hint = "  skipped agent-log bootstrap — run 'atlas agent-log init' later"
+    hint = "  agent-log: skipped — run 'atlas agent-log init' later"
     if not shutil.which("atlas"):
         print(hint)
         return
     try:
-        subprocess.run(["atlas", "agent-log", "init"], timeout=15, check=True)
+        r = subprocess.run(
+            ["atlas", "agent-log", "init"],
+            timeout=15, check=True, capture_output=True, text=True,
+        )
+        out = r.stdout.strip()
+        if out:
+            print("  " + out.replace("\n", "\n  "))
     except Exception:
         print(hint)
 
@@ -180,6 +187,7 @@ if __name__ == "__main__":
     bootstrap_agent_log()
     print(f"\n  Project created: {PROJECT_SLUG}\n")
     print("  Getting started:")
-    print(f"    cd {PROJECT_SLUG}")
+    if not os.environ.get("ATLAS_CD_FILE"):  # the atlas zsh wrapper cds there itself
+        print(f"    cd {PROJECT_SLUG}")
     print("    swift build")
     print("    open Package.swift  # Opens in Xcode\n")
