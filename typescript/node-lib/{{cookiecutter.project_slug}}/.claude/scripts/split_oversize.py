@@ -686,6 +686,15 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
 
     groups = _pack(_sccs(movers, refs), max(target - overhead, 1)) if movers else []
     groups = _merge_leaf_groups([g for g in groups if g], refs)
+    # dir-check caps the file count: fuse the smallest adjacent groups (adjacent
+    # in topological order, so cross-part edges still point backwards) while the
+    # fused part can stay under the hard limit.
+    while len(groups) + len(call_bins) > cfg["dir"]["max_files"] and len(groups) > 1:
+        sizes = [sum(b.lines for b in g) for g in groups]
+        i = min(range(len(groups) - 1), key=lambda k: sizes[k] + sizes[k + 1])
+        if sizes[i] + sizes[i + 1] + overhead > limit:
+            break
+        groups[i : i + 2] = [groups[i] + groups[i + 1]]
     # A single part still helps when the barrel keeps pinned content: the file
     # shrinks by everything that moved. Without kept content it would be a rename.
     if len(groups) + len(call_bins) < 2 and not (pinned_blocks and groups):
