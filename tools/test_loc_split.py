@@ -167,11 +167,73 @@ export function useOverload(s: Shape): string {
 }
 """
 
-# One oversized class of PUBLIC methods — member extraction must refuse (removing
-# a public method from the class would change the instance API).
+# One oversized class of PUBLIC one-line methods — member extraction must refuse:
+# even delegating stubs are as long as the bodies they replace, so the facade
+# cannot shrink below the limit.
 GIANT_CLASS = "const TAG = 'giant'\n\nexport class Giant {\n" + "".join(
     f"  step{i}(): string {{\n    return `${{TAG}}-{i}`\n  }}\n" for i in range(12)
 ) + "}\n"
+
+# Public methods with real bodies: pass 1 keeps them all ("public API"), pass 2
+# moves the bodies behind delegating stubs so the type surface stays identical.
+STUB_CLASS = """export class Api {
+  private base = '/v1'
+
+  fetchUsers(limit: number): string {
+    const parts = [this.base]
+    parts.push('users')
+    parts.push(String(limit))
+    parts.push('a')
+    parts.push('b')
+    return parts.join('/')
+  }
+
+  fetchPosts(limit: number, offset?: number): string {
+    const parts = [this.base]
+    parts.push('posts')
+    parts.push(String(limit))
+    parts.push(String(offset ?? 0))
+    parts.push('c')
+    return parts.join('/')
+  }
+
+  fetchTags(...names: string[]): string {
+    const parts = [this.base]
+    parts.push('tags')
+    parts.push(...names)
+    parts.push('d')
+    parts.push('e')
+    return parts.join('/')
+  }
+}
+"""
+
+# A block reading import.meta (and its dependents) must stay in the barrel;
+# everything else still moves out.
+META_PIN = """import { fileURLToPath } from 'node:url'
+
+const selfPath = fileURLToPath(import.meta.url)
+
+export function locate(name: string): string {
+  return selfPath + name
+}
+
+export function alpha(n: number): number {
+  return n + 1
+}
+
+export function beta(n: number): number {
+  return alpha(n) * 2
+}
+
+export function gamma(n: number): number {
+  return n - 1
+}
+
+export function delta(n: number): number {
+  return gamma(n) * 3
+}
+"""
 
 # One oversized class dominated by PRIVATE methods — the member splitter's home turf.
 # Covers: this -> self in bodies and template literals, this.x() -> x(this, ...),
@@ -548,6 +610,41 @@ def main() -> None:
         r = _run(p, "--apply", "src/big.ts")
         check("annotation" in r.stdout, f"18: missing annotation not flagged: {r.stdout!r}")
         check("not applied" in r.stdout, f"18: applied without annotation: {r.stdout!r}")
+
+        # 19. All-public class with real bodies -> delegating stubs keep the surface.
+        p = _project(tmp_path, "stubs", {"src/api.ts": STUB_CLASS},
+                     quality={"loc": {"warn": 14, "error": 20}, "dir": {"max_files": 6},
+                              "globs": ["src/**/*.ts"]})
+        r = _run(p)
+        check("stubbed:" in r.stdout, f"19: no stub proposal: {r.stdout!r}")
+        r = _run(p, "--apply", "src/api.ts")
+        check("modules + facade" in r.stdout, f"19: apply failed: {r.stdout!r}")
+        facade = (p / "src" / "api.ts").read_text()
+        check("fetchUsers(limit: number): string {" in facade, "19: stub signature changed")
+        check("return fetchUsers(this, limit)" in facade, f"19: stub does not delegate: {facade!r}")
+        check("return fetchTags(this, ...names)" in facade, "19: rest parameter not forwarded")
+        check("private base" not in facade, "19: touched field kept its private modifier")
+        parts = "\n".join(q.read_text() for q in (p / "src").glob("api-*.ts"))
+        check("export function fetchUsers(self: Api" in parts, f"19: no self-taking function: {parts!r}")
+        r = _run(p)
+        check("nothing to split" in r.stdout, f"19: applied output still oversized: {r.stdout!r}")
+
+        # 20. import.meta block (and its dependents) pinned to the barrel; rest moves.
+        p = _project(tmp_path, "metapin", {"src/loc.ts": META_PIN},
+                     quality={"loc": {"warn": 12, "error": 20}, "dir": {"max_files": 6},
+                              "globs": ["src/**/*.ts"]})
+        r = _run(p)
+        check("pinned to the barrel" in r.stdout, f"20: no pin note: {r.stdout!r}")
+        check("selfPath" in r.stdout and "locate" in r.stdout, f"20: pin closure wrong: {r.stdout!r}")
+        r = _run(p, "--apply", "src/loc.ts")
+        barrel = (p / "src" / "loc.ts").read_text()
+        check("fileURLToPath(import.meta.url)" in barrel, f"20: pinned block left the barrel: {barrel!r}")
+        check("export function locate" in barrel, "20: pinned dependent left the barrel")
+        parts = "\n".join(q.read_text() for q in (p / "src").glob("loc-*.ts"))
+        check(parts and "import.meta" not in parts, f"20: import.meta moved into a part: {parts!r}")
+        check("export function alpha" in parts, "20: movers did not move")
+        r = _run(p)
+        check("nothing to split" in r.stdout, f"20: applied output still oversized: {r.stdout!r}")
 
     if f:
         print("FAIL")

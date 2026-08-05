@@ -69,10 +69,21 @@ excess-property checks) survives. This only works for **annotated arrays** — a
 un-annotated array or an object literal is refused, because re-inferred element types
 widen (`'feature'` becomes `string`) and object spreads evaluate getters.
 
+**Public methods and delegating stubs.** When private-only extraction leaves the facade
+still over the limit, public method bodies move out too — but a public method cannot
+simply vanish from the class, so a **stub** stays behind: the original signature with
+the body replaced by `return name(this, ...args)`. The instance type is unchanged
+character-for-character; only the body lives elsewhere. This needs every parameter to be
+a plain (optionally rest/optional/defaulted) identifier — a destructured or `this`-typed
+parameter cannot be forwarded, and such methods stay whole. Stubs also survive being
+referenced without a call (`this.f.bind(this)` still finds a real method), so the usual
+pinning rules do not apply to them.
+
 What stays in the class no matter what: getters/setters, statics, decorated members,
 overload sets, `#private` fields and their users, `super` users, methods that declare
 their own `this` scope (a `function` expression or nested class), methods referenced
-without a call (`this.f.bind(this)`), dynamic imports, and — on an `extends` class —
+without a call (`this.f.bind(this)`) unless stubbed, dynamic imports, `import.meta`
+users (its value is per-module), and — on an `extends` class —
 any method touching an inherited member (`this.ctx` on a Durable Object, `this.emit` on
 an EventEmitter): the scanner cannot know if it is `protected` upstream. If nothing is
 movable, the tool says so and the fix is a design change, as above.
@@ -113,6 +124,13 @@ So:
 applying. After an `--apply`, `git diff` the barrel: it should account for every name the old
 file exported, and introduce none.
 
+One class of declarations never moves at all: anything reading **`import.meta`** (and, by
+extension, anything referencing such a declaration). `import.meta.url` is per-module, so a
+moved copy would resolve to the wrong file. Those blocks stay in the barrel — the proposal
+lists them under "pinned to the barrel" — and the parts hold everything else. This is safe
+because the barrel's imports (the parts) evaluate before its own body, and nothing in a
+part is allowed to reference a pinned name.
+
 ## After `--apply`
 
 ```
@@ -129,8 +147,11 @@ understands.
 
 It prints the proposal but declines to write when:
 
-- the parts would import each other in a **cycle**;
-- the file has **top-level statements** outside any declaration (side effects it cannot place);
+- the parts would import each other in a **cycle** (unless every part on the cycle holds
+  only hoisted declarations);
+- the file has **top-level statements** interleaved between declarations (side effects it
+  cannot place) — statements *after* the last declaration stay in the barrel, which the
+  parts' imports still evaluate first;
 - the file has a **default export** (moving it would change the surface subtly);
 - a **target path already exists**;
 - a giant class has **no safely movable member**, a giant array is **un-annotated**, or a
