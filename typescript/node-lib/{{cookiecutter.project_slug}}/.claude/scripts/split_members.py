@@ -315,6 +315,8 @@ def _keep_reason(m: Member, class_extends: bool, declared: set[str], class_name:
         return "references the class itself"
     if re.search(r"\bimport\s*\(", masked_body):
         return "contains a dynamic import"
+    if "import.meta" in masked_body:
+        return "references import.meta (per-module — its meaning changes in a moved file)"
     if m.name in taken_names:
         return "name already taken at module scope"
     if class_extends:
@@ -750,8 +752,14 @@ def _analyze_class(root, path, cfg, lines, imports, blocks, giant, result, limit
         for m in extractable:
             part_idents.update(IDENT_RE.findall("\n".join(masked[m.start : m.end + 1])))
         needed_top = [b for b in blocks if b is not giant and b.name in part_idents]
-        movable_types = [b for b in needed_top if b.kind in TYPE_KINDS and not b.exported]
-        const_candidates = [b for b in needed_top if b.is_data and not b.exported]
+
+        def _has_meta(b) -> bool:  # import.meta is per-module; such blocks must not move
+            return "import.meta" in "\n".join(masked[b.start : b.end + 1])
+
+        movable_types = [b for b in needed_top
+                         if b.kind in TYPE_KINDS and not b.exported and not _has_meta(b)]
+        const_candidates = [b for b in needed_top
+                            if b.is_data and not b.exported and not _has_meta(b)]
         movable_set = {b.name for b in movable_types} | {b.name for b in const_candidates}
         facade_resident = {b.name for b in blocks if b is not giant} - movable_set
         movable_consts, promoted = [], []
@@ -1139,6 +1147,12 @@ def _parse_elements(masked: list[str], decl: int, end: int, open_col: int):
 
 def _analyze_data(root, path, cfg, lines, imports, blocks, giant, result, limit, target) -> dict:
     masked, _, _ = _mask(lines)
+    if "import.meta" in "\n".join(masked[giant.decl : giant.end + 1]):
+        result["blockers"].append(
+            "`const %s` references import.meta — per-module meaning would change in moved "
+            "element files; split by hand" % giant.name
+        )
+        return result
     decl_mask = masked[giant.decl]
     eq = decl_mask.find("=")
     open_col, open_char = None, None

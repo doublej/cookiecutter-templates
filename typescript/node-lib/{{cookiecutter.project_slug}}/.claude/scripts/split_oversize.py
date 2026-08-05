@@ -601,11 +601,31 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     if blocks and split_members is not None and biggest_block.lines + overhead + 1 > limit:
         return split_members.analyze(root, path, cfg, lines, imports, blocks, biggest_block)
 
+    # Blocks that read import.meta are pinned to the barrel — import.meta is
+    # per-module, so their meaning would change in a moved file. Anything that
+    # references a pinned block is pinned too, so no part ever needs to import
+    # from the barrel (which would cycle).
+    pinned_names: set[str] = {
+        b.name for b in blocks if "import.meta" in "\n".join(code[b.start : b.end + 1])
+    }
+    changed = bool(pinned_names)
+    while changed:
+        changed = False
+        for b in blocks:
+            if b.name not in pinned_names and refs[b.name] & pinned_names:
+                pinned_names.add(b.name)
+                changed = True
+    movers = [b for b in blocks if b.name not in pinned_names]
+    pinned_blocks = [b for b in blocks if b.name in pinned_names]
+    if pinned_names:
+        name_of = {nm: b.name for b in movers for nm in b.all_names}
+        result["pinned"] = sorted(b.name for b in pinned_blocks)
+
     # Statements between declarations cannot move without reordering side effects.
     # Statements after the last declaration stay in the barrel: the parts (its
     # imports) evaluate first, exactly as the declarations did in the original.
     # Ambient declare-module/global blocks are position-independent and also stay.
-    last_block_end = max((b.end for b in blocks), default=-1)
+    last_block_end = max((b.end for b in movers), default=-1)
     interleaved = [(s, e) for s, e in statements if s <= last_block_end]
     if interleaved:
         first = interleaved[0][0] + 1
@@ -613,10 +633,11 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
             f"top-level statements outside any declaration (line {first}) cannot be placed automatically"
         )
     kept_code = "\n".join(
-        code[i] for s, e in statements + ambients for i in range(s, e + 1)
+        [code[i] for s, e in statements + ambients for i in range(s, e + 1)]
+        + [code[i] for b in pinned_blocks for i in range(b.start, b.end + 1)]
     )
     mutated = sorted({
-        nm for b in blocks if b.kind in ("let", "var")
+        nm for b in movers if b.kind in ("let", "var")
         for nm in b.all_names
         if re.search(rf"\b{re.escape(nm)}\s*(?:=(?![=>])|\+\+|--|[-+*/%&|^]=)", kept_code)
     })
@@ -624,14 +645,6 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
         result["blockers"].append(
             f"top-level statements outside any declaration reassign {', '.join(mutated)} — "
             f"a moved `let` cannot be written through an import binding"
-        )
-    meta_block = next(
-        (b for b in blocks if "import.meta" in "\n".join(code[b.start : b.end + 1])), None
-    )
-    if meta_block is not None:
-        result["blockers"].append(
-            f"`{meta_block.name}` references import.meta — its meaning changes in a moved "
-            f"module; split by hand"
         )
     barrel_needs = {name_of[n] for n in set(IDENT_RE.findall(kept_code)) if n in name_of}
 
@@ -642,7 +655,9 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     trailing = [(s, e) for s, e in statements if s > last_block_end]
     call_bins: list[list[tuple[int, int]]] = []
     trailing_total = sum(e - s + 1 for s, e in trailing)
-    if trailing and (not blocks or trailing_total > max(limit - 40, 1)) \
+    # Pinned blocks stay in the barrel body, which runs after all imports — a
+    # moved call statement would then run *before* them, reordering effects.
+    if trailing and not pinned_blocks and (not movers or trailing_total > max(limit - 40, 1)) \
             and not MOCK_RE.search("\n".join(code)):
         movable: list[tuple[int, int]] = []
         for s, e in trailing:
@@ -669,13 +684,21 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
         if cur:
             call_bins.append(cur)
 
-    groups = _pack(_sccs(blocks, refs), max(target - overhead, 1)) if blocks else []
+    groups = _pack(_sccs(movers, refs), max(target - overhead, 1)) if movers else []
     groups = _merge_leaf_groups([g for g in groups if g], refs)
-    if len(groups) + len(call_bins) < 2:
-        result["blockers"].append(
-            "no top-level declarations found — split by hand" if not blocks else
-            "every declaration is in one reference cluster — extract a seam by hand first"
-        )
+    # A single part still helps when the barrel keeps pinned content: the file
+    # shrinks by everything that moved. Without kept content it would be a rename.
+    if len(groups) + len(call_bins) < 2 and not (pinned_blocks and groups):
+        if not blocks:
+            result["blockers"].append("no top-level declarations found — split by hand")
+        elif pinned_blocks and not groups:
+            result["blockers"].append(
+                "every declaration is pinned to the barrel by an import.meta reference — split by hand"
+            )
+        else:
+            result["blockers"].append(
+                "every declaration is in one reference cluster — extract a seam by hand first"
+            )
         return result
 
     # Placement: satisfy dir-check as well as loc-check.
@@ -730,7 +753,7 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
                     for b in g
                     if not b.exported and (
                         b.name in barrel_needs
-                        or any(b.name in refs[o.name] for o in blocks if owner[o.name] != idx)
+                        or any(b.name in refs[o.name] for o in movers if owner[o.name] != idx)
                     )
                 ),
             }
@@ -778,11 +801,14 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     if existing:
         result["blockers"].append(f"target path already exists: {', '.join(existing)}")
     moved_set = {i for bin_ in call_bins for s, e in bin_ for i in range(s, e + 1)}
-    orphans = [i for i in _orphan_lines(lines, imports, blocks) if i not in moved_set]
-    if orphans:
-        result["orphan_comments"] = len(orphans)
+    # Pinned blocks are "uncovered" on purpose: their lines stay in the barrel.
+    orphans = [i for i in _orphan_lines(lines, imports, movers) if i not in moved_set]
+    pinned_lines = {i for b in pinned_blocks for i in range(b.start, b.end + 1)}
+    stray = [i for i in orphans if i not in pinned_lines]
+    if stray:
+        result["orphan_comments"] = len(stray)
     kinds = {nm: b.kind for b in blocks for nm in b.all_names}
-    result["_internal"] = {"lines": lines, "imports": imports, "blocks": blocks, "refs": refs,
+    result["_internal"] = {"lines": lines, "imports": imports, "blocks": movers, "refs": refs,
                            "owner": owner, "named": named, "paths": paths, "orphans": orphans,
                            "code": code, "name_of": name_of, "kinds": kinds,
                            "barrel_needs": barrel_needs, "call_bins": call_bins,
@@ -813,7 +839,8 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     if barrel_size > limit:
         result["blockers"].append(
             f"{result['file']} would still be {barrel_size} lines (max {limit}) as the barrel — "
-            f"what it keeps (trailing statements, ambient declarations) is too big to stay"
+            f"what it keeps (trailing statements, ambient declarations, import.meta-pinned "
+            f"declarations) is too big to stay"
         )
     return result
 
@@ -1088,6 +1115,8 @@ def _print_proposal(analysis: dict) -> None:
         print(f"  {analysis['file']} becomes a barrel re-exporting: {', '.join(analysis['barrel']) or '(nothing)'}")
         if any(not b["exported"] for g in analysis["groups"] for b in g["blocks"]):
             print("  * = file-private; `export`ed in its new module only when a sibling needs it, never in the barrel")
+    if analysis.get("pinned"):
+        print(f"  pinned to the barrel (import.meta is per-module): {', '.join(analysis['pinned'])}")
     if analysis.get("orphan_comments"):
         print(f"  note: {analysis['orphan_comments']} comment line(s) belong to no declaration — kept in the barrel")
     for b in analysis["blockers"]:
