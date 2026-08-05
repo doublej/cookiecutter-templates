@@ -190,7 +190,7 @@ def main() -> None:
         barrel = (p / "src" / "big.ts").read_text()
         exported = set()
         for line in barrel.splitlines():
-            if line.startswith("export"):
+            if line.startswith("export") and "{" in line:
                 exported.update(n.strip() for n in line.split("{")[1].split("}")[0].split(","))
         check(exported == {"Config", "Mode", "Runner", "parseConfig", "renderConfig"},
               f"7: barrel surface changed: {sorted(exported)}")

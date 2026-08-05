@@ -349,10 +349,13 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
 
     names = [b.name for b in blocks]
     refs = {b.name: _references(b, code, names) for b in blocks}
+    # A module costs more than its declarations: copied imports, and a blank line between
+    # each block. Ignoring that lets a component "fit" in a file that is already too long.
+    overhead = sum(end - start + 1 for start, end, _ in imports) + 2
     groups: list[list[Block]] = []
     for comp in _components(blocks, refs):
-        total = sum(b.lines for b in comp)
-        groups.extend(_subdivide(comp, target) if total > limit else [comp])
+        total = sum(b.lines for b in comp) + len(comp) + overhead
+        groups.extend(_subdivide(comp, max(target - overhead, 1)) if total > limit else [comp])
     groups = _merge_leaf_groups([g for g in groups if g], refs)
     if len(groups) < 2:
         result["blockers"].append(
@@ -412,15 +415,6 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
 
     result["layout"] = layout
     result["layout_reason"] = reason
-    for g in result["groups"]:
-        if g["lines"] > limit:
-            biggest = max(g["blocks"], key=lambda b: b["lines"])
-            result["blockers"].append(
-                f"{g['path']} would still be {g['lines']} lines (max {limit}) — "
-                f"`{biggest['kind']} {biggest['name']}` is {biggest['lines']} lines on its own, so no "
-                f"rearranging of top-level declarations can fix this file. Extract members by hand "
-                f"(.claude/SPLITTING.md)"
-            )
     result["barrel"] = sorted(b.name for b in blocks if b.exported)
     result["cycles"] = _find_cycle(named, refs, owner)
     if result["cycles"]:
@@ -440,6 +434,17 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
         result["orphan_comments"] = len(orphans)
     result["_internal"] = {"lines": lines, "imports": imports, "blocks": blocks, "refs": refs,
                            "owner": owner, "named": named, "paths": paths, "orphans": orphans}
+    # Size each part from the text that would actually be written, not an estimate.
+    for idx, g in enumerate(result["groups"]):
+        g["lines"] = _render_module(idx, result).count("\n")
+        if g["lines"] > limit:
+            biggest = max(g["blocks"], key=lambda b: b["lines"])
+            result["blockers"].append(
+                f"{g['path']} would still be {g['lines']} lines (max {limit}) — "
+                f"`{biggest['kind']} {biggest['name']}` is {biggest['lines']} lines on its own, so no "
+                f"rearranging of top-level declarations can fix this file. Extract members by hand "
+                f"(.claude/SPLITTING.md)"
+            )
     return result
 
 
