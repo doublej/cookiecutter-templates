@@ -112,7 +112,8 @@ Each template follows this structure:
 ## Conventions
 
 - **Project slug**: kebab-case `[a-z][a-z0-9-]*[a-z0-9]`, min 2 chars, validated in pre-gen hooks
-- **Hooks are safe**: no `git init`, no dependency installs, no commits
+- **Hooks are safe**: no `git init`, no dependency installs, no commits. `atlas new` does the git bootstrap after cookiecutter returns (`main` + scaffold commit + `develop`), so the branch flow stays in one place instead of in every template's post-gen hook. No `flow`/branch question belongs in `cookiecutter.json`
+
 - **MCP options**: every template supports `mcp_servers` (none/minimal/standard/interactive) and `mcp_scope` (project/local) in cookiecutter.json
 - **When editing a shared file** (identified in sync_manifest.json), apply the same change to all templates in the family
 - **When editing a shared Justfile recipe**, apply the same change to all Justfiles in the family (respecting exceptions)
