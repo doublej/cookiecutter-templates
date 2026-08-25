@@ -251,7 +251,8 @@ def smoke_typescript(project_dir: Path) -> list[tuple[str, bool, str]]:
     results.append(("bun install", ok, out))
     if not ok:
         return results
-    for script in ["lint", "build", "test"]:
+    # build first: lint and check must see the generated output tree (.svelte-kit, dist)
+    for script in ["build", "lint", "check", "test"]:
         pkg = json.loads((project_dir / "package.json").read_text())
         if script in pkg.get("scripts", {}):
             ok, out = run_smoke(["bun", "run", script], project_dir)

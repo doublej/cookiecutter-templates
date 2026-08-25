@@ -13,6 +13,8 @@ PROJECT_SLUG = "{{ cookiecutter.project_slug }}"
 INCLUDE_TRACKING = "{{ cookiecutter.include_tracking }}"
 TRACKING_TARGET = "index.html"
 TRACKING_PLACEHOLDER_LINE = "    <!-- TRACKING_PLACEHOLDER -->\n"
+# Umami rejects a bare slug as a domain; a new project has no public domain yet.
+TRACKING_DOMAIN = "localhost:{{ cookiecutter.port }}"
 MCP_SERVERS = "{{ cookiecutter.mcp_servers }}"
 MCP_SCOPE = "{{ cookiecutter.mcp_scope }}"
 TEMPLATE_VERSION = "{{ cookiecutter._version }}"
@@ -89,7 +91,7 @@ def setup_tracking():
         return
 
     r = subprocess.run(
-        [sys.executable, str(register), PROJECT_SLUG, PROJECT_SLUG, "--json"],
+        [sys.executable, str(register), PROJECT_SLUG, TRACKING_DOMAIN, "--json"],
         capture_output=True, text=True,
     )
     website_id = umami_url = ""
@@ -101,7 +103,8 @@ def setup_tracking():
             pass
     if not (website_id and umami_url):
         print(f"  Umami: register failed: {r.stderr.strip() or r.stdout.strip()}")
-        print(f"  Umami: placeholder left in {TRACKING_TARGET} — run tools/inject_tracking.py later")
+        print(f"  Umami: placeholder left in {TRACKING_TARGET} — inject later with:")
+        print(f"    python {inject} . <umami_url> <website_id>")
         return
     print(f"  Umami: registered '{PROJECT_SLUG}' → {website_id}")
 
