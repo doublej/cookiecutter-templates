@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Tizen widget manifest. It lives in static/ so `vite build` copies it next to
+  index.html in build/ — that directory is what `just wgt` packages.
+  tizen:application@package must match the 10-character package id in your
+  Samsung certificate profile; the store rejects a mismatch.
+-->
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="http://example.org/{{ cookiecutter.project_slug }}" version="1.0.0" viewmodes="maximized">
+    <tizen:application id="{{ cookiecutter.tizen_package_id }}.{{ cookiecutter.project_slug.replace('-', ' ').title().replace(' ', '') }}" package="{{ cookiecutter.tizen_package_id }}" required_version="{{ cookiecutter.tizen_required_version }}"/>
+    <content src="index.html"/>
+    <name>{{ cookiecutter.project_name }}</name>
+    <description>{{ cookiecutter.description }}</description>
+    <author>{{ cookiecutter.author }}</author>
+    <access origin="*" subdomains="true"/>
+    <feature name="http://tizen.org/feature/screen.size.normal.1080.1920"/>
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+    <tizen:profile name="tv-samsung"/>
+    <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" encryption="disable" install-location="auto" hwkey-event="enable"/>
+    <!-- Add an icon: drop a 512x423 PNG in static/ and uncomment. -->
+    <!-- <icon src="icon.png"/> -->
+</widget>

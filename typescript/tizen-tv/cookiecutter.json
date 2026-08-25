@@ -1,0 +1,12 @@
+{
+    "_version": "1.0.0",
+    "project_name": "My TV App",
+    "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+    "description": "A Samsung TV (Tizen) web app",
+    "author": "Your Name",
+    "port": "5173",
+    "tizen_package_id": "1234567890",
+    "tizen_required_version": ["6.0", "7.0", "8.0"],
+    "mcp_servers": ["none", "minimal", "standard", "interactive"],
+    "mcp_scope": ["project", "local"]
+}

@@ -1,0 +1,11 @@
+{
+  "overrides": [
+    {
+      "files": ["**/*.svelte"],
+      "customSyntax": "postcss-html"
+    }
+  ],
+  "rules": {
+    "declaration-no-important": true
+  }
+}

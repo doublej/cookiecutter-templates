@@ -63,7 +63,7 @@ Templates are grouped into families (python, typescript, rust, swift, go, shopif
 | Family | Templates | Shared identical files | Shared Justfile recipes |
 |--------|-----------|----------------------|------------------------|
 | python | cli, fastapi, flask | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json` | default, install, lint, lint-fix, format, format-check, typecheck, test, loc-check, dir-check, check, clean, claude-tree |
-| typescript | node-api, node-cli, bun-package, node-lib, node-worker, react, sveltekit, nextjs | `hooks/pre_gen_project.py` | default, install, lint, lint-fix, test, loc-check, dir-check, check, build, clean, claude-tree |
+| typescript | node-api, node-cli, bun-package, node-lib, node-worker, react, sveltekit, tizen-tv, nextjs | `hooks/pre_gen_project.py` | default, install, lint, lint-fix, test, loc-check, dir-check, check, build, clean, claude-tree |
 | swift | ios, macos | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `.swiftlint.yml` | default, install, xcode, lint, lint-fix, test, loc-check, dir-check, check, build, build-release, clean, claude-tree |
 | rust | cli | `hooks/pre_gen_project.py`, `.gitignore` | default, lint, fmt, fmt-check, check, test, loc-check, dir-check, build-release, reinstall, claude-tree |
 | go | cli, api | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json` | default, install, lint, fmt, fmt-check, test, loc-check, dir-check, check, build, build-release, clean, claude-tree |

@@ -65,6 +65,11 @@ TEMPLATES: dict[str, list[dict]] = {
         {"include_tracking": "y"},
         {"include_tracking": "n", "mcp_servers": "standard", "mcp_scope": "project"},
     ],
+    "typescript/tizen-tv": [
+        {},
+        {"tizen_required_version": "8.0"},
+        {"mcp_servers": "standard", "mcp_scope": "project"},
+    ],
     "typescript/react": [
         {"include_tracking": "n"},
         {"include_tracking": "y"},

@@ -1,0 +1,17 @@
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.local
+.env.*.local
+
+node_modules/
+.svelte-kit/
+build/
+
+dist/
+.buildResult/
+*.wgt
+
+.claude/claude-tree.*
+**/CLAUDE.md.history.jsonl

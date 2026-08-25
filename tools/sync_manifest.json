@@ -17,7 +17,7 @@
       "templates": [
         "typescript/node-api", "typescript/node-cli", "typescript/bun-package",
         "typescript/node-lib", "typescript/node-worker", "typescript/react",
-        "typescript/sveltekit", "typescript/nextjs"
+        "typescript/sveltekit", "typescript/tizen-tv", "typescript/nextjs"
       ],
       "identical_files": ["hooks/pre_gen_project.py"],
       "justfile_shared_recipes": [
@@ -28,6 +28,9 @@
       "justfile_exceptions": {
         "typescript/sveltekit": {
           "skip_recipes": ["typecheck", "clean"]
+        },
+        "typescript/tizen-tv": {
+          "skip_recipes": ["typecheck", "clean", "check"]
         },
         "typescript/nextjs": {
           "skip_recipes": ["clean"]

@@ -22,6 +22,7 @@ Project templates organized by language and framework.
 | `typescript/node-lib` | Library with declarations | -- |
 | `typescript/node-worker` | Background worker | `worker_type`, `include_docker` |
 | `typescript/sveltekit` | SvelteKit web app | `include_tracking` |
+| `typescript/tizen-tv` | Samsung TV (Tizen) web app — SvelteKit static + remote-control focus | `tizen_package_id`, `tizen_required_version` |
 | `typescript/react` | React SPA (Vite) | `include_tracking` |
 | `typescript/nextjs` | Next.js app | `include_tracking` |
 | `typescript/raycast-extension` | Raycast extension (ray CLI, hello view command) | -- |
