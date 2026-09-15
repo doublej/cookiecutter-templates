@@ -6,6 +6,10 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [3.3.0] - 2026-08-26
+- rename main.swift -> App.swift (@main is rejected the moment a second file joins the module)
+- add AppActivation.swift + `bare_nsapp_activate` swiftlint rule: `NSApp.activate()` is a measured no-op for background/LSUIElement apps (macOS 14 cooperative activation), which is why menubar-app windows kept opening behind everything
+
 ## [3.2.0] - 2026-08-16
 - add verify-runner subagent + .claude/tickets/ convention; agent.md delegates checks to it instead of blocking on new-feature work
 

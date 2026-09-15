@@ -24,11 +24,13 @@ The runtime path is `App entry (`@main struct ... : App`) → root `Scene` → `
 - SwiftUI for the UI layer (AppKit only where SwiftUI cannot reach).
 - `async` / `await` for concurrency; avoid completion handlers and explicit `DispatchQueue` work in new code.
 - SwiftLint `--strict` must pass — no warnings.
+- Never call `NSApp.activate()` — it is a no-op for a background or `LSUIElement` app under macOS 14+ cooperative activation, and is the reason windows open behind other apps. Use `AppActivation.front()` right after `openWindow(id:)`. A `bare_nsapp_activate` lint rule enforces this.
 - Functions stay small (5–10 lines target, 20 max).
 - Errors surface at the boundary; throw, propagate with `try`, handle at the SwiftUI layer.
 
 ## Common change patterns
 
+- **Open a window from a menu / hotkey** → `openWindow(id:)` then `AppActivation.front()`. `SettingsLink` has no activation hook, so prefer a plain `Window(id:)` scene over the `Settings` scene in a menubar app.
 - **Add a view** → new `struct ...: View` in a dedicated file.
 - **Add a model** → `struct` (value-typed) or `@Observable` class for state that survives across views.
 - **Add a service** → class with `async` methods, injected via environment or initializer.

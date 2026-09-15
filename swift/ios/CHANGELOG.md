@@ -6,6 +6,10 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [3.3.0] - 2026-08-26
+- rename main.swift -> App.swift (@main is rejected the moment a second file joins the module)
+- share the bare_nsapp_activate swiftlint rule with swift/macos
+
 ## [3.2.0] - 2026-08-16
 - add verify-runner subagent + .claude/tickets/ convention; agent.md delegates checks to it instead of blocking on new-feature work
 
