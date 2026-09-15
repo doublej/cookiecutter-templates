@@ -47,6 +47,7 @@ Justfile            # task runner
 - Biome for linting and formatting (not ESLint/Prettier)
 - Functional components with hooks
 - GSAP for animations (pre-installed) — not framer-motion or other animation libs
+- User-facing text comes from `messages/{en,nl}.json` via `m.key()` — never hardcode it (`en` is the base, `nl` informal je/jij)
 - Keep functions small (5–10 lines target, 20 max)
 - Prefer explicit, readable code over cleverness
 - Handle errors at boundaries; let unexpected errors surface
@@ -85,6 +86,7 @@ confirmed its issue is fixed.
 - Add a CSS module: create a `.module.css` file next to the component
 - Add an animation: `useGSAP()` from `@gsap/react` inside the component; register plugins once at module top
 - Add a dependency: `bun add <package>`
+- Add or change text: edit `messages/en.json` and `messages/nl.json`, call `m.key()` from `./paraglide/messages`, run `just i18n-check`
 
 ### Testing
 

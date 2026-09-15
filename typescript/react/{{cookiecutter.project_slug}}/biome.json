@@ -1,7 +1,15 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.6/schema.json",
   "files": {
-    "includes": ["**", "!**/.mcp.json", "!**/.template-meta.json", "!**/node_modules", "!**/dist"]
+    "includes": [
+      "**",
+      "!**/.mcp.json",
+      "!**/.template-meta.json",
+      "!**/src/paraglide",
+      "!**/project.inlang",
+      "!**/node_modules",
+      "!**/dist"
+    ]
   },
   "assist": {
     "actions": {
