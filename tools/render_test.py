@@ -573,6 +573,7 @@ def main():
                 smoke_results = (
                     check_versioning_payload(project_dir, name, template_path)
                     + smoke_just_fmt(project_dir)
+                    + check_locales(project_dir, name)
                     + smoke_fn(project_dir)
                 )
                 variant_ok = True
