@@ -1,5 +1,6 @@
 {
   "loc": { "warn": 300, "error": 400 },
   "dir": { "max_files": 6 },
-  "globs": ["{{ cookiecutter.project_slug }}/**/*.swift", "Tests/**/*.swift"]
+  "globs": ["{{ cookiecutter.project_slug }}/**/*.swift", "Tests/**/*.swift"],
+  "i18n": { "base": "en", "required": ["en", "nl"], "format": "strings", "files": ["{{ cookiecutter.project_slug }}/Resources/{locale}.lproj/Localizable.strings"] }
 }

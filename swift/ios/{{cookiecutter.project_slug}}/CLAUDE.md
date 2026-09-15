@@ -10,7 +10,9 @@ An iOS SwiftUI application built with SwiftPM. Deployment target: `{{ cookiecutt
 
 ```
 {{ cookiecutter.project_slug }}/
-└── ...             # SwiftUI app source (views, models, services)
+├── ...             # SwiftUI app source (views, models, services)
+├── L10n.swift      # language bundle for String(localized:bundle:)
+└── Resources/      # en.lproj (base) + nl.lproj Localizable.strings
 Package.swift       # SwiftPM manifest — executable target + tests
 Justfile            # task runner
 .swiftlint.yml      # strict ruleset
@@ -24,11 +26,14 @@ The runtime path is `App entry (`@main struct ... : App`) → root `Scene` → `
 - SwiftUI for the UI layer (UIKit only where SwiftUI cannot reach).
 - `async` / `await` for concurrency; avoid completion handlers and explicit `DispatchQueue` work in new code.
 - SwiftLint `--strict` must pass — no warnings.
+- User-facing text is multilingual: `en` (base, fallback) and `nl` (informal je/jij). Never hardcode user-visible strings; add each key to every language file in the same change. Logs and developer errors stay English.
 - Functions stay small (5–10 lines target, 20 max).
 - Errors surface at the boundary; throw, propagate with `try`, handle at the SwiftUI layer.
 
 ## Common change patterns
 
+- **Add or change text** → edit `{{ cookiecutter.project_slug }}/Resources/*.lproj/Localizable.strings`, call `String(localized: "key", bundle: L10n.bundle)` (never `bundle: .module`: a bare SwiftPM executable ignores the user's language there), run `just i18n-check`.
+- **Add a language** → add `{{ cookiecutter.project_slug }}/Resources/<locale>.lproj/Localizable.strings` (SwiftPM picks it up, nothing to register), run `just i18n-check`.
 - **Add a view** → new `struct ...: View` in a dedicated file.
 - **Add a model** → `struct` (value-typed) or `@Observable` class for state that survives across views.
 - **Add a service** → class with `async` methods, injected via environment or initializer.
@@ -38,7 +43,7 @@ The runtime path is `App entry (`@main struct ... : App`) → root `Scene` → `
 
 Run `just check` after every change. It composes:
 
-`just-fmt-check` + `loc-check` + `dir-check` + `lint` + `build` + `test`
+`just-fmt-check` + `loc-check` + `dir-check` + `i18n-check` + `lint` + `build` + `test`
 
 Recipe reference:
 
@@ -49,6 +54,7 @@ Recipe reference:
 - `just test` — SwiftPM test
 - `just xcode` — open in Xcode (required for running on a simulator / device)
 - `just loc-check` / `just dir-check` — file-size and per-directory thresholds from `.quality.json`
+- `just i18n-check` — every language file has the base's keys and placeholders
 - `just just-fmt-check` — verify Justfile formatting
 - `just clean` — remove `.build/` artifacts
 - `just update-scaffold` — pull updates from the cookiecutter template

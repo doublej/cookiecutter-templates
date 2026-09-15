@@ -100,7 +100,8 @@
         "hooks/pre_gen_project.py",
         "{{cookiecutter.project_slug}}/.gitignore",
         "{{cookiecutter.project_slug}}/.quality.json",
-        "{{cookiecutter.project_slug}}/.swiftlint.yml"
+        "{{cookiecutter.project_slug}}/.swiftlint.yml",
+        "{{cookiecutter.project_slug}}/{{cookiecutter.project_slug}}/L10n.swift"
       ],
       "justfile_shared_recipes": [
         "default",

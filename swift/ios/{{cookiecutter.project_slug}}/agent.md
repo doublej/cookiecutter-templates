@@ -37,6 +37,7 @@ Justfile            # task runner
 
 - SwiftPM for dependency management
 - SwiftUI for UI layer
+- User-facing text via `String(localized: "key", bundle: L10n.bundle)` in `en` + `nl`, never hardcoded; logs stay English
 - async/await for concurrency
 - Keep functions small (5–10 lines target, 20 max)
 - Prefer explicit, readable code over cleverness
@@ -70,6 +71,7 @@ confirmed its issue is fixed.
 
 ### Common Tasks
 
+- Add or change text: edit every `Resources/*.lproj/Localizable.strings`, look it up with `String(localized: "key", bundle: L10n.bundle)`, run `just i18n-check`
 - Add a SwiftUI view: create a new `.swift` file with a `View` struct
 - Add a model: create a `Codable` + `Identifiable` struct
 - Add a service: create a class/struct with `async`/`await` methods
