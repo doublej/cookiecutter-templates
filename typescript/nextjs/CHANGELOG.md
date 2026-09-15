@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.6.1] - 2026-09-15
+- ship tsconfig in the form next build writes (jsx react-jsx, .next/dev/types include) and keep next-env.d.ts out of biome, so bun run lint passes after a build
+
 ## [2.6.0] - 2026-08-17
 - ship an og image generator (og.html) with fixed .og-canvas/.og-brand/.og-title/.og-subtitle base classes for the agent to restyle
 - add og:image / twitter:card meta pointing at /og.png

@@ -5,6 +5,7 @@
       "**",
       "!**/.mcp.json",
       "!**/.template-meta.json",
+      "!**/next-env.d.ts",
       "!**/node_modules",
       "!**/.next",
       "!**/out",
