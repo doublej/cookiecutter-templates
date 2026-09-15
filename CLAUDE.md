@@ -21,6 +21,13 @@ uv run tools/render_test.py
 # Offline unit test for the SessionStart update-check hook
 uv run tools/test_update_check.py
 
+# Update every generated project under ~/dev that is behind its released template: tooling + .atlas only,
+# one path-scoped commit per project, never pushes. Report only without --apply.
+python3 tools/update_projects.py [--root ~/dev] [--apply]
+
+# Local test for the batch updater (needs cookiecutter + full git history, so not in CI)
+python3 tools/test_update_projects.py
+
 # Aggregate phone-home diagnostics from deployed-template hooks
 uv run tools/review_diagnostics.py [--since 7d] [--errors-only]
 
@@ -40,7 +47,7 @@ Always run `sync_check.py` then `render_test.py` after changes. CI runs both on 
 
 ## Template versioning
 
-Every `cookiecutter.json` carries a private `_version` field (not prompted). Every render writes it into the project's `.template-meta.json` as `template_version`. Every generated project ships a `.claude/` SessionStart hook that compares local version against the upstream template on every Claude Code session and prints `[template-update] <tmpl> <local> -> <upstream> available ...` when upstream has advanced — prompting the agent to run the `/update-scaffold` skill, which applies non-destructively (tooling overwritten, other changes as `.upstream` sidecars), resolves sidecars itself and asks only about real conflicts. `update_scaffold.py` treats an unchanged `_version` as up to date: template edits are not an update until a bump releases them.
+Every `cookiecutter.json` carries a private `_version` field (not prompted). Every render writes it into the project's `.template-meta.json` as `template_version`. Every generated project ships a `.claude/` SessionStart hook that compares local version against the upstream template on every Claude Code session and prints `[template-update] <tmpl> <local> -> <upstream> available ...` when upstream has advanced — prompting the agent to run the `/update-scaffold` skill, which applies non-destructively (tooling overwritten, other changes as `.upstream` sidecars), resolves sidecars itself and asks only about real conflicts. `update_scaffold.py` treats an unchanged `_version` as up to date: template edits are not an update until a bump releases them. It renders the template from the commit that released its current `_version` (`git archive`), so commits after a bump and uncommitted edits never reach a project. `tools/update_projects.py` applies the safe part of every pending update across `~/dev` in one pass (tooling overwritten, `.atlas` merged, one path-scoped commit per project) and bumps `template_version` only when nothing else differs, so the hook keeps prompting `/update-scaffold` for seeds and new files.
 
 **Semver semantics (strict `MAJOR.MINOR.PATCH`, no pre-release suffixes):**
 
@@ -96,6 +103,7 @@ Each template follows this structure:
 | `tools/sync_check.py` | SHA256 comparison of identical files; recipe-level Justfile comparison |
 | `tools/render_test.py` | Renders ~50 template variants (defined in `TEMPLATES` dict); runs language-specific smoke tests (compileall, bun install+lint+build+test, cargo build, swift build) |
 | `tools/inject_tracking.py` | Replaces the tracking placeholder with a Umami `<script>` tag, indentation-preserving — handles both `.html` (`<!-- TRACKING_PLACEHOLDER -->`) and `.tsx` (`{/* TRACKING_PLACEHOLDER */}`) |
+| `tools/update_projects.py` | Batch scaffold update across `~/dev`: skips unversioned, retrofit, non-git and up-to-date projects and any project with uncommitted changes in a file it would write; writes only tooling + `.atlas`; commits exactly those paths. Covered by `tools/test_update_projects.py` |
 | `tools/umami_register.py` | Creates a website in Umami via `POST /api/websites` and prints the new website id (`--json` adds the resolved URL). Credentials resolve from env, falling back to the onenv `umami` namespace; auth is `UMAMI_API_KEY` (x-umami-api-key, Umami Cloud) or `UMAMI_USERNAME`/`UMAMI_PASSWORD` (login → bearer, self-hosted) |
 
 **Tracking flow (sveltekit/react/nextjs).** `include_tracking` is the up-front gate — and the only question ever asked. When `n`, the post-gen hook strips the placeholder. When `y`, the hook automatically registers `<slug>` in Umami (`umami_register.py --json`) and injects the tracking script (`inject_tracking.py`) — no prompts. Credentials resolve inside `umami_register.py`: env vars first, then the onenv `umami` namespace (`UMAMI_URL` + `UMAMI_USERNAME`/`UMAMI_PASSWORD` for self-hosted login→bearer, or `UMAMI_API_KEY` for Umami Cloud). Test renders (`render_test.py` sets `TEMPLATE_RENDER_TEST=1`) skip the network and leave the placeholder. The whole flow is best-effort and never fails generation.

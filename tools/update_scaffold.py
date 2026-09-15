@@ -21,10 +21,13 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import io
 import json
+import os
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 from datetime import datetime, timezone
 from difflib import unified_diff
@@ -92,25 +95,50 @@ def load_meta(project_dir: Path) -> dict:
 
 
 def render_template(template_dir: Path, context: dict, output_dir: Path) -> Path:
+    """Render for diffing only. Raises RuntimeError when cookiecutter fails."""
+    # mcp_servers only drives post-gen side effects (`mcpick-plus init` is interactive, `claude mcp add`
+    # writes global config); no rendered file reads it, so a diff render always uses none.
+    context = {**context, "mcp_servers": "none"}
     args = [a for k, v in context.items() for a in (f"{k}={v}",)]
+    output_dir.mkdir(parents=True, exist_ok=True)
     result = subprocess.run(
         ["cookiecutter", str(template_dir), "--no-input", "-o", str(output_dir), *args],
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        capture_output=True, text=True, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL,
+        # A re-render is only compared, never shipped: post-gen hooks must skip network side
+        # effects such as registering a new Umami website on every update.
+        env={**os.environ, "TEMPLATE_RENDER_TEST": "1"},
     )
     if result.returncode != 0:
-        print(f"error: cookiecutter failed: {result.stderr.strip()}", file=sys.stderr)
-        sys.exit(1)
+        raise RuntimeError(f"cookiecutter failed: {result.stderr.strip()}")
     return next(output_dir.iterdir())
 
 
-def _upstream_version(template_dir: Path) -> str | None:
-    cc = template_dir / "cookiecutter.json"
-    if not cc.is_file():
-        return None
-    try:
-        return json.loads(cc.read_text()).get("_version")
-    except Exception:
-        return None
+def _git(*args: str) -> str:
+    return subprocess.run(["git", *args], cwd=TEMPLATES_ROOT, capture_output=True, text=True, check=True).stdout
+
+
+def released_template(template_name: str, workdir: Path) -> tuple[str, Path]:
+    """Extract the template as it was when its current _version was released.
+
+    The version comes from HEAD, and the files from the commit that introduced that version.
+    Commits after the bump and uncommitted edits are unreleased work and never reach a project.
+    """
+    cc_rel = f"{template_name}/cookiecutter.json"
+    version = json.loads(_git("show", f"HEAD:{cc_rel}"))["_version"]
+    release = _git("log", "-1", "--format=%H", "-S", f'"_version": "{version}"', "--", cc_rel).strip()
+    if not release:
+        raise RuntimeError(f"no commit introduces {template_name} _version {version}")
+    archive = subprocess.run(["git", "archive", release, template_name], cwd=TEMPLATES_ROOT,
+                             capture_output=True, check=True).stdout
+    with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
+        tar.extractall(workdir, filter="data")
+    return version, workdir / template_name
+
+
+def write_meta_version(project_dir: Path, meta: dict, version: str) -> None:
+    meta["template_version"] = version
+    meta["rendered_at"] = datetime.now(timezone.utc).isoformat()
+    (project_dir / ".template-meta.json").write_text(json.dumps(meta, indent=2) + "\n")
 
 
 def classify(rel_path: str, merge_paths: set[str]) -> str:
@@ -151,7 +179,8 @@ def collect(rendered: Path, project: Path) -> dict[str, list[tuple[str, Path, Pa
             continue
         rel = str(src.relative_to(rendered))
         dst = project / rel
-        if _same(src, dst):
+        # .template-meta.json always differs (rendered_at); this script owns it on --apply.
+        if rel == ".template-meta.json" or _same(src, dst):
             continue
         buckets[classify(rel, merge_paths)].append((rel, src, dst))
     return buckets
@@ -249,21 +278,24 @@ def main() -> None:
         print(f"error: template not found: {template_dir}", file=sys.stderr)
         sys.exit(1)
 
-    upstream_version = _upstream_version(template_dir)
-    head = f"{template_name}: local {local_version} -> upstream {upstream_version}"
-    print(f"Updating {head}")
-    if local_version == upstream_version and not retrofit:
-        # Template changes are released by bumping _version (CI enforces the bump). Same version
-        # with different files is unreleased work in the templates repo, not an update.
-        print("\nUp to date.")
-        return
-    if retrofit:
-        print("note: retrofit project — your local files predate the template.")
-        print("      Seeds (CLAUDE.md, Justfile, .gitignore, …) will NOT be overwritten;")
-        print("      upstream copies land as `<file>.upstream` for manual merge.")
-
     with tempfile.TemporaryDirectory() as tmp:
-        rendered = render_template(template_dir, context, Path(tmp))
+        upstream_version, released_dir = released_template(template_name, Path(tmp) / "released")
+        head = f"{template_name}: local {local_version} -> upstream {upstream_version}"
+        print(f"Updating {head}")
+        if local_version == upstream_version and not retrofit:
+            # Template changes are released by bumping _version (CI enforces the bump). Same version
+            # with different files is unreleased work in the templates repo, not an update.
+            print("\nUp to date.")
+            return
+        if retrofit:
+            print("note: retrofit project — your local files predate the template.")
+            print("      Seeds (CLAUDE.md, Justfile, .gitignore, …) will NOT be overwritten;")
+            print("      upstream copies land as `<file>.upstream` for manual merge.")
+
+        try:
+            rendered = render_template(released_dir, context, Path(tmp) / "rendered")
+        except RuntimeError as e:
+            sys.exit(f"error: {e}")
         buckets = collect(rendered, project_dir)
         if not args.include_other:
             buckets["other"] = []  # drop from apply, still show in summary
@@ -282,12 +314,8 @@ def main() -> None:
         if args.include_other:
             applied += _apply_seeds(buckets["other"], dry, args.force)
 
-        if not dry and upstream_version:
-            meta["template_version"] = upstream_version
-            meta["rendered_at"] = datetime.now(timezone.utc).isoformat()
-            (project_dir / ".template-meta.json").write_text(
-                json.dumps(meta, indent=2) + "\n"
-            )
+        if not dry:
+            write_meta_version(project_dir, meta, upstream_version)
             print(f"  updated: .template-meta.json -> {upstream_version}")
             applied += 1
 
