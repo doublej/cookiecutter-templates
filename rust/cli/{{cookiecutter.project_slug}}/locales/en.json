@@ -1,0 +1,13 @@
+{
+  "cli": {
+    "about": "{{ cookiecutter.description }}",
+    "input": "Input to process",
+    "verbose": "Enable verbose output",
+    "lang": "Output language (default: LC_ALL, LC_MESSAGES or LANG, then en)"
+  },
+  "output": {
+    "processing": "Processing: {input}",
+    "no_input": "No input provided. Use --help for usage.",
+    "characters": { "one": "{count} character", "other": "{count} characters" }
+  }
+}

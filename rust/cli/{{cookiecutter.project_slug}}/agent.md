@@ -12,7 +12,7 @@
 
 Use `just` as the task runner:
 
-- `just check` — run all checks (just-fmt-check + loc-check + dir-check + fmt-check + lint + test)
+- `just check` — run all checks (just-fmt-check + loc-check + dir-check + i18n-check + fmt-check + lint + test)
 - `just lint` — run clippy with -D warnings
 - `just fmt` — format code with rustfmt
 - `just fmt-check` — verify formatting
@@ -28,7 +28,9 @@ Use `just` as the task runner:
 
 ```
 src/
-└── main.rs         # clap CLI entry point
+├── main.rs         # clap CLI entry point
+└── i18n.rs         # t(locale, key, params), locale resolution
+locales/            # en.json (base) + nl.json
 Cargo.toml          # project config, dependencies
 Justfile            # task runner
 ```
@@ -40,6 +42,7 @@ Justfile            # task runner
 - Keep functions small (5-10 lines target, 20 max)
 - Prefer explicit, readable code over cleverness
 - Handle errors at boundaries; let unexpected errors surface
+- User-facing text goes through `i18n::t` with keys in `locales/en.json` (base) and `locales/nl.json` (informal je/jij); logs and developer errors stay English
 
 ## Agent
 
@@ -47,7 +50,7 @@ Justfile            # task runner
 
 Run after every change: `just check`
 
-Runs: just-fmt-check + loc-check + dir-check + fmt-check + lint + test.
+Runs: just-fmt-check + loc-check + dir-check + i18n-check + fmt-check + lint + test.
 
 Step-by-step alternative:
 
@@ -73,6 +76,7 @@ confirmed its issue is fixed.
 - Add a subcommand: define a new `#[derive(Parser)]` struct and add as `#[command(subcommand)]` variant
 - Add a dependency: `cargo add <crate>`
 - Add a module: create `src/<name>.rs` and add `mod <name>;` in `main.rs`
+- Add or change text: edit the key in `locales/en.json` and `locales/nl.json`, call `i18n::t(lang, "section.key", &[])`, run `just i18n-check`
 
 ### Testing
 

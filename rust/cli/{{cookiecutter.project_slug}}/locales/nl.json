@@ -1,0 +1,13 @@
+{
+  "cli": {
+    "about": "{{ cookiecutter.description }}",
+    "input": "Invoer om te verwerken",
+    "verbose": "Toon uitgebreide uitvoer",
+    "lang": "Taal van de uitvoer (standaard: LC_ALL, LC_MESSAGES of LANG, anders en)"
+  },
+  "output": {
+    "processing": "Bezig met verwerken: {input}",
+    "no_input": "Je hebt geen invoer opgegeven. Gebruik --help voor uitleg.",
+    "characters": { "one": "{count} teken", "other": "{count} tekens" }
+  }
+}
