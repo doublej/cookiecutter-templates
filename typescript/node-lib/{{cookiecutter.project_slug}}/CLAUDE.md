@@ -26,6 +26,7 @@ The runtime path is `consumer import → dist/index.js (and .d.ts) → src/index
 - Functions stay small (5–10 lines target, 20 max).
 - Errors surface at the boundary — consumers handle them, the library does not log or `process.exit`.
 - `bun` owns the lockfile. Add deps with `bun add <pkg>`.
+- i18n not enabled; to opt in add an `i18n` block to `.quality.json` and language files (see cookiecutter-templates CLAUDE.md, "Multilingual by default").
 
 ## Common change patterns
 

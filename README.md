@@ -133,6 +133,7 @@ All templates share these variables:
 - Unified `.gitignore` baseline across all templates
 - Every template includes a `README.md` with getting started instructions
 - Every template ships a `.claude/` SessionStart hook that notifies the agent when the upstream template has advanced
+- Multilingual by default: English (`en`, base) and Dutch (`nl`, informal) language files from the first render, a stack-native i18n setup, and `just i18n-check` in `just check` (exempt: node-worker, node-lib, bun-package, raycast-extension)
 
 ## Versioning
 

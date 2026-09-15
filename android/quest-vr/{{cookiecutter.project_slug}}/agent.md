@@ -61,7 +61,7 @@ Justfile
 
 Run after every change: `just check`
 
-Runs: just-fmt-check + loc-check + dir-check + lint + test + build.
+Runs: just-fmt-check + loc-check + dir-check + i18n-check + lint + test + build.
 
 Step-by-step alternative:
 

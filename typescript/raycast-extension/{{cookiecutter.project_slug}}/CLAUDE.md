@@ -25,6 +25,7 @@ Each entry in `package.json` → `commands[]` maps to a `src/<name>.tsx` file wh
 - Raycast spawns processes with a bare env: **no user PATH**. Any spawned binary must be resolved via the `extraPath` preference + `buildPath()` (`src/lib/prefs.ts`), never assumed on PATH.
 - Spawn with argv arrays (`execFile`), never shell strings — filenames contain spaces/unicode.
 - ESLint with the `@raycast` config is the only linter; `ray lint` runs it.
+- i18n not enabled: the Raycast Store requires US English and rejects custom localization, so this extension stays English-only. `.claude/scripts/check_i18n.py` ships dormant.
 
 ## Common change patterns
 

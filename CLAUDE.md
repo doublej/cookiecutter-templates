@@ -69,14 +69,14 @@ Templates are grouped into families (python, typescript, rust, swift, go, shopif
 
 | Family | Templates | Shared identical files | Shared Justfile recipes |
 |--------|-----------|----------------------|------------------------|
-| python | cli, fastapi, flask | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json` | default, install, lint, lint-fix, format, format-check, typecheck, test, loc-check, dir-check, check, clean, claude-tree |
-| typescript | node-api, node-cli, bun-package, node-lib, node-worker, react, sveltekit, tizen-tv, nextjs | `hooks/pre_gen_project.py` | default, install, lint, lint-fix, test, loc-check, dir-check, check, build, clean, claude-tree |
-| swift | ios, macos | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `.swiftlint.yml` | default, install, xcode, lint, lint-fix, test, loc-check, dir-check, check, build, build-release, clean, claude-tree |
-| rust | cli | `hooks/pre_gen_project.py`, `.gitignore` | default, lint, fmt, fmt-check, check, test, loc-check, dir-check, build-release, reinstall, claude-tree |
-| go | cli, api | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json` | default, install, lint, fmt, fmt-check, test, loc-check, dir-check, check, build, build-release, clean, claude-tree |
-| shopify | theme | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `.theme-check.yml` | default, dev, share, lint, lint-fix, loc-check, dir-check, check, pull, push, claude-tree |
+| python | cli, fastapi, flask | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `src/<pkg>/i18n.py`, `tests/test_i18n.py` | default, install, lint, lint-fix, format, format-check, typecheck, test, loc-check, dir-check, i18n-check, check, clean, claude-tree |
+| typescript | node-api, node-cli, bun-package, node-lib, node-worker, react, sveltekit, tizen-tv, nextjs | `hooks/pre_gen_project.py` | default, install, lint, lint-fix, test, loc-check, dir-check, i18n-check, check, build, clean, claude-tree |
+| swift | ios, macos | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `.swiftlint.yml`, `<slug>/L10n.swift` | default, install, xcode, lint, lint-fix, test, loc-check, dir-check, i18n-check, check, build, build-release, clean, claude-tree |
+| rust | cli | `hooks/pre_gen_project.py`, `.gitignore` | default, lint, fmt, fmt-check, check, test, loc-check, dir-check, i18n-check, build-release, reinstall, claude-tree |
+| go | cli, api | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `internal/i18n/i18n.go`, `internal/i18n/i18n_test.go` | default, install, lint, fmt, fmt-check, test, loc-check, dir-check, i18n-check, check, build, build-release, clean, claude-tree |
+| shopify | theme | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `.theme-check.yml` | default, dev, share, lint, lint-fix, loc-check, dir-check, i18n-check, check, pull, push, claude-tree |
 
-Cross-family, every generated `.claude/scripts/` ships identical helper scripts: `_diag.py` (phone-home), `check_template_update.py`, `check_library_freshness.py`, and `snooze_library_check.py`. The `claude-tree` recipe ships no script — it deep-links into the project-atlas viewer (`atlas-api` on :47891) by `pwd`, opening the ancestor + descendant `CLAUDE.md` tree at `/claude-tree?root=$(pwd)`.
+Cross-family, every generated `.claude/scripts/` ships identical helper scripts: `_diag.py` (phone-home), `check_template_update.py`, `check_library_freshness.py`, `snooze_library_check.py`, and `check_i18n.py` (the `just i18n-check` verifier; dormant until `.quality.json` has an `i18n` block). The `claude-tree` recipe ships no script — it deep-links into the project-atlas viewer (`atlas-api` on :47891) by `pwd`, opening the ancestor + descendant `CLAUDE.md` tree at `/claude-tree?root=$(pwd)`.
 
 **Exceptions** are declared in `sync_manifest.json` under `justfile_exceptions` (e.g. SvelteKit skips `typecheck`/`clean`).
 
@@ -93,8 +93,25 @@ Each template follows this structure:
 │   └── post_gen_project.py        # Writes .template-meta.json, MCP setup, prints instructions
 └── {{cookiecutter.project_slug}}/
     ├── CLAUDE.md, agent.md, Justfile, README.md, .gitignore, .quality.json
+    ├── en + nl language files (path per stack, see "Multilingual runtimes")
     └── src/ (or language-specific layout)
 ```
+
+### Multilingual runtimes
+
+Each stack uses its native i18n mechanism; the contract and `just i18n-check` are the same everywhere (see Conventions).
+
+| Template(s) | Runtime | Language files | `i18n.format` |
+|-------------|---------|----------------|---------------|
+| python/cli, fastapi, flask | zero-dep `src/<pkg>/i18n.py` (`importlib.resources` + json) | `src/<pkg>/locales/{en,nl}.json` | json |
+| go/cli, api | zero-dep `internal/i18n` (`embed` + `encoding/json`) | `internal/i18n/locales/{en,nl}.json` | json |
+| rust/cli | zero-dep `src/i18n.rs` (`include_str!` + serde_json) | `locales/{en,nl}.json` | json |
+| typescript/node-api, node-cli | zero-dep `src/i18n.ts` (`Intl.PluralRules`) | `src/locales/{en,nl}.json` | json |
+| typescript/sveltekit, tizen-tv, react | Paraglide JS 2, compiled (`prepare` script; plugin loaded from `node_modules`, never a CDN) | `messages/{en,nl}.json` + `project.inlang/settings.json` | json |
+| typescript/nextjs | next-intl, `localePrefix: 'as-needed'`, locale via `next/root-params` | `messages/{en,nl}.json` | json |
+| swift/ios, macos | Foundation `.strings` + `L10n.swift` (SPM executables have no Info.plist, so `Bundle.module` alone ignores the preferred language) | `<slug>/Resources/{en,nl}.lproj/Localizable.strings` | strings |
+| android/quest-vr | Android resources | `app/src/main/res/values{,-nl}/strings.xml` | android |
+| shopify/theme | Shopify locales (`t` filter, `t:` schema keys) | `locales/{en.default,nl}{,.schema}.json` | json + `base_file` |
 
 ### Tools
 
@@ -103,6 +120,7 @@ Each template follows this structure:
 | `tools/sync_check.py` | SHA256 comparison of identical files; recipe-level Justfile comparison |
 | `tools/render_test.py` | Renders ~50 template variants (defined in `TEMPLATES` dict); runs language-specific smoke tests (compileall, bun install+lint+build+test, cargo build, swift build) |
 | `tools/inject_tracking.py` | Replaces the tracking placeholder with a Umami `<script>` tag, indentation-preserving — handles both `.html` (`<!-- TRACKING_PLACEHOLDER -->`) and `.tsx` (`{/* TRACKING_PLACEHOLDER */}`) |
+| `tools/test_i18n_check.py` | Offline fixtures for `check_i18n.py`: missing/extra key, placeholder and plural mismatch, `.strings` (UTF-8/16), Android, Shopify `en.default`, not-configured mode, phone-home record, and a guard that the script contains no Jinja delimiters |
 | `tools/update_projects.py` | Batch scaffold update across `~/dev`: skips unversioned, retrofit, non-git and up-to-date projects and any project with uncommitted changes in a file it would write; writes only tooling + `.atlas`; commits exactly those paths. Covered by `tools/test_update_projects.py` |
 | `tools/umami_register.py` | Creates a website in Umami via `POST /api/websites` and prints the new website id (`--json` adds the resolved URL). Credentials resolve from env, falling back to the onenv `umami` namespace; auth is `UMAMI_API_KEY` (x-umami-api-key, Umami Cloud) or `UMAMI_USERNAME`/`UMAMI_PASSWORD` (login → bearer, self-hosted) |
 
@@ -122,6 +140,7 @@ Each template follows this structure:
 - **Project slug**: kebab-case `[a-z][a-z0-9-]*[a-z0-9]`, min 2 chars, validated in pre-gen hooks
 - **Hooks are safe**: no `git init`, no dependency installs, no commits. `atlas new` does the git bootstrap after cookiecutter returns (`main` + scaffold commit + `develop`), so the branch flow stays in one place instead of in every template's post-gen hook. No `flow`/branch question belongs in `cookiecutter.json`
 
+- **Multilingual by default**: every template except the exempt four ships `en` (base, fallback) + `nl` (informal je/jij) language files from the first render, a stack-native runtime (see "Multilingual runtimes") and a configured `just i18n-check`. The contract: user-facing strings are looked up by key, never hardcoded; logs and developer errors stay English; `nl` has exactly `en`'s keys and placeholders; placeholders are `{name}` (Shopify keeps Liquid double braces, Apple `.strings` use `%@`); plurals are `{"one": …, "other": …}` objects; locale resolves explicit choice (flag, URL, cookie, setting) → `LC_ALL`/`LC_MESSAGES`/`LANG`, `Accept-Language` or system language → `en`; adding a language is one file plus at most one registration. Language files and `.claude/scripts/` are rendered by Jinja, so they never contain `{{`, `{%`, `{#` or ICU `#` unless the path is in `_copy_without_render`. Exempt, with the checker shipped dormant (opt in by adding an `i18n` block to `.quality.json`): typescript/node-worker, node-lib, bun-package (no user-facing text) and raycast-extension (the Raycast Store requires US English). `render_test.py` fails any non-exempt template whose checker does not report `i18n: ok`.
 - **MCP options**: every template supports `mcp_servers` (none/minimal/standard/interactive) and `mcp_scope` (project/local) in cookiecutter.json
 - **When editing a shared file** (identified in sync_manifest.json), apply the same change to all templates in the family
 - **When editing a shared Justfile recipe**, apply the same change to all Justfiles in the family (respecting exceptions)
@@ -141,3 +160,39 @@ Any hook or script that ships inside a generated project's `.claude/` (e.g. `che
 - Best-effort: logging failure must never raise. Wrap in try/except and exit 0.
 - Diag-specific opt-out (separate from per-hook opt-outs): `NO_TEMPLATE_DIAG=1` env or `.claude/no-template-diag` sentinel.
 - `_diagnostics/` is gitignored at the repo root; reviewed via a tool (see below) and pruned manually.
+
+<!-- agent-log:policy -->
+### Shared agent journal
+
+Use `./agent-log` (a shim for `atlas agent-log` — both are identical) for short-lived
+operational awareness between concurrent agents. It is not chat and not a task tracker: the
+issue tracker remains the source of truth for ownership, blockers, and durable findings.
+
+- Run `./agent-log recent` before interpreting shared state.
+- Before an action that can change another agent's observations, write an intent with every
+  affected scope. This includes shared-worktree edits, generated artifacts, git/index
+  mutations, and shared ports, processes, or services.
+- Run builds, tests, and deployments through the wrapper so start, commit, dirty state,
+  duration, exit code, and outcome are recorded even on failure:
+  `./agent-log run build|test|deploy --scope <resource> [--bead <id>] -- <command...>`.
+- For manual operations, use `./agent-log begin <operation> --scope <resource> [--bead <id>]
+  -- <summary>` and always close the returned id with `./agent-log end <id> --outcome
+  ok|failed|cancelled -- <result>`. `<operation>` is one of build, commit, deploy, edit, implement, investigate, merge, push, review, sync, test — what
+  makes this particular run specific goes in the summary, never in an invented operation name.
+- Record a temporary result-affecting discovery with `./agent-log finding --scope <resource>
+  --evidence <fact> [--bead <id>] -- <summary>`. This is the entry that saves another agent a
+  wasted run, and the one most often skipped — write one whenever you learn something that
+  would change what a concurrent agent does next, especially a dead end. Promote lasting
+  knowledge to the issue tracker or the relevant doc.
+- At session end, write `./agent-log handoff -- <stopping point + next step>` — the durable
+  baton the next session's briefing picks up. Handoffs never expire; the latest one is
+  always shown by `recent`.
+- Intents expire after 20 minutes and findings after 4 hours unless `--ttl` overrides them.
+  Renew by closing and reopening an intent; never treat an expired entry as current.
+- Keep summaries factual and short. Do not reply, ask questions, mention agents, narrate
+  routine progress, or log isolated reads/edits/tests that cannot affect anyone else.
+
+Canonical scopes are `path:<repo-relative-path>`, `artifact:<name>`, `service:<name>`,
+`host:<name>`, `port:<number>`, and `git:<worktree-or-ref>`; a repo may define additional
+canonical scopes of its own. Add multiple `--scope` flags when needed. The journal SQLite db
+lives in the git common directory, so linked worktrees share it without dirtying the repo.

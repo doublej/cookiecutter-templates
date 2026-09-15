@@ -27,6 +27,7 @@ The runtime path is `bun → tsx → src/index.ts → consume loop`. The worker 
 - Errors surface at the boundary; a failed job should not bring down the worker silently — surface, log, ack/nack explicitly.
 - Shutdown is cooperative: trap signals, stop accepting work, drain, then exit.
 - `bun` owns the lockfile. Add deps with `bun add <pkg>`.
+- i18n not enabled; to opt in add an `i18n` block to `.quality.json` and language files (see cookiecutter-templates CLAUDE.md, "Multilingual by default").
 
 ## Common change patterns
 
