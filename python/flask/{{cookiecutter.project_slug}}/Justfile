@@ -113,7 +113,7 @@ clean:
     rm -rf dist/ .mypy_cache/ .pytest_cache/ .ruff_cache/
     find . -type d -name __pycache__ -exec rm -rf {} +
 
-# Open this project's CLAUDE.md tree in the project-atlas viewer (via the global `atlas` CLI)
+# Open this project's CLAUDE.md tree in the project-atlas viewer, https://github.com/doublej/project-atlas (via the global `atlas` CLI)
 [group('docs')]
 claude-tree:
     atlas tree

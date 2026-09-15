@@ -110,7 +110,7 @@ build:
 clean:
     rm -rf .next/ node_modules/.cache/
 
-# Open this project's CLAUDE.md tree in the project-atlas viewer (via the global `atlas` CLI)
+# Open this project's CLAUDE.md tree in the project-atlas viewer, https://github.com/doublej/project-atlas (via the global `atlas` CLI)
 [group('docs')]
 claude-tree:
     atlas tree
