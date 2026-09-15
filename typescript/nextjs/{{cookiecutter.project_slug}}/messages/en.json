@@ -1,0 +1,17 @@
+{
+  "Metadata": {
+    "title": "{{ cookiecutter.project_name }}",
+    "description": "{{ cookiecutter.description }}"
+  },
+  "Home": {
+    "title": "{{ cookiecutter.project_name }}",
+    "intro": "You can change this text in {file}.",
+    "languages": {
+      "one": "Available in {count} language.",
+      "other": "Available in {count} languages."
+    }
+  },
+  "LanguageSwitcher": {
+    "label": "Language"
+  }
+}

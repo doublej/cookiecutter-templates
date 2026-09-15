@@ -1,0 +1,17 @@
+{
+  "Metadata": {
+    "title": "{{ cookiecutter.project_name }}",
+    "description": "{{ cookiecutter.description }}"
+  },
+  "Home": {
+    "title": "{{ cookiecutter.project_name }}",
+    "intro": "Je kunt deze tekst aanpassen in {file}.",
+    "languages": {
+      "one": "Beschikbaar in {count} taal.",
+      "other": "Beschikbaar in {count} talen."
+    }
+  },
+  "LanguageSwitcher": {
+    "label": "Taal"
+  }
+}

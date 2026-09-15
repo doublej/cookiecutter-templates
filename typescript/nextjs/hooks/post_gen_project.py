@@ -11,7 +11,7 @@ from pathlib import Path
 PROJECT_DIR = Path(os.path.realpath(os.path.curdir))
 PROJECT_SLUG = "{{ cookiecutter.project_slug }}"
 INCLUDE_TRACKING = "{{ cookiecutter.include_tracking }}"
-TRACKING_TARGET = "src/app/layout.tsx"
+TRACKING_TARGET = "src/app/[locale]/layout.tsx"
 TRACKING_PLACEHOLDER_LINE = "        {/* TRACKING_PLACEHOLDER */}\n"
 # Umami rejects a bare slug as a domain; a new project has no public domain yet.
 TRACKING_DOMAIN = "localhost:{{ cookiecutter.port }}"
@@ -56,8 +56,6 @@ def _strip_placeholder():
     content = target.read_text()
     if TRACKING_PLACEHOLDER_LINE in content:
         content = content.replace(TRACKING_PLACEHOLDER_LINE, "")
-        # Collapse the now single-child <body> onto one line to match Biome's formatting.
-        content = content.replace("      <body>\n        {children}\n      </body>", "      <body>{children}</body>")
         # newline="\n": default platform newlines would write CRLF on Windows,
         # failing the rendered project's own Biome check (lineEnding=lf).
         target.write_text(content, newline="\n")
