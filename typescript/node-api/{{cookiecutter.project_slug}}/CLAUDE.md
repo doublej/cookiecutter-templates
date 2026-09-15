@@ -11,7 +11,9 @@ A TypeScript HTTP server. Runs under `bun` for dev (with `tsx` watch) and ships 
 ```
 src/
 ├── env.ts          # parsed, typed environment config
+├── i18n.ts         # t(), negotiate(Accept-Language), localeFromEnv() — zero-dep
 ├── index.ts        # server entry — wires env → server → port
+├── locales/        # en.json (base, fallback), nl.json
 └── logger.ts       # logging utility
 package.json        # type: module, scripts, dependencies
 tsconfig.json       # strict mode
@@ -28,9 +30,12 @@ The runtime path is `bun → tsx → src/index.ts → server`. `env.ts` is the o
 - Functions stay small (5–10 lines target, 20 max).
 - Errors surface at the boundary; do not swallow with `try/catch`.
 - `bun` owns the lockfile. Add deps with `bun add <pkg>`.
+- User-facing text is multilingual: `en` (base, fallback) and `nl` (informal je/jij). Never hardcode user-visible strings; add each key to every language file in the same change. Logs and developer errors stay English.
 
 ## Common change patterns
 
+- **Add or change text** → edit `src/locales/*.json`, call `t(locale, 'key', params)` with the `locale` that `index.ts` derives from `Accept-Language`, run `just i18n-check`.
+- **Add a language** → add `src/locales/<locale>.json` (+ register in `catalogs` in `src/i18n.ts`), run `just i18n-check`.
 - **Add a route / handler** → new module under `src/`, wire it into `index.ts`.
 - **Add config** → extend the parser in `env.ts`; consume the typed result everywhere else.
 - **Add middleware** → compose it in `index.ts` between env load and server start.
@@ -40,7 +45,7 @@ The runtime path is `bun → tsx → src/index.ts → server`. `env.ts` is the o
 
 Run `just check` after every change. It composes:
 
-`just-fmt-check` + `loc-check` + `dir-check` + `lint` + `typecheck` + `test`
+`just-fmt-check` + `loc-check` + `dir-check` + `i18n-check` + `lint` + `typecheck` + `test`
 
 Recipe reference:
 
@@ -52,6 +57,7 @@ Recipe reference:
 - `just test` — Vitest
 - `just build` — production build
 - `just loc-check` / `just dir-check` — file-size and per-directory thresholds from `.quality.json`
+- `just i18n-check` — every language file has the base's keys and placeholders
 - `just just-fmt-check` — verify Justfile formatting
 - `just clean` — remove build artifacts
 - `just update-scaffold` — pull updates from the cookiecutter template

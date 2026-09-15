@@ -11,13 +11,15 @@ A TypeScript command-line tool. `bun` for install + run, `tsx` for dev watch, Bi
 ```
 src/
 ├── cli.ts          # CLI entry — argument parsing + dispatch
-└── index.ts        # main logic, importable as a library
+├── i18n.ts         # t(), localeFromEnv(), negotiate() — zero-dep
+├── index.ts        # main logic, importable as a library
+└── locales/        # en.json (base, fallback), nl.json
 package.json        # bin: { "{{ cookiecutter.project_slug }}": "dist/cli.js" }
 tsconfig.json       # strict mode
 biome.json          # lint + format rules
 ```
 
-The runtime path is `bin → cli.ts → main logic`. `cli.ts` only knows about argv + I/O; the actual work lives in `index.ts` (or sibling modules) so it can be reused programmatically.
+The runtime path is `bin → cli.ts → main logic`. `cli.ts` only knows about argv + I/O; the actual work lives in `index.ts` (or sibling modules) so it can be reused programmatically. `cli.ts` resolves the locale before declaring commands: `--lang` → `LC_ALL` / `LC_MESSAGES` / `LANG` → `en`.
 
 ## Invariants
 
@@ -27,9 +29,12 @@ The runtime path is `bin → cli.ts → main logic`. `cli.ts` only knows about a
 - Functions stay small (5–10 lines target, 20 max).
 - Errors surface at the boundary; the CLI translates them to exit codes + stderr.
 - `bun` owns the lockfile. Add deps with `bun add <pkg>`.
+- User-facing text is multilingual: `en` (base, fallback) and `nl` (informal je/jij). Never hardcode user-visible strings; add each key to every language file in the same change. Logs and developer errors stay English.
 
 ## Common change patterns
 
+- **Add or change text** → edit `src/locales/*.json`, call `t(locale, 'key', params)`, run `just i18n-check`.
+- **Add a language** → add `src/locales/<locale>.json` (+ register in `catalogs` in `src/i18n.ts`), run `just i18n-check`.
 - **Add a command / flag** → extend argv parsing in `cli.ts`, dispatch to a function in `index.ts`.
 - **Add main-logic surface** → export a new function from `index.ts` (keep CLI-shaped concerns out).
 - **Add a dependency** → `bun add <pkg>` (or `bun add -d <pkg>` for dev).
@@ -38,7 +43,7 @@ The runtime path is `bin → cli.ts → main logic`. `cli.ts` only knows about a
 
 Run `just check` after every change. It composes:
 
-`just-fmt-check` + `loc-check` + `dir-check` + `lint` + `typecheck` + `test`
+`just-fmt-check` + `loc-check` + `dir-check` + `i18n-check` + `lint` + `typecheck` + `test`
 
 Recipe reference:
 
@@ -50,6 +55,7 @@ Recipe reference:
 - `just test` — Vitest
 - `just build` — production build
 - `just loc-check` / `just dir-check` — file-size and per-directory thresholds from `.quality.json`
+- `just i18n-check` — every language file has the base's keys and placeholders
 - `just just-fmt-check` — verify Justfile formatting
 - `just clean` — remove build artifacts
 - `just update-scaffold` — pull updates from the cookiecutter template

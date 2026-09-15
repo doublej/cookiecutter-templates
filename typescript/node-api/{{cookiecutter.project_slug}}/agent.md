@@ -45,6 +45,7 @@ Justfile            # task runner
 - Keep functions small (5–10 lines target, 20 max)
 - Prefer explicit, readable code over cleverness
 - Handle errors at boundaries; let unexpected errors surface
+- User-facing text goes through `t()` with keys in every `src/locales/*.json` (`en` base, `nl` informal); logs stay English
 
 ## Agent
 
@@ -77,6 +78,7 @@ confirmed its issue is fixed.
 - Add an HTTP route handler: define a handler in `src/` and wire it to the server in `index.ts`
 - Add middleware: create a middleware function and apply it before route handlers
 - Add an env var: add the variable to `src/env.ts` with validation
+- Add or change user-facing text: edit every `src/locales/*.json`, call `t(locale, 'key', params)`, run `just i18n-check`
 - Add a dependency: `bun add <package>`
 
 ### Testing

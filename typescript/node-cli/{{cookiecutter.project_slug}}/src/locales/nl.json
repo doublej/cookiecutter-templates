@@ -1,0 +1,24 @@
+{
+  "description": "{{ cookiecutter.description }}",
+  "options": {
+    "help": "Toon hulp",
+    "version": "Toon het versienummer",
+    "lang": "Taal van de uitvoer ({locales})"
+  },
+  "commands": {
+    "help": "Toon hulp bij een commando"
+  },
+  "hello": {
+    "description": "Zeg hallo",
+    "names": "Namen om te begroeten",
+    "prompt": "Hoe heet je?",
+    "defaultName": "Wereld",
+    "cancelled": "Geannuleerd",
+    "working": "Bezig...",
+    "done": {
+      "one": "{count} persoon begroet",
+      "other": "{count} mensen begroet"
+    },
+    "greeting": "Hallo, {name}!"
+  }
+}

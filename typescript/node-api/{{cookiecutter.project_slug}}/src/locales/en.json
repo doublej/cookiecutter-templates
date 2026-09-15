@@ -1,0 +1,7 @@
+{
+  "hello": "Hello from {name}!",
+  "uptime": {
+    "one": "Running for {count} second",
+    "other": "Running for {count} seconds"
+  }
+}

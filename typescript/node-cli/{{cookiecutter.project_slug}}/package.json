@@ -11,7 +11,7 @@
     "build": "tsc",
     "dev": "tsx watch src/cli.ts",
     "start": "node dist/cli.js",
-    "test": "vitest --passWithNoTests",
+    "test": "vitest --passWithNoTests --dir src",
     "lint": "biome check .",
     "lint:fix": "biome check --write ."
   },

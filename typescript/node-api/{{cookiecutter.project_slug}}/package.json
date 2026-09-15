@@ -8,7 +8,7 @@
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
-    "test": "vitest --passWithNoTests",
+    "test": "vitest --passWithNoTests --dir src",
     "lint": "biome check .",
     "lint:fix": "biome check --write ."
   },

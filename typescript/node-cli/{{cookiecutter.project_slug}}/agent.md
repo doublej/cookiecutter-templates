@@ -44,6 +44,7 @@ Justfile            # task runner
 - Keep functions small (5–10 lines target, 20 max)
 - Prefer explicit, readable code over cleverness
 - Handle errors at boundaries; let unexpected errors surface
+- User-facing text goes through `t()` with keys in every `src/locales/*.json` (`en` base, `nl` informal); logs stay English
 
 ## Agent
 
@@ -76,6 +77,7 @@ confirmed its issue is fixed.
 - Add a CLI command: define the command logic in `src/` and wire it in `cli.ts`
 - Add argument parsing: use the project's argument parsing approach in `cli.ts`
 - Add a subcommand: create a new module in `src/` and import it in the CLI entry point
+- Add or change user-facing text: edit every `src/locales/*.json`, call `t(locale, 'key', params)`, run `just i18n-check`
 - Add a dependency: `bun add <package>`
 
 ### Testing
