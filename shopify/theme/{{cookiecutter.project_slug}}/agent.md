@@ -13,7 +13,8 @@
 
 Use `just` as the task runner:
 
-- `just check` — run all checks (just-fmt-check + loc-check + dir-check + lint)
+- `just check` — run all checks (just-fmt-check + loc-check + dir-check + i18n-check + lint)
+- `just i18n-check` — every language file has the base's keys and placeholders
 - `just dev` — start the local dev server (long-lived; agent must not run this)
 - `just lint` / `just lint-fix` — Theme Check / `--auto-correct`
 - `just share` — generate a shareable preview link
@@ -33,7 +34,7 @@ sections/       # configurable blocks with {% raw %}{% schema %}{% endraw %}
 snippets/       # reusable Liquid partials ({% raw %}{% render %}{% endraw %})
 blocks/         # theme blocks
 config/         # settings_schema.json, settings_data.json
-locales/        # translation files (*.default.json is active)
+locales/        # en.default.json (base) + nl.json; *.schema.json pair for the theme editor
 assets/         # css / js / images
 .theme-check.yml
 Justfile
@@ -44,7 +45,7 @@ Justfile
 - Online Store 2.0: templates are JSON composing sections; markup lives in `sections/`.
 - Every section has a `{% raw %}{% schema %}{% endraw %}` with `settings`, optional `blocks`, and a `presets` entry.
 - Reuse with `{% raw %}{% render %}{% endraw %}` (not the deprecated `{% raw %}{% include %}{% endraw %}`).
-- All copy goes through the `t` filter, backed by `locales/*.json`.
+- User-facing text is multilingual (`en` base and fallback, `nl` informal je/jij): copy goes through the `t` filter, schema text through `t:` keys, and every key lands in all `locales/` files in the same change.
 - Reference assets with the `asset_url` filter, not hard-coded paths.
 - Don't invent Liquid objects/filters — verify against Shopify docs.
 - Keep sections focused; extract shared markup into snippets.
@@ -55,7 +56,7 @@ Justfile
 
 Run after every change: `just check`
 
-Runs: just-fmt-check + loc-check + dir-check + lint (Theme Check).
+Runs: just-fmt-check + loc-check + dir-check + i18n-check + lint (Theme Check).
 
 Step-by-step alternative:
 
@@ -88,7 +89,7 @@ it after the user has said to deploy.
 - Add a snippet: create `snippets/<name>.liquid`; call it with `{% raw %}{% render '<name>' %}{% endraw %}`.
 - Add a theme block: create `blocks/<name>.liquid` with a `{% raw %}{% schema %}{% endraw %}`.
 - Add a setting: edit `config/settings_schema.json`; read via `{% raw %}{{ settings.<id> }}{% endraw %}`.
-- Add a string: add the key to `locales/en.default.json`; render with `{% raw %}{{ 'group.key' | t }}{% endraw %}`.
+- Add or change text: edit `locales/en.default.json` and `locales/nl.json` (schema text: the `*.schema.json` pair); render with `{% raw %}{{ 'group.key' | t }}{% endraw %}`; run `just i18n-check`.
 
 ### Testing
 

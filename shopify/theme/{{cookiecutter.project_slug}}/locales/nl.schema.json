@@ -1,0 +1,142 @@
+{
+  "settings_schema": {
+    "colors": {
+      "name": "Kleuren",
+      "settings": {
+        "color_background": {
+          "label": "Achtergrond"
+        },
+        "color_foreground": {
+          "label": "Tekst"
+        },
+        "color_accent": {
+          "label": "Accent"
+        }
+      }
+    },
+    "layout": {
+      "name": "Indeling",
+      "settings": {
+        "logo": {
+          "label": "Logo"
+        },
+        "favicon": {
+          "label": "Favicon",
+          "info": "Wordt verkleind tot 32 x 32 px"
+        },
+        "page_width": {
+          "label": "Paginabreedte",
+          "unit": "rem"
+        }
+      }
+    }
+  },
+  "sections": {
+    "header": {
+      "name": "Header",
+      "settings": {
+        "menu": {
+          "label": "Menu"
+        }
+      }
+    },
+    "footer": {
+      "name": "Footer",
+      "settings": {
+        "show_newsletter": {
+          "label": "Aanmelden voor nieuwsbrief tonen"
+        },
+        "copyright_text": {
+          "label": "Copyrighttekst"
+        }
+      }
+    },
+    "announcement_bar": {
+      "name": "Aankondigingsbalk",
+      "settings": {
+        "text": {
+          "label": "Tekst",
+          "default": "Welkom in onze winkel"
+        },
+        "link": {
+          "label": "Link"
+        }
+      },
+      "presets": {
+        "name": "Aankondigingsbalk"
+      }
+    },
+    "rich_text": {
+      "name": "Opgemaakte tekst",
+      "settings": {
+        "heading": {
+          "label": "Kop",
+          "default": "Vertel over je merk"
+        },
+        "text": {
+          "label": "Tekst",
+          "default": "<p>Gebruik deze tekst om je klanten meer over je merk te vertellen.</p>"
+        }
+      },
+      "presets": {
+        "name": "Opgemaakte tekst"
+      }
+    },
+    "main_product": {
+      "name": "Productinformatie"
+    },
+    "main_collection": {
+      "name": "Productraster",
+      "settings": {
+        "products_per_page": {
+          "label": "Producten per pagina"
+        }
+      }
+    },
+    "main_list_collections": {
+      "name": "Collectielijst"
+    },
+    "main_page": {
+      "name": "Pagina"
+    },
+    "main_blog": {
+      "name": "Blogberichten"
+    },
+    "main_article": {
+      "name": "Artikel"
+    },
+    "main_cart": {
+      "name": "Winkelwagen"
+    },
+    "main_search": {
+      "name": "Zoekresultaten"
+    },
+    "main_404": {
+      "name": "404-pagina"
+    },
+    "main_password": {
+      "name": "Wachtwoord"
+    },
+    "main_account": {
+      "name": "Account"
+    },
+    "main_login": {
+      "name": "Inloggen"
+    },
+    "main_register": {
+      "name": "Registreren"
+    },
+    "main_order": {
+      "name": "Bestelling"
+    },
+    "main_addresses": {
+      "name": "Adressen"
+    },
+    "main_reset_password": {
+      "name": "Wachtwoord opnieuw instellen"
+    },
+    "main_activate_account": {
+      "name": "Account activeren"
+    }
+  }
+}

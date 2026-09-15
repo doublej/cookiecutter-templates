@@ -28,7 +28,9 @@ blocks/                 # theme blocks (nestable, app-block compatible)
 config/
 ├── settings_schema.json   # global theme settings (Theme editor → Settings)
 └── settings_data.json     # current values of those settings
-locales/                # translations; <code>.default.json is the active storefront locale
+locales/
+├── en.default.json · nl.json                 # storefront strings (t filter); en is base and fallback
+└── en.default.schema.json · nl.schema.json   # theme editor strings (t: keys in schemas)
 assets/                 # CSS / JS / images, served via the asset_url filter
 ```
 
@@ -41,7 +43,7 @@ sections, not templates.
 - **Online Store 2.0**: `templates/*.json` only *compose* sections — they hold no markup. Put markup in `sections/`.
 - A **section** is the unit of merchant configuration. Each ships a `{% raw %}{% schema %}{% endraw %}` with `settings`, optional `blocks`, and a `presets` entry so it can be added in the theme editor.
 - Reuse partials with `{% raw %}{% render 'name' %}{% endraw %}` (isolated scope). Do **not** use `{% raw %}{% include %}{% endraw %}` — it is deprecated.
-- Every user-facing string goes through the `t` filter and lives in `locales/*.json` — no hard-coded copy.
+- User-facing text is multilingual: `en` (base, fallback) and `nl` (informal je/jij). Never hardcode user-visible strings; add each key to every language file in the same change. Logs and developer errors stay English. Storefront copy goes through the `t` filter (`locales/*.json`), schema text (`name`, `label`, `info`, text `default`) through `t:` keys (`locales/*.schema.json`), and dates through `date: format: 'month_day_year'` (`date_formats`).
 - Reference assets with the `asset_url` filter — never hard-code `/assets/...` paths.
 - Liquid objects and filters are Shopify-provided. Don't invent objects/filters; check the docs.
 - **Theme Check is the source of truth for lint** — `just lint` must be clean.
@@ -53,17 +55,19 @@ sections, not templates.
 - **Add a reusable partial** → `snippets/<name>.liquid`; call it with `{% raw %}{% render '<name>', arg: value %}{% endraw %}`.
 - **Add a theme block** → `blocks/<name>.liquid` with a `{% raw %}{% schema %}{% endraw %}`; allow it from a section's schema `blocks`.
 - **Add a global setting** → edit `config/settings_schema.json`; read it in Liquid as `{% raw %}{{ settings.<id> }}{% endraw %}`.
-- **Add a string** → add the key to `locales/en.default.json`, render with `{% raw %}{{ 'group.key' | t }}{% endraw %}`.
+- **Add or change text** → edit `locales/en.default.json` and `locales/nl.json` (schema text: the `*.schema.json` pair), call `{% raw %}{{ 'group.key' | t }}{% endraw %}` (schema: `"t:group.key"`), run `just i18n-check`.
+- **Add a language** → add `locales/<code>.json` and `locales/<code>.schema.json` (no registration in code; publish the language in Shopify admin), run `just i18n-check`.
 - **Add an asset** → drop the file in `assets/`, reference via `{% raw %}{{ 'file.css' | asset_url | stylesheet_tag }}{% endraw %}`.
 
 ## Verification
 
 Run `just check` after every change. It composes:
 
-`just-fmt-check` + `loc-check` + `dir-check` + `lint`
+`just-fmt-check` + `loc-check` + `dir-check` + `i18n-check` + `lint`
 
 Recipe reference:
 
+- `just i18n-check` — every language file has the base's keys and placeholders
 - `just dev` — `shopify theme dev` (agent must not run this; it's a long-lived server)
 - `just lint` / `just lint-fix` — Theme Check / `--auto-correct`
 - `just share` — `shopify theme share` (preview link)

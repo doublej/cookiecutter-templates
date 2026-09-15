@@ -32,7 +32,7 @@ sections/    configurable, schema-driven blocks
 snippets/    reusable Liquid partials
 blocks/      theme blocks
 config/      settings_schema.json + settings_data.json
-locales/     translations (en.default.json is active)
+locales/     translations: en.default.json (base) + nl.json, and their .schema.json pairs
 assets/      css / js / images
 ```
 

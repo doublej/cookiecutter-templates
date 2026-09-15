@@ -1,7 +1,8 @@
 <section class="order section">
   <div class="page-width">
     <h1 class="order__title">{{ 'customer.order.title' | t: name: order.name }}</h1>
-    <p class="order__date">{{ 'customer.order.date' | t: date: order.created_at | date: '%B %d, %Y' }}</p>
+    {%- assign order_date = order.created_at | date: format: 'month_day_year' -%}
+    <p class="order__date">{{ 'customer.order.date' | t: date: order_date }}</p>
 
     <table class="order__table">
       <thead>

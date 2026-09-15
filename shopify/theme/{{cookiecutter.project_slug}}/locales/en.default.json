@@ -172,5 +172,8 @@
       "cancel": "Cancel",
       "none": "You haven't saved any addresses yet."
     }
+  },
+  "date_formats": {
+    "month_day_year": "%B %-d, %Y"
   }
 }

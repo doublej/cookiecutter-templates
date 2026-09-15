@@ -55,7 +55,8 @@
       "name": "Announcement bar",
       "settings": {
         "text": {
-          "label": "Text"
+          "label": "Text",
+          "default": "Welcome to our store"
         },
         "link": {
           "label": "Link"
@@ -69,10 +70,12 @@
       "name": "Rich text",
       "settings": {
         "heading": {
-          "label": "Heading"
+          "label": "Heading",
+          "default": "Talk about your brand"
         },
         "text": {
-          "label": "Text"
+          "label": "Text",
+          "default": "<p>Use this text to share information about your brand with your customers.</p>"
         }
       },
       "presets": {

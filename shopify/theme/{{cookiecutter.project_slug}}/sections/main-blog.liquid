@@ -21,7 +21,7 @@
               {%- endif -%}
               <h2 class="blog__item-title">{{ article.title }}</h2>
             </a>
-            <p class="blog__date">{{ article.published_at | date: '%B %d, %Y' }}</p>
+            <p class="blog__date">{{ article.published_at | date: format: 'month_day_year' }}</p>
             {%- if article.excerpt != blank -%}
               <div class="blog__excerpt rte">{{ article.excerpt }}</div>
             {%- endif -%}

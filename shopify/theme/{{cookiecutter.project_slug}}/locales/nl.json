@@ -1,0 +1,179 @@
+{
+  "general": {
+    "meta": {
+      "tags": "Met tag \"{{ tags }}\"",
+      "page": "Pagina {{ page }}"
+    },
+    "pagination": {
+      "label": "Paginering",
+      "previous": "Vorige",
+      "next": "Volgende"
+    },
+    "search": {
+      "search": "Zoeken",
+      "placeholder": "Zoeken",
+      "results_with_count": {
+        "one": "{{ count }} resultaat",
+        "other": "{{ count }} resultaten"
+      },
+      "no_results": "Geen resultaten gevonden voor “{{ terms }}”.",
+      "submit": "Zoeken"
+    },
+    "newsletter": {
+      "label": "E-mail",
+      "placeholder": "E-mailadres",
+      "submit": "Inschrijven",
+      "success": "Bedankt voor je inschrijving."
+    },
+    "404": {
+      "title": "Pagina niet gevonden",
+      "body": "De pagina die je zocht bestaat niet.",
+      "continue_shopping": "Verder winkelen"
+    },
+    "password_page": {
+      "login_form_heading": "Open de winkel met je wachtwoord",
+      "login_form_password_label": "Wachtwoord",
+      "login_form_password_placeholder": "Je wachtwoord",
+      "login_form_submit": "Doorgaan"
+    }
+  },
+  "accessibility": {
+    "skip_to_content": "Direct naar de inhoud",
+    "home": "Home"
+  },
+  "products": {
+    "product": {
+      "add_to_cart": "In winkelwagen",
+      "sold_out": "Uitverkocht",
+      "unavailable": "Niet beschikbaar",
+      "quantity": "Aantal",
+      "price": "Prijs",
+      "from_price": "Vanaf {{ price }}",
+      "on_sale": "Aanbieding",
+      "vendor": "Verkoper"
+    }
+  },
+  "collections": {
+    "general": {
+      "title": "Collecties",
+      "no_products": "Geen producten gevonden.",
+      "view_all": "Alles bekijken"
+    }
+  },
+  "cart": {
+    "title": "Je winkelwagen",
+    "empty": "Je winkelwagen is leeg.",
+    "continue_shopping": "Verder winkelen",
+    "product": "Product",
+    "price": "Prijs",
+    "quantity": "Aantal",
+    "total": "Totaal",
+    "subtotal": "Subtotaal",
+    "remove": "Verwijderen",
+    "update": "Bijwerken",
+    "checkout": "Afrekenen",
+    "taxes_and_shipping_at_checkout": "Belasting en verzendkosten worden bij het afrekenen berekend"
+  },
+  "blogs": {
+    "article": {
+      "read_more": "Lees meer",
+      "back_to_blog": "Terug naar de blog",
+      "posted_in": "Geplaatst in"
+    }
+  },
+  "page": {
+    "title": "Pagina"
+  },
+  "gift_cards": {
+    "issued": {
+      "title": "Hier is je cadeaubon van {{ value }} voor {{ shop }}!",
+      "subtext": "Je cadeaubon",
+      "code": "Cadeauboncode",
+      "shop_link": "Naar de webwinkel"
+    }
+  },
+  "customer": {
+    "account": {
+      "title": "Mijn account",
+      "details": "Accountgegevens",
+      "view_addresses": "Adressen bekijken",
+      "order_history": "Bestelgeschiedenis",
+      "no_orders": "Je hebt nog geen bestellingen geplaatst.",
+      "log_out": "Uitloggen"
+    },
+    "login": {
+      "title": "Inloggen",
+      "email": "E-mail",
+      "password": "Wachtwoord",
+      "submit": "Inloggen",
+      "forgot_password": "Wachtwoord vergeten?",
+      "create_account": "Account aanmaken",
+      "guest": "Doorgaan als gast"
+    },
+    "register": {
+      "title": "Account aanmaken",
+      "first_name": "Voornaam",
+      "last_name": "Achternaam",
+      "email": "E-mail",
+      "password": "Wachtwoord",
+      "submit": "Aanmaken",
+      "cancel": "Terug naar de winkel"
+    },
+    "recover_password": {
+      "title": "Wachtwoord opnieuw instellen",
+      "subtext": "We sturen je een e-mail om je wachtwoord opnieuw in te stellen.",
+      "email": "E-mail",
+      "submit": "Versturen",
+      "cancel": "Annuleren",
+      "success": "We hebben je een e-mail gestuurd met een link om je wachtwoord te wijzigen."
+    },
+    "reset_password": {
+      "title": "Accountwachtwoord opnieuw instellen",
+      "subtext": "Kies een nieuw wachtwoord.",
+      "password": "Wachtwoord",
+      "password_confirm": "Bevestig je wachtwoord",
+      "submit": "Wachtwoord opnieuw instellen"
+    },
+    "activate_account": {
+      "title": "Account activeren",
+      "subtext": "Maak je wachtwoord aan om je account te activeren.",
+      "password": "Wachtwoord",
+      "password_confirm": "Bevestig je wachtwoord",
+      "submit": "Account activeren",
+      "cancel": "Uitnodiging weigeren"
+    },
+    "order": {
+      "title": "Bestelling {{ name }}",
+      "date": "Geplaatst op {{ date }}",
+      "product": "Product",
+      "quantity": "Aantal",
+      "price": "Prijs",
+      "total": "Totaal",
+      "subtotal": "Subtotaal"
+    },
+    "addresses": {
+      "title": "Je adressen",
+      "add": "Nieuw adres toevoegen",
+      "edit": "Bewerken",
+      "delete": "Verwijderen",
+      "default": "Standaard",
+      "first_name": "Voornaam",
+      "last_name": "Achternaam",
+      "company": "Bedrijf",
+      "address1": "Adres 1",
+      "address2": "Adres 2",
+      "city": "Plaats",
+      "country": "Land",
+      "province": "Provincie",
+      "zip": "Postcode",
+      "phone": "Telefoon",
+      "set_default": "Instellen als standaardadres",
+      "save": "Opslaan",
+      "cancel": "Annuleren",
+      "none": "Je hebt nog geen adressen opgeslagen."
+    }
+  },
+  "date_formats": {
+    "month_day_year": "%-d %B %Y"
+  }
+}

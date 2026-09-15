@@ -2,7 +2,7 @@
   <div class="page-width article__inner">
     <h1 class="article__title">{{ article.title }}</h1>
     <p class="article__meta">
-      {{ article.published_at | date: '%B %d, %Y' }}
+      {{ article.published_at | date: format: 'month_day_year' }}
       {%- if article.author != blank %} &middot; {{ article.author }}{% endif -%}
     </p>
 

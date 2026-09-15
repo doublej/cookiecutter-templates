@@ -1,5 +1,6 @@
 {
   "loc": { "warn": 350, "error": 600 },
   "dir": { "max_files": 50 },
-  "globs": ["layout/*.liquid", "sections/*.liquid", "snippets/*.liquid", "blocks/*.liquid", "assets/*.js"]
+  "globs": ["layout/*.liquid", "sections/*.liquid", "snippets/*.liquid", "blocks/*.liquid", "assets/*.js"],
+  "i18n": { "base": "en", "required": ["en", "nl"], "format": "json", "base_file": "en.default", "files": ["locales/{locale}.json", "locales/{locale}.schema.json"] }
 }
