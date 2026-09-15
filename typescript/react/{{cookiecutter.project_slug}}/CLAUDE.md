@@ -31,6 +31,7 @@ The runtime path is `index.html → main.tsx → <App/> → component tree`. New
 - Errors surface at the boundary; use React error boundaries for render-time recovery, not `try/catch` inside hooks.
 - GSAP is the animation tool (`gsap` + `@gsap/react` ship by default) — don't add framer-motion or other animation libraries.
 - `bun` owns the lockfile. Add deps with `bun add <pkg>`.
+- The social preview lives in `public/og.html`. Its four base classes — `.og-canvas`, `.og-brand`, `.og-title`, `.og-subtitle` — are fixed: restyle them and the `:root` tokens (font, colors, sizes, layout) and replace the placeholder copy, but never rename or drop them. Screenshot `.og-canvas` at 1200x630 into `public/og.png`.
 
 ## Common change patterns
 
@@ -56,6 +57,7 @@ Recipe reference:
 - `just typecheck` — `tsc --noEmit`
 - `just test` — Vitest
 - `just loc-check` / `just dir-check` — file-size and per-directory thresholds from `.quality.json`
+- `just og-check` — warns while `public/og.png` is missing (never fails)
 - `just just-fmt-check` — verify Justfile formatting
 - `just clean` — remove build artifacts
 - `just update-scaffold` — pull updates from the cookiecutter template

@@ -87,10 +87,17 @@ dir-check:
 just-fmt-check:
     just --fmt --check
 
+# Warn (never fail) while the social preview image is missing.
+[group('quality')]
+og-check:
+    @test -f public/og.png || echo "warn: public/og.png missing — open /og.html, screenshot .og-canvas at 1200x630, save it as public/og.png"
+
 [group('quality')]
 check:
     @echo '→ Checking Justfile format...'
     just just-fmt-check
+    @echo '→ Checking og image...'
+    just og-check
     @echo '→ Checking file lengths...'
     just loc-check
     @echo '→ Checking directory sizes...'

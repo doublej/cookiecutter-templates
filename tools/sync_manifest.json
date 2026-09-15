@@ -63,7 +63,8 @@
         "typescript/sveltekit": {
           "skip_recipes": [
             "typecheck",
-            "clean"
+            "clean",
+            "check"
           ]
         },
         "typescript/tizen-tv": {
@@ -75,7 +76,13 @@
         },
         "typescript/nextjs": {
           "skip_recipes": [
-            "clean"
+            "clean",
+            "check"
+          ]
+        },
+        "typescript/react": {
+          "skip_recipes": [
+            "check"
           ]
         }
       }

@@ -33,6 +33,7 @@ The runtime path is `request → src/routes/<path>/+page(.server).svelte → ren
 - Errors surface at the boundary; SvelteKit's `+error.svelte` / `hooks.server.ts` translate them to responses.
 - GSAP is the animation tool (`gsap` ships by default) — don't add other animation libraries; Svelte's built-in `transition:` directives are fine for trivial enter/leave only.
 - `bun` owns the lockfile. Add deps with `bun add <pkg>`.
+- The social preview lives in `static/og.html`. Its four base classes — `.og-canvas`, `.og-brand`, `.og-title`, `.og-subtitle` — are fixed: restyle them and the `:root` tokens (font, colors, sizes, layout) and replace the placeholder copy, but never rename or drop them. Screenshot `.og-canvas` at 1200x630 into `static/og.png`.
 
 ## Common change patterns
 
@@ -60,6 +61,7 @@ Recipe reference:
 - `just typecheck` — `svelte-check`
 - `just test` — Vitest
 - `just loc-check` / `just dir-check` — file-size and per-directory thresholds from `.quality.json`
+- `just og-check` — warns while `static/og.png` is missing (never fails)
 - `just just-fmt-check` — verify Justfile formatting
 - `just update-scaffold` — pull updates from the cookiecutter template
 

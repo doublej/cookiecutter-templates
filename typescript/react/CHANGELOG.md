@@ -6,6 +6,11 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.6.0] - 2026-08-17
+- ship an og image generator (og.html) with fixed .og-canvas/.og-brand/.og-title/.og-subtitle base classes for the agent to restyle
+- add og:image / twitter:card meta pointing at /og.png
+- add 'just og-check' to 'just check' — warns while the og.png is missing
+
 ## [2.5.0] - 2026-08-16
 - add verify-runner subagent + .claude/tickets/ convention; agent.md delegates checks to it instead of blocking on new-feature work
 

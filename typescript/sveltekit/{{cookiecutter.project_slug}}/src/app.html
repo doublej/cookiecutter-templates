@@ -4,6 +4,11 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>{{ cookiecutter.project_name }}</title>
+		<!-- Social preview — generated from static/og.html. Make og:image absolute once the domain is known. -->
+		<meta property="og:title" content="{{ cookiecutter.project_name }}" />
+		<meta property="og:description" content="{{ cookiecutter.description }}" />
+		<meta property="og:image" content="/og.png" />
+		<meta name="twitter:card" content="summary_large_image" />
 		%sveltekit.head%
 		<!-- TRACKING_PLACEHOLDER -->
 	</head>
