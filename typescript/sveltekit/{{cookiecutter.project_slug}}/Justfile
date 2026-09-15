@@ -97,6 +97,10 @@ og-check:
     @test -f static/og.png || echo "warn: static/og.png missing — open /og.html, screenshot .og-canvas at 1200x630, save it as static/og.png"
 
 [group('quality')]
+i18n-check:
+    python3 .claude/scripts/check_i18n.py
+
+[group('quality')]
 check:
     @echo '→ Checking Justfile format...'
     just just-fmt-check
@@ -106,6 +110,8 @@ check:
     just loc-check
     @echo '→ Checking directory sizes...'
     just dir-check
+    @echo '→ Checking translations...'
+    just i18n-check
     @echo '→ Running lint...'
     just lint
     @echo '→ Running typecheck...'

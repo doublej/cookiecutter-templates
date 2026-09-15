@@ -223,6 +223,12 @@ def check_versioning_payload(
     return results
 
 
+def check_locales(project_dir: Path, template_name: str) -> list[tuple[str, bool, str]]:
+    """Run the shipped i18n checker (`just i18n-check`) against the rendered language files."""
+    ok, out = run_smoke([sys.executable, ".claude/scripts/check_i18n.py"], project_dir)
+    return [("i18n-check", ok, out)]
+
+
 def smoke_just_fmt(project_dir: Path) -> list[tuple[str, bool, str]]:
     """Verify the rendered Justfile is canonically formatted."""
     if not (project_dir / "Justfile").exists():

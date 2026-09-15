@@ -29,11 +29,11 @@ MANIFEST = ROOT / "tools" / "sync_manifest.json"
 
 
 def all_family_templates(manifest: dict) -> list[str]:
+    # Same discovery as sync_check.py's cross-family check: templates outside any
+    # family (android/quest-vr, typescript/raycast-extension) still get cross-family files.
     exclude = set(manifest.get("cross_family", {}).get("exclude_templates", []))
-    templates = []
-    for cfg in manifest["families"].values():
-        templates.extend(t for t in cfg["templates"] if t not in exclude)
-    return templates
+    discovered = sorted(p.parent.relative_to(ROOT).as_posix() for p in ROOT.glob("*/*/cookiecutter.json"))
+    return [t for t in discovered if t not in exclude]
 
 
 def main() -> None:
