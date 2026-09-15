@@ -14,6 +14,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from inject_tracking import inject
+
 ROOT = Path(__file__).resolve().parent.parent
 
 # Windows defaults stdout to cp1252, which can't encode tool output like
@@ -548,6 +550,11 @@ def main():
                     print(f"  RENDER FAILED: {e}")
                     failed_list.append((variant_label, f"render: {e}"))
                     continue
+
+                if context.get("include_tracking") == "y":
+                    # Test renders skip the Umami network call and keep the placeholder; inject a
+                    # fake snippet so lint runs on what a real render ships.
+                    inject(project_dir, "https://umami.example.com", "00000000-0000-0000-0000-000000000000")
 
                 smoke_results = (
                     check_versioning_payload(project_dir, name, template_path)

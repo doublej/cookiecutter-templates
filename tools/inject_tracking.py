@@ -17,13 +17,23 @@ from pathlib import Path
 HTML_RE = re.compile(r"(?m)^([ \t]*)<!--\s*TRACKING_PLACEHOLDER\s*-->[ \t]*\n?")
 JSX_RE = re.compile(r"(?m)^([ \t]*)\{/\*\s*TRACKING_PLACEHOLDER\s*\*/\}[ \t]*\n?")
 SKIP_DIRS = {"node_modules", ".git", "dist", "build", ".svelte-kit", ".next"}
+LINE_WIDTH = 100  # biome.json formatter.lineWidth in the web templates
 
 
-def _inject_file(path: Path, pattern: re.Pattern, snippet: str, project_dir: Path) -> bool:
+def _jsx_snippet(indent: str, src: str, website_id: str) -> str:
+    """Biome keeps a JSX element on one line only while it fits; past that, one attribute per line."""
+    one_line = f'<script defer src="{src}" data-website-id="{website_id}" />'
+    if len(indent) + len(one_line) <= LINE_WIDTH:
+        return one_line
+    pad = indent + "  "
+    return f'<script\n{pad}defer\n{pad}src="{src}"\n{pad}data-website-id="{website_id}"\n{indent}/>'
+
+
+def _inject_file(path: Path, pattern: re.Pattern, snippet, project_dir: Path) -> bool:
     content = path.read_text()
     if "TRACKING_PLACEHOLDER" not in content:
         return False
-    updated = pattern.sub(lambda m: f"{m.group(1)}{snippet}\n", content)
+    updated = pattern.sub(lambda m: f"{m.group(1)}{snippet(m.group(1))}\n", content)
     if updated == content:
         return False
     path.write_text(updated)
@@ -34,15 +44,14 @@ def _inject_file(path: Path, pattern: re.Pattern, snippet: str, project_dir: Pat
 def inject(project_dir: Path, umami_url: str, website_id: str) -> int:
     src = f"{umami_url}/script.js"
     html_snippet = f'<script defer src="{src}" data-website-id="{website_id}"></script>'
-    jsx_snippet = f'<script defer src="{src}" data-website-id="{website_id}" />'
     count = 0
     for path in project_dir.rglob("*"):
         if any(part in SKIP_DIRS for part in path.parts):
             continue
         if path.suffix == ".html":
-            count += _inject_file(path, HTML_RE, html_snippet, project_dir)
+            count += _inject_file(path, HTML_RE, lambda _indent: html_snippet, project_dir)
         elif path.suffix == ".tsx":
-            count += _inject_file(path, JSX_RE, jsx_snippet, project_dir)
+            count += _inject_file(path, JSX_RE, lambda indent: _jsx_snippet(indent, src, website_id), project_dir)
     return count
 
 
