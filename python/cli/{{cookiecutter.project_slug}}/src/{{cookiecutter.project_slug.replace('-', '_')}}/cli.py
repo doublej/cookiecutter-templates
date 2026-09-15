@@ -1,16 +1,27 @@
 import click
 
+from {{ cookiecutter.project_slug.replace('-', '_') }}.i18n import LOCALES, locale_from_env, t
+
 
 @click.group()
-def main():
+@click.option(
+    "--lang",
+    type=click.Choice(LOCALES),
+    help="Output language; defaults to LC_ALL, LC_MESSAGES or LANG, then en.",
+)
+@click.pass_context
+def main(ctx: click.Context, lang: str | None) -> None:
     """{{ cookiecutter.description }}"""
-    pass
+    ctx.obj = lang or locale_from_env()
 
 
 @main.command()
-def hello():
+@click.pass_obj
+def hello(locale: str) -> None:
     """Say hello."""
-    click.echo("Hello from {{ cookiecutter.project_name }}!")
+    name = "{{ cookiecutter.project_name }}"
+    click.echo(t("hello.greeting", locale, name=name))
+    click.echo(t("hello.languages", locale, count=len(LOCALES)))
 
 
 if __name__ == "__main__":

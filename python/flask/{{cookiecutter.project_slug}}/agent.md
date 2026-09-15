@@ -42,6 +42,7 @@ Justfile            # task runner
 - Keep functions small (5–10 lines target, 20 max)
 - Prefer explicit, readable code over cleverness
 - Handle errors at boundaries; let unexpected errors surface
+- User-facing text goes through `t()` with keys in `locales/en.json` (base, fallback) and `locales/nl.json` (informal je/jij); logs and developer errors stay English
 
 ## Agent
 
@@ -76,6 +77,7 @@ confirmed its issue is fixed.
 - Add a route: define a function decorated with `@app.route()` in `app.py`
 - Add a Blueprint: create a new module with `Blueprint`, register with `app.register_blueprint()`
 - Add a dependency: `uv add <package>`
+- Add or change user-facing text: edit every `src/{{ cookiecutter.project_slug.replace('-', '_') }}/locales/*.json`, call `t("root.message", get_locale(), ...)`, run `just i18n-check`
 
 ### Testing
 

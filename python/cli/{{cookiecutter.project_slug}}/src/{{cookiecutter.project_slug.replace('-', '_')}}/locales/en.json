@@ -1,0 +1,9 @@
+{
+  "hello": {
+    "greeting": "Hello from {name}!",
+    "languages": {
+      "one": "Available in {count} language.",
+      "other": "Available in {count} languages."
+    }
+  }
+}

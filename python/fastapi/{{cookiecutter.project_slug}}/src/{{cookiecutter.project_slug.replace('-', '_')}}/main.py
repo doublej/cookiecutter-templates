@@ -1,6 +1,10 @@
-from fastapi import FastAPI
+from typing import Annotated
+
+from fastapi import Depends, FastAPI, Header, Response
 from fastapi.openapi.docs import get_swagger_ui_html
 from scalar_fastapi import Layout, Theme, get_scalar_api_reference
+
+from {{ cookiecutter.project_slug.replace('-', '_') }}.i18n import negotiate, t
 
 app = FastAPI(
     title="{{ cookiecutter.project_name }}",
@@ -10,9 +14,19 @@ app = FastAPI(
 )
 
 
+def get_locale(
+    response: Response, accept_language: Annotated[str | None, Header()] = None
+) -> str:
+    """Negotiate the language from Accept-Language and advertise it on the response."""
+    locale = negotiate(accept_language)
+    response.headers["Content-Language"] = locale
+    response.headers["Vary"] = "Accept-Language"
+    return locale
+
+
 @app.get("/")
-def root():
-    return {"message": "Hello from {{ cookiecutter.project_name }}"}
+def root(locale: Annotated[str, Depends(get_locale)]):
+    return {"message": t("root.message", locale, name=app.title)}
 
 
 @app.get("/health")

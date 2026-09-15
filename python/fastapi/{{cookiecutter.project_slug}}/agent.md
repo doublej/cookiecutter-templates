@@ -49,6 +49,7 @@ Justfile            # task runner
 - Keep functions small (5–10 lines target, 20 max)
 - Prefer explicit, readable code over cleverness
 - Handle errors at boundaries; let unexpected errors surface
+- User-facing text goes through `t()` with keys in `locales/en.json` (base, fallback) and `locales/nl.json` (informal je/jij); logs and developer errors stay English
 
 ## Agent
 
@@ -85,6 +86,7 @@ confirmed its issue is fixed.
 - Extract a router: create an `APIRouter` in a new module, include with `app.include_router()`
 - Add middleware or lifespan: use `@app.middleware("http")` or the `lifespan` parameter on `FastAPI()`
 - Add a dependency: `uv add <package>`
+- Add or change user-facing text: edit every `src/{{ cookiecutter.project_slug.replace('-', '_') }}/locales/*.json`, call `t("root.message", locale, ...)` with `Depends(get_locale)`, run `just i18n-check`
 
 ### Testing
 

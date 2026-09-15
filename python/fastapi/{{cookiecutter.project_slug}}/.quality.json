@@ -1,5 +1,6 @@
 {
   "loc": { "warn": 300, "error": 400 },
   "dir": { "max_files": 6 },
-  "globs": ["src/**/*.py", "tests/**/*.py"]
+  "globs": ["src/**/*.py", "tests/**/*.py"],
+  "i18n": { "base": "en", "required": ["en", "nl"], "format": "json", "files": ["src/{{ cookiecutter.project_slug.replace('-', '_') }}/locales/{locale}.json"] }
 }
