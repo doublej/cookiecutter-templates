@@ -6,6 +6,12 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.5.2] - 2026-08-16
+- agent.md: defer lint-fix to after feature ships, same as loc-fix
+
+## [2.5.1] - 2026-08-16
+- agent.md: defer LOC split to after feature ships, while user tests
+
 ## [2.5.0] - 2026-08-05
 - loc-fix: public methods extract behind delegating stubs when the facade stays too big
 - loc-fix: import.meta blocks pin to the barrel instead of refusing the file

@@ -63,6 +63,9 @@ Step-by-step alternative:
 
 - `bun run biome check --write src/` — auto-fix lint and format issues in one command
 
+Mid-feature, a lint failure does not block delivery either: ship the feature and let the user
+test it first, then run `lint-fix` while they're testing.
+
 ### Common Tasks
 
 - Add an exported function or class: create it in `src/` and re-export from `src/index.ts`
@@ -82,6 +85,10 @@ Step-by-step alternative:
 `just loc-fix` for a proposed split, then read [.claude/SPLITTING.md](.claude/SPLITTING.md)
 before accepting it: it covers seam selection, the `dir-check` interaction, and the rule that
 a split must not add anything to the public surface.
+
+Mid-feature, a `loc-check` failure does not block delivery: ship the feature and let the user
+test it first. The split is a pure refactor with no behavior change — do it while the user is
+testing, not before they get to try the feature.
 
 ### Boundaries
 
