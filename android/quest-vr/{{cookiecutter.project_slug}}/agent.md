@@ -53,6 +53,7 @@ Justfile
 - Allocate at session start, NEVER in the frame loop
 - Pose queries must use `predictedDisplayTime` from `xrWaitFrame`
 - Use multiview + FFR — do not submit multi-pass stereo
+- User-facing text lives in `res/values*/strings.xml` (`en` base, `nl`), never hardcoded; logs stay English
 
 ## Agent
 
@@ -86,6 +87,7 @@ confirmed its issue is fixed.
 
 - Add a C++ module: create `foo.h` + `foo.cpp` under `app/src/main/cpp/`, add both to `CMakeLists.txt` `add_library` source list
 - Enable an OpenXR extension: add to `extensions[]` in `create_instance()`, guard with `#if defined(...)` if optional, check for support via `xrEnumerateInstanceExtensionProperties`
+- Add or change text: edit `app/src/main/res/values/strings.xml` and every `values-<locale>/strings.xml`, run `just i18n-check`
 - Add a Gradle dependency: edit `app/build.gradle.kts`, then `just clean && just build`
 - Lower CPU/GPU level: use `XR_EXT_performance_settings` — do not pin to `BOOST`
 - Increase render detail: raise the swapchain size toward `recommendedImageRectWidth/Height` only

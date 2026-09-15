@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Quoted so an apostrophe in the name needs no escaping. -->
+    <string name="app_name" translatable="false">"{{ cookiecutter.project_name }}"</string>
+    <string name="edit_hint">Edit %1$s to get started.</string>
+    <string name="welcome">Welcome</string>
+</resources>

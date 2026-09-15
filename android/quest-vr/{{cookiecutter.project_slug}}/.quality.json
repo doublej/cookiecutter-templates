@@ -1,5 +1,6 @@
 {
   "loc": { "warn": 300, "error": 400 },
   "dir": { "max_files": 6 },
-  "globs": ["app/src/main/cpp/**/*.cpp", "app/src/main/cpp/**/*.h", "app/src/main/cpp/**/*.hpp"]
+  "globs": ["app/src/main/cpp/**/*.cpp", "app/src/main/cpp/**/*.h", "app/src/main/cpp/**/*.hpp"],
+  "i18n": { "base": "en", "required": ["en", "nl"], "format": "android", "files": ["app/src/main/res/values-{locale}/strings.xml"] }
 }

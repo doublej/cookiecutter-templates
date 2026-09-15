@@ -13,6 +13,9 @@ app/
 ├── build.gradle.kts        # AGP, NDK/CMake wiring, OpenXR AAR
 └── src/main/
     ├── AndroidManifest.xml # VR intent category, supported devices
+    ├── res/
+    │   ├── values/strings.xml    # en (base): app_name + user-facing text
+    │   └── values-nl/strings.xml # nl
     └── cpp/
         ├── CMakeLists.txt  # links openxr_loader + game-activity
         ├── main.cpp        # android_main entry
@@ -36,19 +39,22 @@ The runtime path is `Android boot → GameActivity → android_main (main.cpp) �
 - Stereo rendering uses multiview (texture array, `arraySize=2`).
 - Fixed foveated rendering (`XR_FB_foveation`) is enabled by default with dynamic level.
 - Quest devices only — `minSdk` and `targetSdk` track Meta's supported range.
+- User-facing text is multilingual: `en` (base, fallback) and `nl` (informal je/jij). Never hardcode user-visible strings; add each key to every language file in the same change. Logs and developer errors stay English.
 
 ## Common change patterns
 
 - **Add a render call** → inside the frame loop in `openxr_app.cpp`, between `xrBeginFrame` and `xrEndFrame`.
 - **Add an OpenXR extension** → request it at instance creation in `openxr_app.cpp`, guard usage with `xrEnumerateInstanceExtensionProperties`.
 - **Switch / extend graphics API** → change `cookiecutter.graphics_api` semantics: update `CMakeLists.txt` link targets, swapchain creation, and shader path.
+- **Add or change text** → edit `app/src/main/res/values/strings.xml` and every `values-<locale>/strings.xml`, reference it as `@string/<key>` in XML or through JNI (`Resources.getIdentifier` + `getString`) from C++, run `just i18n-check`.
+- **Add a language** → add `app/src/main/res/values-<locale>/strings.xml` (Android picks it up, nothing to register), run `just i18n-check`.
 - **Add a dependency** → AGP module deps in `app/build.gradle.kts`; native deps via prefab packages or CMake `find_package`.
 
 ## Verification
 
 Run `just check` after every change. It composes:
 
-`just-fmt-check` + `loc-check` + `dir-check` + `lint` + `test` + `build`
+`just-fmt-check` + `loc-check` + `dir-check` + `i18n-check` + `lint` + `test` + `build`
 
 Recipe reference:
 
@@ -61,6 +67,7 @@ Recipe reference:
 - `just log` — `adb logcat` filtered to this app
 - `just uninstall` — remove from device
 - `just loc-check` / `just dir-check` — file-size and per-directory thresholds from `.quality.json`
+- `just i18n-check` — every language file has the base's keys and placeholders
 - `just just-fmt-check` — verify Justfile formatting
 - `just clean` — remove Gradle / build outputs
 - `just update-scaffold` — pull updates from the cookiecutter template

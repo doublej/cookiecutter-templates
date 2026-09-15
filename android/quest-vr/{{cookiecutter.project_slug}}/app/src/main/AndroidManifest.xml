@@ -8,7 +8,7 @@
     <application
         android:allowBackup="false"
         android:hasCode="false"
-        android:label="{{ cookiecutter.project_name }}">
+        android:label="@string/app_name">
 
         <meta-data android:name="com.oculus.supportedDevices" android:value="quest2|quest3|quest3s" />
 
