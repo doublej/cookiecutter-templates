@@ -169,7 +169,8 @@
         "hooks/pre_gen_project.py",
         "{{cookiecutter.project_slug}}/.gitignore",
         "{{cookiecutter.project_slug}}/.quality.json",
-        "{{cookiecutter.project_slug}}/.theme-check.yml"
+        "{{cookiecutter.project_slug}}/.theme-check.yml",
+        "{{cookiecutter.project_slug}}/.claude/agents/deploy-runner.md"
       ],
       "justfile_shared_recipes": [
         "default",
@@ -194,7 +195,9 @@
       "{{cookiecutter.project_slug}}/.claude/scripts/_diag.py",
       "{{cookiecutter.project_slug}}/.claude/scripts/check_template_update.py",
       "{{cookiecutter.project_slug}}/.claude/scripts/check_library_freshness.py",
-      "{{cookiecutter.project_slug}}/.claude/scripts/snooze_library_check.py"
+      "{{cookiecutter.project_slug}}/.claude/scripts/snooze_library_check.py",
+      "{{cookiecutter.project_slug}}/.claude/agents/verify-runner.md",
+      "{{cookiecutter.project_slug}}/.claude/tickets/README.md"
     ],
     "slug_dir_overrides": {},
     "exclude_templates": []

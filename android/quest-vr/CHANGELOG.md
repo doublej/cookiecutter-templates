@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.3.0] - 2026-08-16
+- add verify-runner subagent + .claude/tickets/ convention; agent.md delegates checks to it instead of blocking on new-feature work
+
 ## [2.2.0] - 2026-07-31
 - AGP 8.2.2 -> 8.13.2, compileSdk 34 -> 36, targetSdk default 32 -> 36
 - NDK 26.1.10909125 -> 28.2.13676358 (r28c, 16KB page support)

@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.5.0] - 2026-08-16
+- add verify-runner subagent + .claude/tickets/ convention; agent.md delegates checks to it instead of blocking on new-feature work
+
 ## [2.4.2] - 2026-07-31
 - bump react and react-dom to ^19.2 with @types/react(-dom) ^19.2
 - bump vite to ^8.2, @vitejs/plugin-react to ^6.0.5, vitest to ^4.1

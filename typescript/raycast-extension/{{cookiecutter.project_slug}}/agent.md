@@ -40,6 +40,14 @@ tsconfig.json       # strict, react-jsx, noEmit
 
 No test suite — verify manually in Raycast after `bun run dev`.
 
+### Delegating verification
+
+Don't block on `bun run lint` / `bun run build` while a feature is still in progress —
+hand it to the `verify-runner` subagent and keep building. It applies safe auto-fixes
+itself (`bun run fix-lint`) and writes anything it can't safely resolve to
+`.claude/tickets/` instead of stopping you. Read `.claude/tickets/` before treating a
+feature as done, and delete a ticket once you've confirmed its issue is fixed.
+
 ### Common Tasks
 
 - Add a command: create `src/<name>.tsx` (default-export component) and add the matching `commands[]` entry in `package.json`

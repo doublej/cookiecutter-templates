@@ -1,5 +1,5 @@
 {
-    "_version": "1.0.0",
+    "_version": "1.1.0",
     "project_name": "My Shopify Theme",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "description": "A Shopify Online Store 2.0 theme",

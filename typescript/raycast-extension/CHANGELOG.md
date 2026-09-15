@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [1.2.0] - 2026-08-16
+- add verify-runner subagent + .claude/tickets/ convention; agent.md delegates checks to it instead of blocking on new-feature work
+
 ## [1.1.0] - 2026-07-31
 - migrate ESLint to flat config: replace .eslintrc.json with eslint.config.mjs
 - bump eslint to ^10, @raycast/eslint-config and @raycast/utils to ^2.2

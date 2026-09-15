@@ -62,9 +62,25 @@ Step-by-step alternative:
 1. `just lint-fix`
 2. `just lint`
 
+### Delegating verification
+
+Don't block on `just check` while a feature is still in progress — hand it to the
+`verify-runner` subagent and keep building. It applies safe auto-fixes itself and writes
+anything it can't safely resolve to `.claude/tickets/` instead of stopping you. Read
+`.claude/tickets/` before treating a feature as done, and delete a ticket once you've
+confirmed its issue is fixed.
+
 ### Auto-fixable
 
 - `shopify theme check --auto-correct` (a.k.a. `just lint-fix`) — fix auto-correctable Theme Check offenses.
+
+### Deploying
+
+Once the user has explicitly approved a push, hand it to the `deploy-runner` subagent
+(`just push`) rather than blocking your own turn on it. It files a ticket in
+`.claude/tickets/` if the push fails; it never retries and never touches theme config to
+work around a failure. The explicit-approval requirement below is unchanged — only invoke
+it after the user has said to deploy.
 
 ### Common Tasks
 

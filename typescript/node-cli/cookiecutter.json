@@ -1,5 +1,5 @@
 {
-    "_version": "2.1.2",
+    "_version": "2.2.0",
     "project_name": "My CLI",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "description": "A command-line tool",

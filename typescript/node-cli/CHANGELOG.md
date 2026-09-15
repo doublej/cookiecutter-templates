@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.2.0] - 2026-08-16
+- add verify-runner subagent + .claude/tickets/ convention; agent.md delegates checks to it instead of blocking on new-feature work
+
 ## [2.1.2] - 2026-07-31
 - bump @biomejs/biome to ^2.5.0 and migrate biome.json to the v2 schema
 - bump chalk ^6, commander ^15, ora ^9.4, @clack/prompts ^1.7

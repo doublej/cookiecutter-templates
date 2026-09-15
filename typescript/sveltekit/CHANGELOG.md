@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.5.0] - 2026-08-16
+- add verify-runner subagent + .claude/tickets/ convention; agent.md delegates checks to it instead of blocking on new-feature work
+
 ## [2.4.2] - 2026-07-31
 - bump vite to ^8.2, @sveltejs/vite-plugin-svelte to ^7.2, @sveltejs/adapter-auto to ^7.0.1
 - bump vitest to ^4.1, stylelint to ^17, typescript floor to ^5.9
