@@ -12,7 +12,8 @@
 
 Use `just` as the task runner:
 
-- `just check` — run all checks (just-fmt-check + loc-check + dir-check + fmt-check + lint + test)
+- `just check` — run all checks (just-fmt-check + loc-check + dir-check + i18n-check + fmt-check + lint + test)
+- `just i18n-check` — every language file has the base's keys and placeholders
 - `just lint` — `go vet ./...`
 - `just fmt` — format with `gofmt`
 - `just fmt-check` — fail if any file is unformatted
@@ -30,6 +31,7 @@ Use `just` as the task runner:
 ```
 main.go          # flag-based CLI entry point
 main_test.go     # unit tests
+internal/i18n/   # translator + locales/{en,nl}.json
 go.mod           # module config
 Justfile         # task runner
 ```
@@ -41,6 +43,7 @@ Justfile         # task runner
 - Keep functions small (5-10 lines target, 20 max)
 - Prefer explicit, readable code over cleverness
 - Handle errors at boundaries; let unexpected errors surface (no silent `_`)
+- User-facing text goes through `i18n.T`/`i18n.N` with keys in every `internal/i18n/locales/*.json` (en base, nl informal); logs and developer errors stay English
 
 ## Agent
 
@@ -48,7 +51,7 @@ Justfile         # task runner
 
 Run after every change: `just check`
 
-Runs: just-fmt-check + loc-check + dir-check + fmt-check + lint + test.
+Runs: just-fmt-check + loc-check + dir-check + i18n-check + fmt-check + lint + test.
 
 Step-by-step alternative:
 
@@ -71,6 +74,7 @@ confirmed its issue is fixed.
 
 ### Common Tasks
 
+- Add or change text: edit `internal/i18n/locales/en.json` and `nl.json`, call `i18n.T(locale, "key")`, run `just i18n-check`
 - Add a flag: register on the `FlagSet` in `run`, thread into `process`
 - Add a dependency: `go get <module>` then `go mod tidy`
 - Add a package: new dir with `package <name>`, import via module path

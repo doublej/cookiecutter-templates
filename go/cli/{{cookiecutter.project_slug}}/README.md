@@ -28,4 +28,5 @@ go run . --help
 ```
 main.go          # flag-based CLI entry point
 main_test.go     # unit tests
+internal/i18n/   # translations (en, nl); -lang overrides LANG
 ```

@@ -152,7 +152,9 @@
       "identical_files": [
         "hooks/pre_gen_project.py",
         "{{cookiecutter.project_slug}}/.gitignore",
-        "{{cookiecutter.project_slug}}/.quality.json"
+        "{{cookiecutter.project_slug}}/.quality.json",
+        "{{cookiecutter.project_slug}}/internal/i18n/i18n.go",
+        "{{cookiecutter.project_slug}}/internal/i18n/i18n_test.go"
       ],
       "justfile_shared_recipes": [
         "default",

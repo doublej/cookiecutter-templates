@@ -37,4 +37,5 @@ Set `PORT` to change the listen address (default `{{ cookiecutter.port }}`).
 main.go          # entry point (signal ctx, logger, $PORT)
 server.go        # run / routes / handlers
 server_test.go   # handler tests
+internal/i18n/   # translations (en, nl), picked by Accept-Language
 ```

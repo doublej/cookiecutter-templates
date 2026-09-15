@@ -1,0 +1,8 @@
+{
+  "no_input": "No input provided. Use --help for usage.",
+  "input_count": {
+    "one": "Processing {count} input",
+    "other": "Processing {count} inputs"
+  },
+  "processing": "Processing: {input}"
+}

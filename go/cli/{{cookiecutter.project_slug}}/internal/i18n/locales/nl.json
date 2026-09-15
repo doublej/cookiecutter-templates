@@ -1,0 +1,8 @@
+{
+  "no_input": "Geen invoer gegeven. Gebruik --help voor hulp.",
+  "input_count": {
+    "one": "{count} item wordt verwerkt",
+    "other": "{count} items worden verwerkt"
+  },
+  "processing": "Verwerken: {input}"
+}

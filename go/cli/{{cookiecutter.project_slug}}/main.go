@@ -6,6 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
+
+	"{{ cookiecutter.project_slug }}/internal/i18n"
 )
 
 func main() {
@@ -19,26 +22,35 @@ func main() {
 func run(args []string) error {
 	fs := flag.NewFlagSet("{{ cookiecutter.project_slug }}", flag.ContinueOnError)
 	verbose := fs.Bool("verbose", false, "enable verbose output")
+	lang := fs.String("lang", "", "output language: "+strings.Join(i18n.Supported(), ", ")+" (default: LC_ALL, LC_MESSAGES, LANG)")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return nil
 		}
 		return err
 	}
-	return process(fs.Args(), *verbose)
+	return process(fs.Args(), *verbose, resolveLocale(*lang))
 }
 
-// process handles the parsed positional inputs.
-func process(inputs []string, verbose bool) error {
+// resolveLocale picks the output language: the -lang flag, then the environment, then en.
+func resolveLocale(flagValue string) string {
+	if flagValue != "" {
+		return i18n.Normalize(flagValue)
+	}
+	return i18n.FromEnv()
+}
+
+// process handles the parsed positional inputs, printing in locale.
+func process(inputs []string, verbose bool, locale string) error {
 	if len(inputs) == 0 {
-		fmt.Println("No input provided. Use --help for usage.")
+		fmt.Println(i18n.T(locale, "no_input"))
 		return nil
 	}
 	if verbose {
-		fmt.Printf("processing %d input(s)\n", len(inputs))
+		fmt.Println(i18n.N(locale, "input_count", len(inputs)))
 	}
 	for _, in := range inputs {
-		fmt.Println("Processing:", in)
+		fmt.Println(i18n.T(locale, "processing", "input", in))
 	}
 	return nil
 }
