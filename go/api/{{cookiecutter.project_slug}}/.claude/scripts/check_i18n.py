@@ -69,7 +69,8 @@ def placeholders(text: str) -> Counter[str]:
         elif m["brace"]:
             found["{" + m["brace"] + "}"] += 1
         else:
-            found[re.sub(r"^%\d+\$", "%", m["printf"])] += 1
+            # Position, flags, width and precision don't change the argument: %1$s == %s, %-d == %d.
+            found[re.sub(r"^%(?:\d+\$)?[-+0#]*\d*(?:\.\d+)?", "%", m["printf"])] += 1
     return found
 
 
