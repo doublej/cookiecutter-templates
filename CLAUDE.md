@@ -40,7 +40,7 @@ Always run `sync_check.py` then `render_test.py` after changes. CI runs both on 
 
 ## Template versioning
 
-Every `cookiecutter.json` carries a private `_version` field (not prompted). Every render writes it into the project's `.template-meta.json` as `template_version`. Every generated project ships a `.claude/` SessionStart hook that compares local version against the upstream template on every Claude Code session and prints `[template-update] <tmpl> <local> -> <upstream> available ...` when upstream has advanced — prompting the agent to ask the user whether to run `update_scaffold.py`.
+Every `cookiecutter.json` carries a private `_version` field (not prompted). Every render writes it into the project's `.template-meta.json` as `template_version`. Every generated project ships a `.claude/` SessionStart hook that compares local version against the upstream template on every Claude Code session and prints `[template-update] <tmpl> <local> -> <upstream> available ...` when upstream has advanced — prompting the agent to run the `/update-scaffold` skill, which applies non-destructively (tooling overwritten, other changes as `.upstream` sidecars), resolves sidecars itself and asks only about real conflicts. `update_scaffold.py` treats an unchanged `_version` as up to date: template edits are not an update until a bump releases them.
 
 **Semver semantics (strict `MAJOR.MINOR.PATCH`, no pre-release suffixes):**
 

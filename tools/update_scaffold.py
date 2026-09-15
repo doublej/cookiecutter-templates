@@ -252,6 +252,11 @@ def main() -> None:
     upstream_version = _upstream_version(template_dir)
     head = f"{template_name}: local {local_version} -> upstream {upstream_version}"
     print(f"Updating {head}")
+    if local_version == upstream_version and not retrofit:
+        # Template changes are released by bumping _version (CI enforces the bump). Same version
+        # with different files is unreleased work in the templates repo, not an update.
+        print("\nUp to date.")
+        return
     if retrofit:
         print("note: retrofit project — your local files predate the template.")
         print("      Seeds (CLAUDE.md, Justfile, .gitignore, …) will NOT be overwritten;")
