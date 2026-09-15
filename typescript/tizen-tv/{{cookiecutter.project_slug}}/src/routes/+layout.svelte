@@ -1,10 +1,15 @@
 <script lang="ts">
 import { onMount } from 'svelte'
+import { getLocale } from '$lib/paraglide/runtime'
 import { initRemote } from '$lib/remote'
 
 const { children } = $props()
 
-onMount(() => initRemote())
+onMount(() => {
+  // ssr=false: the prerendered shell keeps app.html's lang, so set it once the locale is known.
+  document.documentElement.lang = getLocale()
+  return initRemote()
+})
 </script>
 
 {@render children()}

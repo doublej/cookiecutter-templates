@@ -1,0 +1,6 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "greeting": "Welkom, {name}! Fijn dat je er bent.",
+  "intro": "Een SvelteKit-applicatie",
+  "language": "Taal"
+}

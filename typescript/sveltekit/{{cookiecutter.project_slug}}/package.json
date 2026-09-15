@@ -5,6 +5,7 @@
   "author": "{{ cookiecutter.author }}",
   "type": "module",
   "scripts": {
+    "prepare": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy url cookie preferredLanguage baseLocale",
     "dev": "vite dev --port {{ cookiecutter.port }}",
     "build": "vite build",
     "preview": "vite preview",
@@ -18,6 +19,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.0",
+    "@inlang/paraglide-js": "^2.25.2",
+    "@inlang/plugin-message-format": "^4.4.4",
     "postcss-html": "^1.0.0",
     "stylelint": "^17.0.0",
     "@types/node": "^26.0.0",

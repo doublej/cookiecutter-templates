@@ -1,0 +1,6 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "hint": "Arrow keys move focus, Enter selects, Back exits.",
+  "intro": "A Samsung TV (Tizen) web app",
+  "tile": "Tile {number}"
+}

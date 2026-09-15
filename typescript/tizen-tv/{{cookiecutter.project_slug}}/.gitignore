@@ -8,6 +8,7 @@ Thumbs.db
 node_modules/
 .svelte-kit/
 build/
+src/lib/paraglide/
 
 dist/
 .buildResult/

@@ -50,6 +50,7 @@ Justfile                # task runner
 - Biome for linting and formatting (not ESLint/Prettier)
 - SvelteKit file-based routing (`src/routes/`)
 - Shared code in `src/lib/`
+- User-facing text lives in `messages/{en,nl}.json` (en base, nl informal) and is read via `m.<key>()` — never hardcoded
 - GSAP for animations (pre-installed) — Svelte `transition:` directives only for trivial enter/leave
 - Keep functions small (5–10 lines target, 20 max)
 - Prefer explicit, readable code over cleverness
@@ -61,7 +62,7 @@ Justfile                # task runner
 
 Run after every change: `just check`
 
-Runs: just-fmt-check + loc-check + dir-check + lint + typecheck + test.
+Runs: just-fmt-check + loc-check + dir-check + i18n-check + lint + typecheck + test.
 
 Step-by-step alternative:
 
@@ -92,6 +93,7 @@ confirmed its issue is fixed.
 - Use the `$lib/` alias for imports from `src/lib/`
 - Add an animation: GSAP inside `$effect`/`onMount` (client-only), kill tweens on teardown
 - Add a dependency: `bun add <package>`
+- Add or change text: edit every `messages/*.json`, call `m.<key>()` from `$lib/paraglide/messages`, run `just i18n-check`
 
 ### Testing
 

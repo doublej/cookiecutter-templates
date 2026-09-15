@@ -5,6 +5,8 @@
       "**",
       "!**/.mcp.json",
       "!**/.template-meta.json",
+      "!**/src/lib/paraglide",
+      "!**/project.inlang",
       "!**/.svelte-kit/**",
       "!**/build/**",
       "!**/dist/**"
@@ -57,6 +59,7 @@
       "linter": {
         "rules": {
           "correctness": {
+            "noUnusedImports": "off",
             "noUnusedVariables": "off"
           }
         }

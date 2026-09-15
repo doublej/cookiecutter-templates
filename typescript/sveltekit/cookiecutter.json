@@ -7,5 +7,6 @@
     "port": "5173",
     "include_tracking": ["n", "y"],
     "mcp_servers": ["none", "minimal", "standard", "interactive"],
-    "mcp_scope": ["project", "local"]
+    "mcp_scope": ["project", "local"],
+    "_copy_without_render": ["src/lib/LanguageSwitcher.svelte", "src/routes/+layout.svelte"]
 }

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "hint": "Met de pijltjes verplaats je de focus, met Enter kies je en met Terug sluit je de app.",
+  "intro": "Een Samsung TV-app (Tizen)",
+  "tile": "Tegel {number}"
+}

@@ -57,6 +57,7 @@ Justfile                 # task runner
 - SvelteKit file-based routing (`src/routes/`), shared code in `src/lib/`
 - Everything prerendered, no server code — no `+page.server.ts`, no `+server.ts`
 - Focusable elements carry `data-focusable`; no scrolling, fixed 1920x1080
+- User-facing text lives in `messages/{en,nl}.json` (en base, nl informal) and is read via `m.<key>()` — never hardcoded
 - GSAP for animations — `transform`/`opacity` only, TV GPUs are weak
 - Keep functions small (5–10 lines target, 20 max)
 - Handle errors at boundaries; let unexpected errors surface
@@ -67,7 +68,7 @@ Justfile                 # task runner
 
 Run after every change: `just check`
 
-Runs: just-fmt-check + loc-check + dir-check + lint + typecheck + test.
+Runs: just-fmt-check + loc-check + dir-check + i18n-check + lint + typecheck + test.
 
 Step-by-step alternative:
 
@@ -97,6 +98,7 @@ confirmed its issue is fixed.
 - Add a shared component: create it in `src/lib/components/`
 - Add an animation: GSAP inside `$effect`/`onMount`, kill tweens on teardown
 - Add a dependency: `bun add <package>`
+- Add or change text: edit every `messages/*.json`, call `m.<key>()` from `$lib/paraglide/messages`, run `just i18n-check`
 
 ### Testing
 

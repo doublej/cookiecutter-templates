@@ -1,13 +1,17 @@
+<script lang="ts">
+import { m } from '$lib/paraglide/messages'
+</script>
+
 <h1>{{ cookiecutter.project_name }}</h1>
-<p>{{ cookiecutter.description }}</p>
+<p>{m.intro()}</p>
 
 <div class="row">
-  <button class="tile" type="button" data-focusable>One</button>
-  <button class="tile" type="button" data-focusable>Two</button>
-  <button class="tile" type="button" data-focusable>Three</button>
+  <button class="tile" type="button" data-focusable>{m.tile({ number: 1 })}</button>
+  <button class="tile" type="button" data-focusable>{m.tile({ number: 2 })}</button>
+  <button class="tile" type="button" data-focusable>{m.tile({ number: 3 })}</button>
 </div>
 
-<p class="hint">Arrow keys move focus, Enter selects, Back exits.</p>
+<p class="hint">{m.hint()}</p>
 
 <style>
   h1 {

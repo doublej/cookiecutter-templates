@@ -5,6 +5,8 @@
       "**",
       "!**/.mcp.json",
       "!**/.template-meta.json",
+      "!**/src/lib/paraglide",
+      "!**/project.inlang",
       "!**/node_modules",
       "!**/.svelte-kit",
       "!**/build"
@@ -48,5 +50,17 @@
       "quoteStyle": "single",
       "semicolons": "asNeeded"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.svelte"],
+      "linter": {
+        "rules": { "correctness": { "noUnusedImports": "off", "noUnusedVariables": "off" } }
+      }
+    },
+    {
+      "includes": ["src/app.html"],
+      "linter": { "rules": { "a11y": { "useValidLang": "off" } } }
+    }
+  ]
 }

@@ -9,6 +9,7 @@
     <tizen:application id="{{ cookiecutter.tizen_package_id }}.{{ cookiecutter.project_slug.replace('-', ' ').title().replace(' ', '') }}" package="{{ cookiecutter.tizen_package_id }}" required_version="{{ cookiecutter.tizen_required_version }}"/>
     <content src="index.html"/>
     <name>{{ cookiecutter.project_name }}</name>
+    <name xml:lang="nl">{{ cookiecutter.project_name }}</name>
     <description>{{ cookiecutter.description }}</description>
     <author>{{ cookiecutter.author }}</author>
     <access origin="*" subdomains="true"/>
