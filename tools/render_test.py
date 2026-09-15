@@ -225,9 +225,23 @@ def check_versioning_payload(
     return results
 
 
+I18N_EXEMPT = {
+    "typescript/node-worker",
+    "typescript/node-lib",
+    "typescript/bun-package",
+    "typescript/raycast-extension",
+}
+
+
 def check_locales(project_dir: Path, template_name: str) -> list[tuple[str, bool, str]]:
-    """Run the shipped i18n checker (`just i18n-check`) against the rendered language files."""
+    """Run the shipped i18n checker (`just i18n-check`) against the rendered language files.
+
+    Every non-exempt template must ship en + nl with the checker configured, so a template
+    cannot silently drop i18n; exempt templates only need the dormant checker to exit 0.
+    """
     ok, out = run_smoke([sys.executable, ".claude/scripts/check_i18n.py"], project_dir)
+    if template_name not in I18N_EXEMPT:
+        ok = ok and "i18n: ok" in out
     return [("i18n-check", ok, out)]
 
 
