@@ -1,44 +1,90 @@
 {
   "families": {
     "python": {
-      "templates": ["python/cli", "python/fastapi", "python/flask"],
+      "templates": [
+        "python/cli",
+        "python/fastapi",
+        "python/flask"
+      ],
       "identical_files": [
         "hooks/pre_gen_project.py",
         "{{cookiecutter.project_slug}}/.gitignore",
         "{{cookiecutter.project_slug}}/.quality.json"
       ],
       "justfile_shared_recipes": [
-        "default", "install", "lint", "lint-fix", "format", "format-check",
-        "typecheck", "test", "loc-check", "dir-check", "just-fmt-check",
-        "check", "clean", "claude-tree", "update-scaffold"
+        "default",
+        "install",
+        "lint",
+        "lint-fix",
+        "format",
+        "format-check",
+        "typecheck",
+        "test",
+        "loc-check",
+        "dir-check",
+        "just-fmt-check",
+        "check",
+        "clean",
+        "claude-tree",
+        "update-scaffold"
       ]
     },
     "typescript": {
       "templates": [
-        "typescript/node-api", "typescript/node-cli", "typescript/bun-package",
-        "typescript/node-lib", "typescript/node-worker", "typescript/react",
-        "typescript/sveltekit", "typescript/tizen-tv", "typescript/nextjs"
+        "typescript/node-api",
+        "typescript/node-cli",
+        "typescript/bun-package",
+        "typescript/node-lib",
+        "typescript/node-worker",
+        "typescript/react",
+        "typescript/sveltekit",
+        "typescript/tizen-tv",
+        "typescript/nextjs"
       ],
-      "identical_files": ["hooks/pre_gen_project.py"],
+      "identical_files": [
+        "hooks/pre_gen_project.py"
+      ],
       "justfile_shared_recipes": [
-        "default", "install", "lint", "lint-fix", "test",
-        "loc-check", "dir-check", "just-fmt-check", "check", "build", "clean",
-        "claude-tree", "update-scaffold"
+        "default",
+        "install",
+        "lint",
+        "lint-fix",
+        "test",
+        "loc-check",
+        "dir-check",
+        "just-fmt-check",
+        "check",
+        "build",
+        "clean",
+        "claude-tree",
+        "update-scaffold"
       ],
       "justfile_exceptions": {
         "typescript/sveltekit": {
-          "skip_recipes": ["typecheck", "clean"]
+          "skip_recipes": [
+            "typecheck",
+            "clean"
+          ]
         },
         "typescript/tizen-tv": {
-          "skip_recipes": ["typecheck", "clean", "check"]
+          "skip_recipes": [
+            "typecheck",
+            "clean",
+            "check"
+          ]
         },
         "typescript/nextjs": {
-          "skip_recipes": ["clean"]
+          "skip_recipes": [
+            "clean"
+          ]
         }
       }
     },
     "swift": {
-      "templates": ["swift/ios", "swift/macos"],
+      "templates": [
+        "swift/ios",
+        "swift/macos"
+      ],
       "identical_files": [
         "hooks/pre_gen_project.py",
         "{{cookiecutter.project_slug}}/.gitignore",
@@ -46,38 +92,79 @@
         "{{cookiecutter.project_slug}}/.swiftlint.yml"
       ],
       "justfile_shared_recipes": [
-        "default", "install", "xcode", "lint", "lint-fix", "test",
-        "loc-check", "dir-check", "just-fmt-check", "check",
-        "build", "build-release", "clean", "claude-tree", "update-scaffold"
+        "default",
+        "install",
+        "xcode",
+        "lint",
+        "lint-fix",
+        "test",
+        "loc-check",
+        "dir-check",
+        "just-fmt-check",
+        "check",
+        "build",
+        "build-release",
+        "clean",
+        "claude-tree",
+        "update-scaffold"
       ]
     },
     "rust": {
-      "templates": ["rust/cli"],
+      "templates": [
+        "rust/cli"
+      ],
       "identical_files": [
         "hooks/pre_gen_project.py",
         "{{cookiecutter.project_slug}}/.gitignore"
       ],
       "justfile_shared_recipes": [
-        "default", "lint", "fmt", "fmt-check", "just-fmt-check",
-        "check", "test", "loc-check", "dir-check", "build-release",
-        "reinstall", "claude-tree", "update-scaffold"
+        "default",
+        "lint",
+        "fmt",
+        "fmt-check",
+        "just-fmt-check",
+        "check",
+        "test",
+        "loc-check",
+        "dir-check",
+        "build-release",
+        "reinstall",
+        "claude-tree",
+        "update-scaffold"
       ]
     },
     "go": {
-      "templates": ["go/cli", "go/api"],
+      "templates": [
+        "go/cli",
+        "go/api"
+      ],
       "identical_files": [
         "hooks/pre_gen_project.py",
         "{{cookiecutter.project_slug}}/.gitignore",
         "{{cookiecutter.project_slug}}/.quality.json"
       ],
       "justfile_shared_recipes": [
-        "default", "install", "lint", "fmt", "fmt-check",
-        "test", "loc-check", "dir-check", "just-fmt-check", "check",
-        "build", "build-release", "clean", "claude-tree", "update-scaffold"
+        "default",
+        "install",
+        "lint",
+        "fmt",
+        "fmt-check",
+        "test",
+        "loc-check",
+        "dir-check",
+        "just-fmt-check",
+        "check",
+        "build",
+        "build-release",
+        "clean",
+        "claude-tree",
+        "update-scaffold"
       ]
     },
     "shopify": {
-      "templates": ["shopify/theme"],
+      "templates": [
+        "shopify/theme"
+      ],
       "identical_files": [
         "hooks/pre_gen_project.py",
         "{{cookiecutter.project_slug}}/.gitignore",
@@ -85,9 +172,19 @@
         "{{cookiecutter.project_slug}}/.theme-check.yml"
       ],
       "justfile_shared_recipes": [
-        "default", "dev", "share", "lint", "lint-fix",
-        "loc-check", "dir-check", "just-fmt-check", "check",
-        "pull", "push", "claude-tree", "update-scaffold"
+        "default",
+        "dev",
+        "share",
+        "lint",
+        "lint-fix",
+        "loc-check",
+        "dir-check",
+        "just-fmt-check",
+        "check",
+        "pull",
+        "push",
+        "claude-tree",
+        "update-scaffold"
       ]
     }
   },
@@ -104,6 +201,8 @@
   },
   "merge_paths": {
     "description": "JSON files that update_scaffold.py shallow-merges instead of overwriting: upstream fields missing locally are added; existing local values are preserved so user edits survive.",
-    "files": [".atlas"]
+    "files": [
+      ".atlas"
+    ]
   }
 }
