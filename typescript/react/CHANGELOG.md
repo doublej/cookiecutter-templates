@@ -6,6 +6,10 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.7.0] - 2026-09-15
+- add en+nl i18n: Paraglide JS 2 (localStorage + browser language), LanguageSwitcher, just i18n-check active
+- update-check hook tells agents to apply scaffold updates safely and ask only about conflicts
+
 ## [2.6.0] - 2026-08-17
 - ship an og image generator (og.html) with fixed .og-canvas/.og-brand/.og-title/.og-subtitle base classes for the agent to restyle
 - add og:image / twitter:card meta pointing at /og.png

@@ -6,6 +6,10 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.7.0] - 2026-09-15
+- add en+nl i18n: next-intl (as-needed prefix, next/root-params), next ^16.3, [locale] routes + proxy.ts + LanguageSwitcher, just i18n-check active
+- update-check hook tells agents to apply scaffold updates safely and ask only about conflicts
+
 ## [2.6.1] - 2026-09-15
 - ship tsconfig in the form next build writes (jsx react-jsx, .next/dev/types include) and keep next-env.d.ts out of biome, so bun run lint passes after a build
 

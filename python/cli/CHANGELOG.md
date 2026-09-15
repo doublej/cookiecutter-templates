@@ -6,6 +6,10 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.3.0] - 2026-09-15
+- add en+nl i18n: zero-dep i18n.py, locales/{en,nl}.json, --lang + LANG detection, just i18n-check active
+- update-check hook tells agents to apply scaffold updates safely and ask only about conflicts
+
 ## [2.2.0] - 2026-08-16
 - add verify-runner subagent + .claude/tickets/ convention; agent.md delegates checks to it instead of blocking on new-feature work
 

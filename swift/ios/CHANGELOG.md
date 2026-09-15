@@ -6,6 +6,10 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [3.4.0] - 2026-09-15
+- add en+nl i18n: Resources/{en,nl}.lproj/Localizable.strings + L10n.swift, defaultLocalization en, just i18n-check active
+- update-check hook tells agents to apply scaffold updates safely and ask only about conflicts
+
 ## [3.3.0] - 2026-08-26
 - rename main.swift -> App.swift (@main is rejected the moment a second file joins the module)
 - share the bare_nsapp_activate swiftlint rule with swift/macos

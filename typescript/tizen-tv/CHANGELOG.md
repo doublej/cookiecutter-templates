@@ -6,6 +6,10 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [1.1.0] - 2026-09-15
+- add en+nl i18n: Paraglide JS 2 following the TV system language, localized tiles + config.xml name, just i18n-check active
+- update-check hook tells agents to apply scaffold updates safely and ask only about conflicts
+
 ## [1.0.1] - 2026-08-25
 - add @types/node so svelte-check can resolve vite/kit node types
 - biome ignores generated .svelte-kit/, build/ and dist/ — lint failed once those existed
