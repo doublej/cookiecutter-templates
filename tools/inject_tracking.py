@@ -30,13 +30,15 @@ def _jsx_snippet(indent: str, src: str, website_id: str) -> str:
 
 
 def _inject_file(path: Path, pattern: re.Pattern, snippet, project_dir: Path) -> bool:
-    content = path.read_text()
+    content = path.read_text(encoding="utf-8")
     if "TRACKING_PLACEHOLDER" not in content:
         return False
     updated = pattern.sub(lambda m: f"{m.group(1)}{snippet(m.group(1))}\n", content)
     if updated == content:
         return False
-    path.write_text(updated)
+    # newline="\n": platform newlines would write CRLF on Windows, failing the
+    # rendered project's own Biome check (lineEnding=lf).
+    path.write_text(updated, encoding="utf-8", newline="\n")
     print(f"Umami: injected tracking into {path.relative_to(project_dir)}")
     return True
 
