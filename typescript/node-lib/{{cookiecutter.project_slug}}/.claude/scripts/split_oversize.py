@@ -552,7 +552,7 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     limit = cfg["loc"]["error"]
     target = cfg["loc"].get("warn", limit)
     result: dict = {
-        "file": str(path.relative_to(root)),
+        "file": path.relative_to(root).as_posix(),
         "lines": len(lines),
         "limit": limit,
         "blockers": [],
@@ -718,13 +718,13 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
     stem = path.stem
     if current + n_parts <= max_files:
         layout = "siblings"
-        reason = f"{directory.relative_to(root)}/ holds {current} files, max {max_files} — room for {n_parts} more"
+        reason = f"{directory.relative_to(root).as_posix()}/ holds {current} files, max {max_files} — room for {n_parts} more"
         paths = [directory / (stem + "-{}.ts") for _ in groups]
         call_tpl = directory / (stem + "-{}.ts")
     else:
         layout = "subdirectory"
         reason = (
-            f"{directory.relative_to(root)}/ holds {current} files, max {max_files} — "
+            f"{directory.relative_to(root).as_posix()}/ holds {current} files, max {max_files} — "
             f"no room for {n_parts} siblings, so nest them and keep {path.name} as the barrel"
         )
         paths = [directory / stem / "{}.ts" for _ in groups]
@@ -750,7 +750,7 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
         result["groups"].append(
             {
                 "name": gname,
-                "path": str(rel),
+                "path": rel.as_posix(),
                 "lines": sum(b.lines for b in g),
                 "blocks": [
                     {"name": b.name, "kind": b.kind, "lines": b.lines, "exported": b.exported}
@@ -775,7 +775,7 @@ def _analyze(root: Path, path: Path, cfg: dict) -> dict:
         result["groups"].append(
             {
                 "name": call_names[i],
-                "path": str(call_paths[i].relative_to(root)),
+                "path": call_paths[i].relative_to(root).as_posix(),
                 "lines": sum(e - s + 1 for s, e in bin_),
                 "blocks": [
                     {"name": (callee.group() if callee else "statements") + "(…)",
@@ -1116,13 +1116,13 @@ def _apply(root: Path, path: Path, analysis: dict) -> list[str]:
         target = Path(str(internal["paths"][idx]).format(gname))
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(_render_module(idx, analysis), encoding="utf-8")
-        written.append(str(target.relative_to(root)))
+        written.append(target.relative_to(root).as_posix())
     for idx, target in enumerate(internal.get("call_paths", [])):
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(_render_call_part(idx, analysis), encoding="utf-8")
-        written.append(str(target.relative_to(root)))
+        written.append(target.relative_to(root).as_posix())
     path.write_text(_render_barrel(analysis, path), encoding="utf-8")
-    written.append(str(path.relative_to(root)))
+    written.append(path.relative_to(root).as_posix())
     return written
 
 
@@ -1183,6 +1183,9 @@ def _oversized(root: Path, cfg: dict) -> list[Path]:
 
 
 def main() -> None:
+    # Windows defaults stdout to cp1252; the report's dashes must reach a piped reader as utf-8.
+    if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     started = time.monotonic()
 
     def elapsed_ms() -> int:

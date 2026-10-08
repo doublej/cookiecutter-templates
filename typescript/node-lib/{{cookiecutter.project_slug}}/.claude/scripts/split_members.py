@@ -624,13 +624,13 @@ def _placement(root: Path, path: Path, cfg: dict, n_parts: int, result: dict) ->
     if current + n_parts <= max_files:
         result["layout"] = "siblings"
         result["layout_reason"] = "%s/ holds %d files, max %d — room for %d more" % (
-            directory.relative_to(root), current, max_files, n_parts)
+            directory.relative_to(root).as_posix(), current, max_files, n_parts)
         return [directory / (stem + "-%s.ts") for _ in range(n_parts)]
     result["layout"] = "subdirectory"
     result["layout_reason"] = (
         "%s/ holds %d files, max %d — no room for %d siblings, so nest them under %s/ and "
         "keep %s as the facade" % (
-            directory.relative_to(root), current, max_files, n_parts, stem, path.name)
+            directory.relative_to(root).as_posix(), current, max_files, n_parts, stem, path.name)
     )
     if n_parts > max_files:
         result["blockers"].append("%d parts exceed dir.max_files (%d) on their own" % (n_parts, max_files))
@@ -647,7 +647,7 @@ def analyze(root: Path, path: Path, cfg: dict, lines: list[str],
     limit = cfg["loc"]["error"]
     target = cfg["loc"].get("warn", limit)
     result: dict = {
-        "file": str(path.relative_to(root)),
+        "file": path.relative_to(root).as_posix(),
         "lines": len(lines),
         "limit": limit,
         "strategy": "members",
@@ -810,7 +810,7 @@ def _analyze_class(root, path, cfg, lines, imports, blocks, giant, result, limit
         existing = [p for p in part_paths if p.exists()]
         if existing:
             res["blockers"].append(
-                "target path already exists: %s" % ", ".join(str(p.relative_to(root)) for p in existing)
+                "target path already exists: %s" % ", ".join(p.relative_to(root).as_posix() for p in existing)
             )
 
         owner: dict[str, int] = {}
@@ -841,7 +841,7 @@ def _analyze_class(root, path, cfg, lines, imports, blocks, giant, result, limit
             n_lines = text.count("\n")
             res["groups"].append({
                 "name": name,
-                "path": str(part_paths[idx].relative_to(root)),
+                "path": part_paths[idx].relative_to(root).as_posix(),
                 "lines": n_lines,
                 "blocks": [
                     {"name": item.name, "kind": getattr(item, "kind", "method"),
@@ -858,7 +858,7 @@ def _analyze_class(root, path, cfg, lines, imports, blocks, giant, result, limit
                 res["blockers"].append(
                     "%s would still be %d lines (max %d) — `%s` is %d lines on its own; split "
                     "that member by hand first (.claude/SPLITTING.md)"
-                    % (part_paths[idx].relative_to(root), n_lines, limit, biggest.name, biggest.lines)
+                    % (part_paths[idx].relative_to(root).as_posix(), n_lines, limit, biggest.name, biggest.lines)
                 )
 
         facade_lines = _render_facade(internal, path).count("\n")
@@ -1222,7 +1222,7 @@ def _analyze_data(root, path, cfg, lines, imports, blocks, giant, result, limit,
     existing = [p for p in part_paths if p.exists()]
     if existing:
         result["blockers"].append(
-            "target path already exists: %s" % ", ".join(str(p.relative_to(root)) for p in existing)
+            "target path already exists: %s" % ", ".join(p.relative_to(root).as_posix() for p in existing)
         )
 
     const_names = ["%s_%d" % (giant.name, i + 1) for i in range(len(bins))]
@@ -1239,7 +1239,7 @@ def _analyze_data(root, path, cfg, lines, imports, blocks, giant, result, limit,
         n_lines = text.count("\n")
         result["groups"].append({
             "name": part_names[i],
-            "path": str(part_paths[i].relative_to(root)),
+            "path": part_paths[i].relative_to(root).as_posix(),
             "lines": n_lines,
             "blocks": [{"name": const_names[i], "kind": "const",
                         "lines": n_lines, "exported": False}],
@@ -1249,7 +1249,7 @@ def _analyze_data(root, path, cfg, lines, imports, blocks, giant, result, limit,
             biggest = max(bin_, key=lambda el: el[1] - el[0])
             result["blockers"].append(
                 "%s would still be %d lines (max %d) — one element spans %d lines; split that "
-                "element by hand first" % (part_paths[i].relative_to(root), n_lines, limit,
+                "element by hand first" % (part_paths[i].relative_to(root).as_posix(), n_lines, limit,
                                            biggest[1] - biggest[0] + 1)
             )
 
@@ -1351,7 +1351,7 @@ def apply(root: Path, path: Path, analysis: dict) -> list[str]:
     for target, text in render_all(root, path, analysis):
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text, encoding="utf-8")
-        written.append(str(target.relative_to(root)))
+        written.append(target.relative_to(root).as_posix())
     return written
 
 

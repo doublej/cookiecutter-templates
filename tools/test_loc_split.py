@@ -369,6 +369,9 @@ def _git(project: Path, *args: str) -> None:
 
 
 def main() -> None:
+    # Failure messages quote the script's output; cp1252 stdout on Windows can't print all of it.
+    if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     f: list[str] = []
 
     def check(cond: bool, msg: str) -> None:
