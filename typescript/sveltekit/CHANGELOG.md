@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.8.0] - 2026-10-11
+- app.html preloader: page stays hidden until window load + web fonts (4s cap, no-JS safe)
+
 ## [2.7.0] - 2026-09-15
 - add en+nl i18n: Paraglide JS 2 (local plugin, prepare compile), /nl prefix, hreflang + LanguageSwitcher, just i18n-check active
 - update-check hook tells agents to apply scaffold updates safely and ask only about conflicts

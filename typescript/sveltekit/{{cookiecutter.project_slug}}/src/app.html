@@ -10,9 +10,46 @@
 		<meta property="og:image" content="/og.png" />
 		<meta name="twitter:card" content="summary_large_image" />
 		%sveltekit.head%
+		<!-- Preloader: hides the page until window load (images, CSS) and web fonts are done, capped at 4s.
+		     Without JS the class is never set, so the page shows normally. Restyle #preloader freely. -->
+		<style>
+			.preloading body { visibility: hidden; }
+			#preloader {
+				position: fixed;
+				inset: 0;
+				z-index: 2147483647;
+				display: grid;
+				place-items: center;
+				background: Canvas;
+				color: CanvasText;
+				opacity: 0;
+				visibility: hidden;
+				pointer-events: none;
+				transition: opacity 0.3s, visibility 0.3s;
+			}
+			.preloading #preloader { opacity: 1; visibility: visible; }
+			#preloader::after {
+				content: "";
+				width: 2rem;
+				height: 2rem;
+				border: 3px solid currentColor;
+				border-right-color: transparent;
+				border-radius: 50%;
+				animation: preloader-spin 0.8s linear infinite;
+			}
+			@keyframes preloader-spin { to { transform: rotate(1turn); } }
+			@media (prefers-reduced-motion: reduce) { #preloader::after { animation: none; } }
+		</style>
+		<script>
+			document.documentElement.classList.add('preloading')
+			const reveal = () => document.documentElement.classList.remove('preloading')
+			addEventListener('load', () => document.fonts.ready.then(reveal))
+			setTimeout(reveal, 4000)
+		</script>
 		<!-- TRACKING_PLACEHOLDER -->
 	</head>
 	<body data-sveltekit-preload-data="hover">
+		<div id="preloader" aria-hidden="true"></div>
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>
