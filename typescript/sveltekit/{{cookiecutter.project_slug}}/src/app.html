@@ -10,7 +10,7 @@
 		<meta property="og:image" content="/og.png" />
 		<meta name="twitter:card" content="summary_large_image" />
 		%sveltekit.head%
-		<!-- Preloader: hides the page until window load (images, CSS) and web fonts are done, capped at 4s.
+		<!-- Preloader: hides the page until it is hydrated, loaded (images, CSS) and its web fonts are in, capped at 4s.
 		     Without JS the class is never set, so the page shows normally. Restyle #preloader freely. -->
 		<style>
 			.preloading body { visibility: hidden; }
@@ -42,9 +42,8 @@
 		</style>
 		<script>
 			document.documentElement.classList.add('preloading')
-			const reveal = () => document.documentElement.classList.remove('preloading')
-			addEventListener('load', () => document.fonts.ready.then(reveal))
-			setTimeout(reveal, 4000)
+			// src/lib/preloader.ts lifts this after hydration; the timer caps the wait.
+			setTimeout(() => document.documentElement.classList.remove('preloading'), 4000)
 		</script>
 		<!-- TRACKING_PLACEHOLDER -->
 	</head>
