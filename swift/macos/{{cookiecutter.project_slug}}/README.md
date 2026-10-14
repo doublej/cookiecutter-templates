@@ -13,7 +13,7 @@ Author: {{ cookiecutter.author }}
 
 ```bash
 swift build
-swift run {{ cookiecutter.module_name }}
+just run
 ```
 
 Or open in Xcode:
@@ -27,7 +27,7 @@ open Package.swift
 | Command | Description |
 |---------|-------------|
 | `swift build` | Build the project |
-| `swift run` | Run the app |
+| `just run` | Build `.build/<Module>.app` and open it (a real app: Dock, Cmd-Tab, focus) |
 | `swift test` | Run tests |
 
 ## Project Structure

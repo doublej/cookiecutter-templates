@@ -190,4 +190,4 @@ if __name__ == "__main__":
     if not os.environ.get("ATLAS_CD_FILE"):  # the atlas zsh wrapper cds there itself
         print(f"    cd {PROJECT_SLUG}")
     print("    swift build")
-    print(f"    swift run {MODULE_NAME}\n")
+    print("    just run\n")

@@ -11,9 +11,13 @@ install:
     swift package resolve
     @command -v swiftlint >/dev/null 2>&1 || echo 'warn: swiftlint not installed — run: brew install swiftlint'
 
+# Run it as an app, never as `swift run`. A bare SwiftPM binary has no Info.plist, so AppKit
+# starts it with activation policy `prohibited`: no Dock icon, no Cmd-Tab entry, and windows that
+# cannot take focus. The same binary inside a bundle with a CFBundleIdentifier starts `regular`
+# (measured 2026-10-14). A menu bar app opts out on purpose, with LSUIElement in `bundle`.
 [group('develop')]
-run-app:
-    swift run {{ cookiecutter.module_name }}
+run-app: bundle
+    open .build/{{ cookiecutter.module_name }}.app
 
 alias run := run-app
 
@@ -110,6 +114,35 @@ check:
 [group('build')]
 build:
     swift build
+
+# The binary wrapped in .build/{{ cookiecutter.module_name }}.app, ad-hoc signed. SwiftPM's resource
+# bundle goes in Contents/Resources: the generated `Bundle.module` looks there first and has no
+# fallback to the build folder, so an app without it crashes at the first localized string.
+[group('build')]
+bundle:
+    #!/usr/bin/env zsh
+    set -euo pipefail
+    swift build
+    app=.build/{{ cookiecutter.module_name }}.app
+    plist=$app/Contents/Info.plist
+    rm -rf $app
+    bin=$(swift build --show-bin-path)
+    mkdir -p $app/Contents/MacOS $app/Contents/Resources
+    cp $bin/{{ cookiecutter.module_name }} $app/Contents/MacOS/
+    for resources in $bin/*.bundle(N); do cp -R $resources $app/Contents/Resources/; done
+    plutil -create xml1 $plist
+    for key value in \
+        CFBundleIdentifier dev.jurrejan.{{ cookiecutter.project_slug }} \
+        CFBundleName {{ cookiecutter.module_name }} \
+        CFBundleExecutable {{ cookiecutter.module_name }} \
+        CFBundlePackageType APPL \
+        CFBundleShortVersionString 0.1.0 \
+        CFBundleDevelopmentRegion en \
+        LSMinimumSystemVersion {{ cookiecutter.deployment_target }}; do
+        plutil -insert $key -string $value $plist
+    done
+    plutil -insert CFBundleLocalizations -json '["en","nl"]' $plist
+    codesign --force --sign - $app
 
 [group('build')]
 build-release:

@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [3.5.0] - 2026-10-14
+- just run builds and opens .build/<Module>.app instead of swift run: a bare SwiftPM binary gets activation policy prohibited (no Dock icon, no Cmd-Tab entry, no focus); new just bundle recipe
+
 ## [3.4.0] - 2026-09-15
 - add en+nl i18n: Resources/{en,nl}.lproj/Localizable.strings + L10n.swift, defaultLocalization en, just i18n-check active
 - update-check hook tells agents to apply scaffold updates safely and ask only about conflicts

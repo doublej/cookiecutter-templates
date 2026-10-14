@@ -23,6 +23,7 @@ The runtime path is `App entry (`@main struct ... : App`) → root `Scene` → `
 ## Invariants
 
 - SwiftPM is the build system — no Xcode project files committed. `just xcode` opens the package in Xcode for editing.
+- Run the app with `just run`, which builds `.build/<Module>.app` and opens it — never `swift run`. A bare SwiftPM binary has no Info.plist, so AppKit gives it activation policy `prohibited`: no Dock icon, no Cmd-Tab entry, windows that cannot take focus. Inside a bundle it starts `regular`. A menu bar app that wants none of those adds `LSUIElement` in the `bundle` recipe, as a choice.
 - SwiftUI for the UI layer (AppKit only where SwiftUI cannot reach).
 - `async` / `await` for concurrency; avoid completion handlers and explicit `DispatchQueue` work in new code.
 - SwiftLint `--strict` must pass — no warnings.
