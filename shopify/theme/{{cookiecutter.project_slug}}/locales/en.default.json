@@ -145,6 +145,8 @@
     "order": {
       "title": "Order {{ name }}",
       "date": "Placed on {{ date }}",
+      "number_header": "Order",
+      "date_header": "Date",
       "product": "Product",
       "quantity": "Quantity",
       "price": "Price",

@@ -145,6 +145,8 @@
     "order": {
       "title": "Bestelling {{ name }}",
       "date": "Geplaatst op {{ date }}",
+      "number_header": "Bestelling",
+      "date_header": "Datum",
       "product": "Product",
       "quantity": "Aantal",
       "price": "Prijs",
