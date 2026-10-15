@@ -1,4 +1,4 @@
-// Command {{ cookiecutter.project_slug }} is {{ cookiecutter.description }}.
+// Command {{ cookiecutter.project_slug }}: {{ cookiecutter.description }}
 package main
 
 import (

@@ -1,5 +1,5 @@
 {
-    "_version": "1.2.1",
+    "_version": "1.2.2",
     "project_name": "My Go CLI",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "description": "A Go CLI tool",

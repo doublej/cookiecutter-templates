@@ -1,4 +1,4 @@
-// Command {{ cookiecutter.project_slug }} is {{ cookiecutter.description }}.
+// Command {{ cookiecutter.project_slug }}: {{ cookiecutter.description }}
 package main
 
 import (
@@ -21,8 +21,9 @@ func main() {
 // run parses flags and dispatches. Returns nil on -h/--help.
 func run(args []string) error {
 	fs := flag.NewFlagSet("{{ cookiecutter.project_slug }}", flag.ContinueOnError)
-	verbose := fs.Bool("verbose", false, "enable verbose output")
-	lang := fs.String("lang", "", "output language: "+strings.Join(i18n.Supported(), ", ")+" (default: LC_ALL, LC_MESSAGES, LANG)")
+	helpLocale := i18n.FromEnv()
+	verbose := fs.Bool("verbose", false, i18n.T(helpLocale, "flag_verbose"))
+	lang := fs.String("lang", "", i18n.T(helpLocale, "flag_lang", "langs", strings.Join(i18n.Supported(), ", ")))
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return nil

@@ -4,5 +4,7 @@
     "one": "{count} item wordt verwerkt",
     "other": "{count} items worden verwerkt"
   },
-  "processing": "Verwerken: {input}"
+  "processing": "Verwerken: {input}",
+  "flag_verbose": "toon uitgebreide uitvoer",
+  "flag_lang": "taal van de uitvoer: {langs} (standaard: LC_ALL, LC_MESSAGES, LANG)"
 }

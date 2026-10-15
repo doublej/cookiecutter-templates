@@ -4,5 +4,7 @@
     "one": "Processing {count} input",
     "other": "Processing {count} inputs"
   },
-  "processing": "Processing: {input}"
+  "processing": "Processing: {input}",
+  "flag_verbose": "enable verbose output",
+  "flag_lang": "output language: {langs} (default: LC_ALL, LC_MESSAGES, LANG)"
 }

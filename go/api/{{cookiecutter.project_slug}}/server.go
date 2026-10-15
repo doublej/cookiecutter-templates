@@ -13,7 +13,14 @@ import (
 
 // run starts the HTTP server and blocks until ctx is cancelled, then drains.
 func run(ctx context.Context, logger *slog.Logger, addr string) error {
-	srv := &http.Server{Addr: addr, Handler: routes(logger)}
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           routes(logger),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
 	go func() {
 		<-ctx.Done()
 		shutdown(srv, logger)

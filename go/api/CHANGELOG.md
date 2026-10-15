@@ -6,6 +6,12 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [1.2.2] - 2026-10-15
+- post-gen hook: quotes in description/author no longer crash generation; relative template paths record the real repo
+- go 1.27 (1.25 is EOL)
+- http.Server gets read/write/idle timeouts (Slowloris)
+- package comment reads correctly
+
 ## [1.2.1] - 2026-10-15
 - update hook describes the 3-way merge instead of .upstream sidecars
 
