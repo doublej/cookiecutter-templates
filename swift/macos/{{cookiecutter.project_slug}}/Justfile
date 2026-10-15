@@ -11,10 +11,11 @@ install:
     swift package resolve
     @command -v swiftlint >/dev/null 2>&1 || echo 'warn: swiftlint not installed — run: brew install swiftlint'
 
-# Run it as an app, never as `swift run`. A bare SwiftPM binary has no Info.plist, so AppKit
-# starts it with activation policy `prohibited`: no Dock icon, no Cmd-Tab entry, and windows that
-# cannot take focus. The same binary inside a bundle with a CFBundleIdentifier starts `regular`
-# (measured 2026-10-14). A menu bar app opts out on purpose, with LSUIElement in `bundle`.
+# Never `swift run`: a bare SwiftPM binary has no Info.plist, so AppKit starts it `prohibited`
+# (no Dock icon, no Cmd-Tab, no focus); inside a bundle it starts `regular` (measured 2026-10-14).
+# A menu bar app opts out on purpose, with LSUIElement in `bundle`.
+
+# Run it as an app
 [group('develop')]
 run-app: bundle
     open .build/{{ cookiecutter.module_name }}.app
@@ -115,9 +116,10 @@ check:
 build:
     swift build
 
-# The binary wrapped in .build/{{ cookiecutter.module_name }}.app, ad-hoc signed. SwiftPM's resource
-# bundle goes in Contents/Resources: the generated `Bundle.module` looks there first and has no
-# fallback to the build folder, so an app without it crashes at the first localized string.
+# SwiftPM's resource bundle goes in Contents/Resources: the generated `Bundle.module` looks there
+# first and has no fallback to the build folder, so an app without it crashes at the first string.
+
+# Wrap the binary in .build/{{ cookiecutter.module_name }}.app, ad-hoc signed
 [group('build')]
 bundle:
     #!/usr/bin/env zsh
