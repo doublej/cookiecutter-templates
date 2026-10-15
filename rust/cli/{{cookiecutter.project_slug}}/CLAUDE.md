@@ -20,7 +20,7 @@ The runtime path is `binary → main → clap parse → command dispatch`. New s
 
 ## Invariants
 
-- Edition 2021. Release profile keeps `lto = true`, `strip = true`, `panic = "abort"` — do not relax these without reason.
+- Edition 2024. Release profile keeps `lto = true`, `strip = true`, `panic = "abort"` — do not relax these without reason.
 - `clippy -D warnings` is the lint bar — code must compile clean.
 - `main` returns `anyhow::Result<()>` so `?` propagates errors to the binary exit code.
 - Functions stay small (5–10 lines target, 20 max).

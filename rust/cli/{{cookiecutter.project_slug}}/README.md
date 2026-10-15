@@ -4,7 +4,7 @@
 
 ## Requirements
 
-- [Rust](https://rustup.rs/) (edition 2021)
+- [Rust](https://rustup.rs/) (edition 2024)
 
 ## Getting Started
 

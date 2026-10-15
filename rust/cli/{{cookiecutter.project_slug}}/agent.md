@@ -4,7 +4,7 @@
 
 ## Stack
 
-- Rust (edition 2021), cargo, clippy, rustfmt
+- Rust (edition 2024), cargo, clippy, rustfmt
 - CLI framework: clap (derive)
 - Error handling: anyhow
 
@@ -37,7 +37,7 @@ Justfile            # task runner
 
 ## Conventions
 
-- Edition 2021 with release profile optimizations (LTO, strip, abort on panic)
+- Edition 2024 with release profile optimizations (LTO, strip, abort on panic)
 - Entry point returns `anyhow::Result<()>`
 - Keep functions small (5-10 lines target, 20 max)
 - Prefer explicit, readable code over cleverness
