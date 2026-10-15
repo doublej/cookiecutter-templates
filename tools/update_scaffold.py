@@ -6,14 +6,19 @@ happens automatically — instead of bulldozing the user's customizations.
 
   template_managed   pure tooling (`.claude/scripts/*.py`) — safe to overwrite
   mergeable          shallow-mergeable JSON (`.atlas`)
-  seed               render-once files (CLAUDE.md, Justfile, .gitignore, ...)
-                     — diffed only; with --apply we write the upstream copy to
-                     `<file>.upstream` so you can merge manually
+  seed / other       everything else — 3-way merged like `git merge`: the base is
+                     the project's own template version rendered with the same
+                     context, so only what the template changed is applied and
+                     local edits stay. Files the template did not change are left
+                     alone, files you deleted stay deleted, new template files are
+                     added. Where both sides changed the same lines the file gets
+                     git conflict markers. Without a base (retrofit, unversioned,
+                     unknown version) seeds fall back to `<file>.upstream` sidecars.
 
 Default: report-only (no writes).
-  --apply            apply template_managed + mergeable; sidecar seeds
-  --force            also overwrite seeds (the old destructive behaviour)
-  --include-other    treat unclassified files as seeds (sidecar them too)
+  --apply            apply all of the above
+  --force            overwrite seeds instead of merging (destructive)
+  --include-other    without a base, also sidecar unclassified files
 
 Resolves project dir from cwd; reads .template-meta.json for template name.
 """
@@ -117,6 +122,14 @@ def _git(*args: str) -> str:
     return subprocess.run(["git", *args], cwd=TEMPLATES_ROOT, capture_output=True, text=True, check=True).stdout
 
 
+def _extract(template_name: str, commit: str, workdir: Path) -> Path:
+    archive = subprocess.run(["git", "archive", commit, template_name], cwd=TEMPLATES_ROOT,
+                             capture_output=True, check=True).stdout
+    with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
+        tar.extractall(workdir, filter="data")
+    return workdir / template_name
+
+
 def released_template(template_name: str, workdir: Path) -> tuple[str, Path]:
     """Extract the template as it was when its current _version was released.
 
@@ -128,11 +141,16 @@ def released_template(template_name: str, workdir: Path) -> tuple[str, Path]:
     release = _git("log", "-1", "--format=%H", "-S", f'"_version": "{version}"', "--", cc_rel).strip()
     if not release:
         raise RuntimeError(f"no commit introduces {template_name} _version {version}")
-    archive = subprocess.run(["git", "archive", release, template_name], cwd=TEMPLATES_ROOT,
-                             capture_output=True, check=True).stdout
-    with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
-        tar.extractall(workdir, filter="data")
-    return version, workdir / template_name
+    return version, _extract(template_name, release, workdir)
+
+
+def base_template(template_name: str, version: str, workdir: Path) -> Path | None:
+    """Extract the template as it was released at an older _version: the merge base for a project
+    rendered from it. The oldest commit touching the version string introduced it; later ones bumped
+    it away. None when no commit has that version (hand-edited or pre-versioning meta)."""
+    cc_rel = f"{template_name}/cookiecutter.json"
+    commits = _git("log", "--reverse", "--format=%H", "-S", f'"_version": "{version}"', "--", cc_rel).split()
+    return _extract(template_name, commits[0], workdir) if commits else None
 
 
 def write_meta_version(project_dir: Path, meta: dict, version: str) -> None:
@@ -169,10 +187,12 @@ def _short_diff(old: Path, new: Path, label: str, max_lines: int = 12) -> str:
     return "".join(diff)
 
 
-def collect(rendered: Path, project: Path) -> dict[str, list[tuple[str, Path, Path]]]:
+def collect(rendered: Path, project: Path, base: Path | None = None) -> dict[str, list[tuple[str, Path, Path]]]:
+    """With a `base` render, files the template did not change and files the project deleted are
+    not changes, and seed + other files land in the `merge` bucket."""
     merge_paths = set(_merge_paths())
     buckets: dict[str, list[tuple[str, Path, Path]]] = {
-        "template_managed": [], "mergeable": [], "seed": [], "other": [],
+        "template_managed": [], "mergeable": [], "seed": [], "other": [], "merge": [],
     }
     for src in rendered.rglob("*"):
         if not src.is_file():
@@ -182,7 +202,13 @@ def collect(rendered: Path, project: Path) -> dict[str, list[tuple[str, Path, Pa
         # .template-meta.json always differs (rendered_at); this script owns it on --apply.
         if rel == ".template-meta.json" or _same(src, dst):
             continue
-        buckets[classify(rel, merge_paths)].append((rel, src, dst))
+        cls = classify(rel, merge_paths)
+        if base is not None and cls in ("seed", "other"):
+            old = base / rel
+            if _same(src, old) or (old.is_file() and not dst.exists()):
+                continue
+            cls = "merge"
+        buckets[cls].append((rel, src, dst))
     return buckets
 
 
@@ -210,6 +236,41 @@ def _apply_mergeable(items: list, dry: bool) -> int:
             dst.write_text(merged)
         n += 1
     return n
+
+
+def merge_file(dst: Path, base_file: Path, src: Path) -> tuple[str, bytes | None]:
+    """3-way merge of one file. Returns (outcome, new content); content None means sidecar it."""
+    if not dst.exists():
+        return "added", src.read_bytes()
+    if _same(dst, base_file):
+        return "updated", src.read_bytes()
+    result = subprocess.run(
+        ["git", "merge-file", "-p", "-L", "yours", "-L", "template (old)", "-L", "template (new)",
+         str(dst), str(base_file) if base_file.is_file() else os.devnull, str(src)],
+        capture_output=True,
+    )
+    if not 0 <= result.returncode <= 127:  # binary file or git error
+        return "sidecar", None
+    return ("merged" if result.returncode == 0 else "conflict"), result.stdout
+
+
+def _apply_merges(items: list, base: Path, dry: bool) -> list[str]:
+    """Returns the paths left with conflict markers (or sidecars, for unmergeable files)."""
+    unresolved = []
+    for rel, src, dst in items:
+        outcome, content = merge_file(dst, base / rel, src)
+        print(f"  [{outcome}] {'would ' if dry else ''}{rel}")
+        if outcome in ("conflict", "sidecar"):
+            unresolved.append(rel + (".upstream" if content is None else ""))
+        if dry:
+            continue
+        target = dst if content is not None else dst.with_name(dst.name + ".upstream")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if content is None:
+            shutil.copy2(src, target)
+        else:
+            target.write_bytes(content)
+    return unresolved
 
 
 def _apply_seeds(items: list, dry: bool, force: bool) -> int:
@@ -241,12 +302,15 @@ def _print_summary(buckets: dict, show_diffs: bool) -> None:
     print(f"\nChanges detected: {total} file(s)")
     print(f"  template_managed: {counts['template_managed']:>3}  (safe to overwrite — tooling)")
     print(f"  mergeable:        {counts['mergeable']:>3}  (shallow JSON merge)")
-    print(f"  seed:             {counts['seed']:>3}  (your customizations — sidecar by default)")
+    if counts["merge"]:
+        print(f"  merge:            {counts['merge']:>3}  (3-way merged — your edits kept)")
+    if counts["seed"]:
+        print(f"  seed:             {counts['seed']:>3}  (no merge base — sidecar by default)")
     if counts["other"]:
         print(f"  other:            {counts['other']:>3}  (unclassified — skipped without --include-other)")
     if not show_diffs:
         return
-    for cls in ("seed", "template_managed", "other"):
+    for cls in ("merge", "seed", "template_managed", "other"):
         for rel, src, dst in buckets[cls]:
             print(f"\n--- {cls}: {rel} ---")
             print(_short_diff(dst, src, rel) or "(new file)")
@@ -257,11 +321,11 @@ def main() -> None:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("path", nargs="?", default=".", help="project dir (default: cwd)")
     parser.add_argument("--apply", action="store_true",
-                        help="apply changes (template_managed + mergeable in place; seeds → sidecar)")
+                        help="apply changes (tooling overwritten, .atlas merged, everything else 3-way merged)")
     parser.add_argument("--force", action="store_true",
-                        help="with --apply, also overwrite seed files (DESTRUCTIVE — your edits are lost)")
+                        help="with --apply, overwrite seed files instead of merging (DESTRUCTIVE — your edits are lost)")
     parser.add_argument("--include-other", action="store_true",
-                        help="treat unclassified files as seeds (write sidecars)")
+                        help="without a merge base, treat unclassified files as seeds (write sidecars)")
     parser.add_argument("--diffs", action="store_true",
                         help="print short diffs for each changed file")
     args = parser.parse_args()
@@ -296,7 +360,16 @@ def main() -> None:
             rendered = render_template(released_dir, context, Path(tmp) / "rendered")
         except RuntimeError as e:
             sys.exit(f"error: {e}")
-        buckets = collect(rendered, project_dir)
+        base = None
+        if local_version and not retrofit and not args.force:
+            base_dir = base_template(template_name, local_version, Path(tmp) / "base-src")
+            try:
+                base = base_dir and render_template(base_dir, context, Path(tmp) / "base")
+            except RuntimeError as e:
+                print(f"note: cannot render merge base {local_version} ({e}); seeds become sidecars")
+        if base is None and not retrofit and not args.force:
+            print(f"note: no merge base for {local_version}; seeds become `<file>.upstream` sidecars")
+        buckets = collect(rendered, project_dir, base)
         if not args.include_other:
             buckets["other"] = []  # drop from apply, still show in summary
         _print_summary(buckets, show_diffs=args.diffs)
@@ -311,6 +384,8 @@ def main() -> None:
         applied += _apply_template_managed(buckets["template_managed"], dry)
         applied += _apply_mergeable(buckets["mergeable"], dry)
         applied += _apply_seeds(buckets["seed"], dry, args.force)
+        unresolved = _apply_merges(buckets["merge"], base, dry) if base else []
+        applied += len(buckets["merge"])
         if args.include_other:
             applied += _apply_seeds(buckets["other"], dry, args.force)
 
@@ -332,6 +407,11 @@ def main() -> None:
                 print("  diff -u <file> <file>.upstream  # review")
                 print("  # cherry-pick what you want into <file>, then:")
                 print("  rm <file>.upstream")
+        if unresolved:
+            print(f"\n{'Would leave' if dry else 'Left'} {len(unresolved)} file(s) with git conflict markers"
+                  " (or .upstream sidecars) — both sides changed the same lines:")
+            for rel in unresolved:
+                print(f"  {rel}")
 
 
 if __name__ == "__main__":
