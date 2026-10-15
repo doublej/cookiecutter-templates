@@ -12,6 +12,7 @@ let package = Package(
             name: "{{ cookiecutter.module_name }}",
             path: "{{ cookiecutter.project_slug }}",
             resources: [.process("Resources")]
-        )
+        ),
+        .testTarget(name: "{{ cookiecutter.module_name }}Tests")
     ]
 )

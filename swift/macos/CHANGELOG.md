@@ -6,6 +6,10 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [3.6.0] - 2026-10-15
+- post-gen hook: quotes in description/author no longer crash generation; relative template paths record the real repo
+- new LocalizationTests test target, so just test/check pass
+
 ## [3.5.1] - 2026-10-15
 - update hook describes the 3-way merge instead of .upstream sidecars
 

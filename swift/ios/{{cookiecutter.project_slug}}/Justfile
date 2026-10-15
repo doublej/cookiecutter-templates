@@ -103,11 +103,11 @@ check:
 
 [group('build')]
 build:
-    swift build
+    xcodebuild -quiet -scheme {{ cookiecutter.module_name }} -destination 'generic/platform=iOS Simulator' -derivedDataPath .build/xcode build
 
 [group('build')]
 build-release:
-    swift build -c release
+    xcodebuild -quiet -scheme {{ cookiecutter.module_name }} -destination 'generic/platform=iOS' -derivedDataPath .build/xcode -configuration Release build CODE_SIGNING_ALLOWED=NO
 
 [group('cleanup')]
 clean:
