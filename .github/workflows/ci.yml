@@ -14,12 +14,12 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v10
 
       - name: Set up Python
         run: uv python install 3.12
@@ -28,9 +28,9 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
-          go-version: '1.24'
+          go-version: '1.27'
 
       - name: Install Swift (Linux)
         if: runner.os == 'Linux'
@@ -61,9 +61,12 @@ jobs:
       - name: Test loc-split PoC
         run: uv run tools/test_loc_split.py
 
+      - name: Test library-freshness check
+        run: uv run tools/test_library_check.py
+
       - name: Upload rendered projects on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rendered-projects-${{ matrix.os }}
           path: /tmp/cookiecutter-render-*

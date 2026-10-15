@@ -115,8 +115,6 @@
         "i18n-check",
         "just-fmt-check",
         "check",
-        "build",
-        "build-release",
         "clean",
         "claude-tree",
         "update-scaffold"

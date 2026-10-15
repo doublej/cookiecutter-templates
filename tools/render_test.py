@@ -586,7 +586,7 @@ def main():
                             print(f"    {line}")
 
                 if variant_ok:
-                    print(f"  PASSED")
+                    print("  PASSED")
                     passed += 1
                 else:
                     failed_list.append((variant_label, "smoke test"))
@@ -594,7 +594,7 @@ def main():
     print(f"\n{'='*60}")
     print(f"Results: {passed}/{total} passed")
     if failed_list:
-        print(f"\nFailed:")
+        print("\nFailed:")
         for name, reason in failed_list:
             print(f"  - {name}: {reason}")
         sys.exit(1)

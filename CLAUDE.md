@@ -31,11 +31,14 @@ python3 tools/test_update_projects.py
 # Local test for the 3-way scaffold merge (same constraints)
 python3 tools/test_update_scaffold.py
 
+# Offline test for the library-freshness hook
+uv run tools/test_library_check.py
+
 # Aggregate phone-home diagnostics from deployed-template hooks
 uv run tools/review_diagnostics.py [--since 7d] [--errors-only]
 
 # Bump a template version (strict MAJOR.MINOR.PATCH only)
-uv run tools/bump_version.py python/fastapi {major|minor|patch}
+uv run tools/bump_version.py python/fastapi {major|minor|patch} "changelog note" ["note" ...]
 
 # Generate a single project
 cookiecutter python/fastapi
@@ -58,7 +61,7 @@ Every `cookiecutter.json` carries a private `_version` field (not prompted). Eve
 - `minor` — new file, new Justfile recipe, added feature
 - `major` — breaking scaffold change (renamed path, removed recipe, cookiecutter key rename)
 
-**Bump workflow:** after editing a template, run `uv run tools/bump_version.py <template> {major|minor|patch}`. CI runs `sync_check.py --enforce-bumps` on every PR and fails if a template has file changes but no `_version` bump.
+**Bump workflow:** after editing a template, run `uv run tools/bump_version.py <template> {major|minor|patch} "note"` (at least one note; it is prepended to the template's `CHANGELOG.md`, which CI requires on every bump). CI runs `sync_check.py --enforce-bumps` on every PR and fails if a template has file changes but no `_version` bump.
 
 **Opt-out** (per generated project): set env `NO_TEMPLATE_UPDATE_CHECK=1` or `touch .claude/no-template-update-check`.
 
@@ -74,16 +77,18 @@ Templates are grouped into families (python, typescript, rust, swift, go, shopif
 |--------|-----------|----------------------|------------------------|
 | python | cli, fastapi, flask | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `src/<pkg>/i18n.py`, `tests/test_i18n.py` | default, install, lint, lint-fix, format, format-check, typecheck, test, loc-check, dir-check, i18n-check, check, clean, claude-tree |
 | typescript | node-api, node-cli, bun-package, node-lib, node-worker, react, sveltekit, tizen-tv, nextjs | `hooks/pre_gen_project.py` | default, install, lint, lint-fix, test, loc-check, dir-check, i18n-check, check, build, clean, claude-tree |
-| swift | ios, macos | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `.swiftlint.yml`, `<slug>/L10n.swift` | default, install, xcode, lint, lint-fix, test, loc-check, dir-check, i18n-check, check, build, build-release, clean, claude-tree |
+| swift | ios, macos | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `.swiftlint.yml`, `<slug>/L10n.swift` | default, install, xcode, lint, lint-fix, test, loc-check, dir-check, i18n-check, check, clean, claude-tree (`build`/`build-release` differ: iOS builds via xcodebuild) |
 | rust | cli | `hooks/pre_gen_project.py`, `.gitignore` | default, lint, fmt, fmt-check, check, test, loc-check, dir-check, i18n-check, build-release, reinstall, claude-tree |
 | go | cli, api | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `internal/i18n/i18n.go`, `internal/i18n/i18n_test.go` | default, install, lint, fmt, fmt-check, test, loc-check, dir-check, i18n-check, check, build, build-release, clean, claude-tree |
-| shopify | theme | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `.theme-check.yml` | default, dev, share, lint, lint-fix, loc-check, dir-check, i18n-check, check, pull, push, claude-tree |
+| shopify | theme | `hooks/pre_gen_project.py`, `.gitignore`, `.quality.json`, `.theme-check.yml`, `.claude/agents/deploy-runner.md` | default, dev, share, lint, lint-fix, loc-check, dir-check, i18n-check, check, pull, push, claude-tree |
 
 Cross-family, every generated `.claude/scripts/` ships identical helper scripts: `_diag.py` (phone-home), `check_template_update.py`, `check_library_freshness.py`, `snooze_library_check.py`, and `check_i18n.py` (the `just i18n-check` verifier; dormant until `.quality.json` has an `i18n` block). The `claude-tree` recipe ships no script — it deep-links into the project-atlas viewer (`atlas-api` on :47891) by `pwd`, opening the ancestor + descendant `CLAUDE.md` tree at `/claude-tree?root=$(pwd)`.
 
-**Exceptions** are declared in `sync_manifest.json` under `justfile_exceptions` (e.g. SvelteKit skips `typecheck`/`clean`).
+Every family also shares the `just-fmt-check` and `update-scaffold` recipes. `android/quest-vr` and `typescript/raycast-extension` belong to no family on purpose; only the cross-family files and the bump check cover them.
 
-**`typescript/node-lib` carries a deliberately detached PoC** — `.claude/scripts/split_oversize.py`, `.claude/SPLITTING.md` and the `just loc-fix` recipe (the LOC autofix experiment, covered by `tools/test_loc_split.py`). It is intentionally **absent from `cross_family.identical_files` and `justfile_shared_recipes`**: `sync_check.py` only compares paths and recipe names the manifest lists, so an extra file and an extra recipe are invisible to it. Do not "fix" the asymmetry by copying it to the other 18 templates — rollout waits until the PoC has proven itself on real oversized files. Registering it in the manifest is what makes the rollout mandatory, so that edit is the rollout decision.
+**Exceptions** are declared in `sync_manifest.json` under `justfile_exceptions` (sveltekit and tizen-tv skip `typecheck`/`clean`/`check`, nextjs skips `clean`/`check`, react skips `check`).
+
+**`typescript/node-lib` carries a deliberately detached PoC** — `.claude/scripts/split_oversize.py`, `.claude/scripts/split_members.py`, `.claude/SPLITTING.md` and the `just loc-fix` recipe (the LOC autofix experiment, covered by `tools/test_loc_split.py`). It is intentionally **absent from `cross_family.identical_files` and `justfile_shared_recipes`**: `sync_check.py` only compares paths and recipe names the manifest lists, so an extra file and an extra recipe are invisible to it. Do not "fix" the asymmetry by copying it to the other 19 templates — rollout waits until the PoC has proven itself on real oversized files. Registering it in the manifest is what makes the rollout mandatory, so that edit is the rollout decision.
 
 ### Template anatomy
 
@@ -136,7 +141,7 @@ Each stack uses its native i18n mechanism; the contract and `just i18n-check` ar
 - Bump pins/floors to current stable; apply any config/source migrations the new majors require (e.g. biome config schema, eslint flat config, vite plugin matrix).
 - Security advisories and EOL toolchains (EOL Go directive, EOL eslint/vite lines) are never left in place.
 - Deliberate holds are allowed (e.g. TypeScript 5.x floor over the 7.x native line, AGP 8.x while render_test has no gradle smoke test) but must be listed in the session's report with the reason.
-- Then run `sync_check.py` + `render_test.py`, and `bump_version.py <template> patch` (minor if files were added) for every changed template.
+- Then run `sync_check.py` + `render_test.py`, and `bump_version.py <template> patch "note"` (minor if files were added) for every changed template.
 
 ## Conventions
 

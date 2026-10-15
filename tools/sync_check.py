@@ -259,15 +259,15 @@ def main():
             all_errors.extend(errors)
             print(f"  FAIL ({len(errors)} issue(s))")
         else:
-            print(f"  OK")
+            print("  OK")
 
-    print(f"Checking cross-family...")
+    print("Checking cross-family...")
     cf_errors = check_cross_family_files(manifest)
     if cf_errors:
         all_errors.extend(cf_errors)
         print(f"  FAIL ({len(cf_errors)} issue(s))")
     else:
-        print(f"  OK")
+        print("  OK")
 
     if args.enforce_bumps:
         print(f"Checking version bumps vs {args.bump_base}...")
@@ -276,15 +276,15 @@ def main():
             all_errors.extend(bump_errors)
             print(f"  FAIL ({len(bump_errors)} issue(s))")
         else:
-            print(f"  OK")
+            print("  OK")
 
     if all_errors:
-        print(f"\nSync errors found:")
+        print("\nSync errors found:")
         for e in all_errors:
             print(e)
         sys.exit(1)
     else:
-        print(f"\nAll families in sync.")
+        print("\nAll families in sync.")
 
 
 if __name__ == "__main__":

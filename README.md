@@ -141,9 +141,9 @@ Every `cookiecutter.json` has a private `_version` field (strict `MAJOR.MINOR.PA
 
 ```bash
 # Bump a template version
-uv run tools/bump_version.py python/fastapi patch     # 1.0.0 -> 1.0.1
-uv run tools/bump_version.py python/fastapi minor     # 1.0.1 -> 1.1.0
-uv run tools/bump_version.py python/fastapi major     # 1.1.0 -> 2.0.0
+uv run tools/bump_version.py python/fastapi patch "fix lint"      # 1.0.0 -> 1.0.1
+uv run tools/bump_version.py python/fastapi minor "add recipe"    # 1.0.1 -> 1.1.0
+uv run tools/bump_version.py python/fastapi major "rename path"   # 1.1.0 -> 2.0.0
 ```
 
 Bump semantics: `patch` for content tweaks/dep bumps, `minor` for additions (files, recipes, options), `major` for breaking scaffold changes. CI runs `sync_check.py --enforce-bumps` on every PR and fails if a template has file changes without a `_version` bump.
@@ -167,7 +167,7 @@ Opt-out per generated project: `export NO_TEMPLATE_UPDATE_CHECK=1` or `touch .cl
 ## Contributing
 
 1. Make changes to template files
-2. `uv run tools/bump_version.py <template> {major|minor|patch}` — bump the template you changed
+2. `uv run tools/bump_version.py <template> {major|minor|patch} "note"` — bump the template you changed
 3. `uv run tools/sync_check.py` — verify cross-family and in-family sync
 4. `uv run tools/render_test.py` — verify every template still renders
 5. `uv run tools/test_update_check.py` — verify the update-check hook still behaves
