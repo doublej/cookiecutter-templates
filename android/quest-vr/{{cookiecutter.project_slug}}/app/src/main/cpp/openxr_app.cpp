@@ -5,6 +5,8 @@
 #include "openxr_app.h"
 
 #include <android/log.h>
+#include <jni.h>
+#include <EGL/egl.h>
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
 
@@ -124,7 +126,7 @@ void run_app(android_app* app) {
     while (state.running && !app->destroyRequested) {
         int events = 0;
         android_poll_source* source = nullptr;
-        while (ALooper_pollAll(0, nullptr, &events, reinterpret_cast<void**>(&source)) >= 0) {
+        while (ALooper_pollOnce(0, nullptr, &events, reinterpret_cast<void**>(&source)) >= 0) {
             if (source != nullptr) {
                 source->process(app, source);
             }

@@ -14,17 +14,19 @@ GRAPHICS_API = "{{ cookiecutter.graphics_api }}"
 MCP_SERVERS = "{{ cookiecutter.mcp_servers }}"
 MCP_SCOPE = "{{ cookiecutter.mcp_scope }}"
 TEMPLATE_VERSION = "{{ cookiecutter._version }}"
-TEMPLATE_PATH = r"{{ cookiecutter._template }}"
+# cookiecutter keeps a local template path relative to its invocation dir (the
+# shell PWD), but hooks run inside the new project; git clones are absolute.
+TEMPLATE_PATH = os.path.join(os.environ.get("PWD", ""), {{ cookiecutter._repo_dir | tojson }})
 ATLAS_TYPE = "android"
 ATLAS_FRAMEWORK = "openxr"
 
 CONTEXT = {
-    "project_name": "{{ cookiecutter.project_name }}",
+    "project_name": {{ cookiecutter.project_name | tojson }},
     "project_slug": PROJECT_SLUG,
     "module_name": MODULE_NAME,
     "package_id": PACKAGE_ID,
-    "description": "{{ cookiecutter.description }}",
-    "author": "{{ cookiecutter.author }}",
+    "description": {{ cookiecutter.description | tojson }},
+    "author": {{ cookiecutter.author | tojson }},
     "graphics_api": GRAPHICS_API,
     "min_sdk_version": "{{ cookiecutter.min_sdk_version }}",
     "target_sdk_version": "{{ cookiecutter.target_sdk_version }}",
@@ -132,7 +134,7 @@ def _run_mcpick_interactive():
 def write_atlas():
     atlas_path = Path(".atlas")
     data = {
-        "description": "{{ cookiecutter.description }}",
+        "description": {{ cookiecutter.description | tojson }},
         "type": ATLAS_TYPE,
         "framework": ATLAS_FRAMEWORK,
         "archived": False,

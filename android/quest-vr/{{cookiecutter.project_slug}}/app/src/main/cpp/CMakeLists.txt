@@ -8,7 +8,7 @@ if(NOT DEFINED GRAPHICS_API)
     set(GRAPHICS_API "{{ cookiecutter.graphics_api }}")
 endif()
 
-find_package(openxr_loader REQUIRED CONFIG)
+find_package(OpenXR REQUIRED CONFIG)
 find_package(game-activity REQUIRED CONFIG)
 
 add_library(${CMAKE_PROJECT_NAME} SHARED
@@ -37,7 +37,7 @@ else()
 endif()
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
-    openxr_loader::openxr_loader
+    OpenXR::openxr_loader
     game-activity::game-activity_static
     android
     log

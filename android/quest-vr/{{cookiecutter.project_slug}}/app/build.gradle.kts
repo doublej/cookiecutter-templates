@@ -55,6 +55,6 @@ android {
 }
 
 dependencies {
-    implementation("org.khronos.openxr:openxr_loader_for_android:1.1.61")
+    implementation("org.khronos.openxr:openxr_loader_for_android:1.1.63")
     implementation("androidx.games:games-activity:3.0.5")
 }

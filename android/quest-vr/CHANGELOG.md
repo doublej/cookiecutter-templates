@@ -6,6 +6,11 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.4.2] - 2026-10-15
+- post-gen hook: quotes in description/author no longer crash generation; relative template paths record the real repo
+- just build works: OpenXR prefab package name, EGL/jni includes, ALooper_pollOnce
+- openxr_loader 1.1.63, Gradle 8.14.6
+
 ## [2.4.1] - 2026-10-15
 - update hook describes the 3-way merge instead of .upstream sidecars
 
