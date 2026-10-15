@@ -6,8 +6,8 @@ import { negotiate, t } from './i18n.js'
 import { logger } from './logger.js'
 
 const app = new Elysia()
-  .use(cors())
-  .use(swagger())
+  .use(cors({ origin: env.CORS_ORIGIN.split(',') }))
+  .use(env.NODE_ENV === 'production' ? new Elysia() : swagger())
   .get('/health', () => ({ status: 'ok', timestamp: new Date().toISOString() }))
   .derive(({ headers, set }) => {
     const locale = negotiate(headers['accept-language'])

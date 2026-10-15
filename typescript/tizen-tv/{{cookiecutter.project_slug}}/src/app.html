@@ -4,6 +4,15 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=1920, height=1080, initial-scale=1" />
 		<title>{{ cookiecutter.project_name }}</title>
+		<!-- Tizen 6.0 is Chrome 76; the Svelte runtime needs replaceAll (Chrome 85+) -->
+		<script>
+			if (!String.prototype.replaceAll) {
+				String.prototype.replaceAll = function (search, replacement) {
+					if (search instanceof RegExp) return this.replace(search, replacement)
+					return this.split(search).join(replacement)
+				}
+			}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body>

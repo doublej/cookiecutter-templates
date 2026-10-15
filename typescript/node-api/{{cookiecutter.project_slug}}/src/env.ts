@@ -5,7 +5,8 @@ export const env = createEnv({
   server: {
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     PORT: z.coerce.number().default({{ cookiecutter.port }}),
-    HOST: z.string().default('0.0.0.0'),
+    HOST: z.string().default('127.0.0.1'),
+    CORS_ORIGIN: z.string().default('http://localhost:5173'),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

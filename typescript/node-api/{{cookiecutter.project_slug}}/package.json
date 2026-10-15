@@ -6,26 +6,25 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
+    "dev": "bun --watch src/index.ts",
+    "start": "bun dist/index.js",
     "test": "vitest --passWithNoTests --dir src",
     "lint": "biome check .",
     "lint:fix": "biome check --write ."
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.0",
+    "@biomejs/biome": "^2.5.15",
     "@t3-oss/env-core": "^0.13.11",
-    "@types/node": "^26.0.0",
-    "tsx": "^4.0.0",
+    "@types/node": "^26.6.5",
     "typescript": "^5.9.0",
-    "vitest": "^4.1.0",
-    "zod": "^4.4.0"
+    "vitest": "^4.1.11",
+    "zod": "^4.6.7"
   },
   "dependencies": {
-    "@elysiajs/cors": "^1.1.0",
+    "@elysiajs/cors": "^1.4.2",
     "@elysiajs/swagger": "^1.1.0",
-    "elysia": "^1.1.0",
-    "pino": "^10.3.0",
+    "elysia": "^1.4.30",
+    "pino": "^10.4.0",
     "pino-pretty": "^13.0.0"
   }
 }

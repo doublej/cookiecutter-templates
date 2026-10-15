@@ -6,6 +6,13 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.4.0] - 2026-10-15
+- post-gen hook: quotes in description/author no longer crash generation; relative template paths record the real repo
+- dep floors: biome 2.5.15 (schema too), vitest 4.1.11 (security)
+- elysia 1.4.30, @elysiajs/cors 1.4.2 (security)
+- dev/start run on bun (Elysia cannot listen under node); tsx dropped
+- HOST defaults to 127.0.0.1, CORS_ORIGIN allowlist, swagger off in production
+
 ## [2.3.1] - 2026-10-15
 - update hook describes the 3-way merge instead of .upstream sidecars
 

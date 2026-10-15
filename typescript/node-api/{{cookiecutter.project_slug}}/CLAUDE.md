@@ -4,7 +4,7 @@
 
 ## What this is
 
-A TypeScript HTTP server. Runs under `bun` for dev (with `tsx` watch) and ships as a built `dist/` artifact. Biome handles lint + format (replacing ESLint / Prettier). Vitest runs the tests.
+A TypeScript HTTP server. Runs under `bun` (`bun --watch` for dev) and ships as a built `dist/` artifact. Biome handles lint + format (replacing ESLint / Prettier). Vitest runs the tests.
 
 ## Mental model
 
@@ -20,7 +20,7 @@ tsconfig.json       # strict mode
 biome.json          # lint + format rules
 ```
 
-The runtime path is `bun → tsx → src/index.ts → server`. `env.ts` is the one place runtime config is parsed; `index.ts` composes it. New routes / middleware live in dedicated modules that `index.ts` imports.
+The runtime path is `bun → src/index.ts → server`. `env.ts` is the one place runtime config is parsed; `index.ts` composes it. New routes / middleware live in dedicated modules that `index.ts` imports.
 
 ## Invariants
 

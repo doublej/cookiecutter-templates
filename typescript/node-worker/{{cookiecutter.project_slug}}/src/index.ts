@@ -1,4 +1,4 @@
-import { env } from './env.js'
+import './env.js'
 import { logger } from './logger.js'
 {%- if cookiecutter.worker_type == 'simple' %}
 

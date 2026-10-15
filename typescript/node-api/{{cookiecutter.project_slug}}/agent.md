@@ -5,7 +5,7 @@
 ## Stack
 
 - TypeScript, bun, Biome, Vitest
-- HTTP server with tsx for dev
+- HTTP server on the bun runtime (`bun --watch` for dev)
 
 ## Commands
 

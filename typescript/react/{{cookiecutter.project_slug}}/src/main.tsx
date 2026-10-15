@@ -5,7 +5,10 @@ import { getLocale } from './paraglide/runtime'
 
 document.documentElement.lang = getLocale()
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const root = document.getElementById('root')
+if (!root) throw new Error('Missing #root element')
+
+ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,

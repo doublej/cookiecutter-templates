@@ -4,6 +4,7 @@
   "description": "{{ cookiecutter.description }}",
   "author": "{{ cookiecutter.author }}",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack -p {{ cookiecutter.port }}",
     "build": "next build",
@@ -14,21 +15,21 @@
   },
   "dependencies": {
     "@gsap/react": "^2.1.0",
-    "gsap": "^3.13.0",
-    "next": "^16.3.5",
-    "next-intl": "^4.14.5",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "gsap": "^3.15.0",
+    "next": "^16.4.1",
+    "next-intl": "^4.14.9",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.0",
-    "stylelint": "^17.0.0",
-    "@types/node": "^26.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^6.0.5",
-    "jsdom": "^30.0.0",
+    "@biomejs/biome": "^2.5.15",
+    "stylelint": "^17.16.0",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "jsdom": "^30.1.3",
     "typescript": "^5.9.0",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.11"
   }
 }

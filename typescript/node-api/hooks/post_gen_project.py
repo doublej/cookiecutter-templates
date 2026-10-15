@@ -12,15 +12,17 @@ INCLUDE_DOCKER = "{{ cookiecutter.include_docker }}".lower() in ("true", "y", "y
 MCP_SERVERS = "{{ cookiecutter.mcp_servers }}"
 MCP_SCOPE = "{{ cookiecutter.mcp_scope }}"
 TEMPLATE_VERSION = "{{ cookiecutter._version }}"
-TEMPLATE_PATH = r"{{ cookiecutter._template }}"
+# cookiecutter keeps a local template path relative to its invocation dir (the
+# shell PWD), but hooks run inside the new project; git clones are absolute.
+TEMPLATE_PATH = os.path.join(os.environ.get("PWD", ""), {{ cookiecutter._repo_dir | tojson }})
 ATLAS_TYPE = "node"
 ATLAS_FRAMEWORK = "elysia"
 
 CONTEXT = {
-    "project_name": "{{ cookiecutter.project_name }}",
+    "project_name": {{ cookiecutter.project_name | tojson }},
     "project_slug": PROJECT_SLUG,
-    "description": "{{ cookiecutter.description }}",
-    "author": "{{ cookiecutter.author }}",
+    "description": {{ cookiecutter.description | tojson }},
+    "author": {{ cookiecutter.author | tojson }},
     "include_docker": "{{ cookiecutter.include_docker }}",
     "mcp_servers": MCP_SERVERS,
     "mcp_scope": MCP_SCOPE,
@@ -132,7 +134,7 @@ def _run_mcpick_interactive():
 def write_atlas():
     atlas_path = Path(".atlas")
     data = {
-        "description": "{{ cookiecutter.description }}",
+        "description": {{ cookiecutter.description | tojson }},
         "type": ATLAS_TYPE,
         "framework": ATLAS_FRAMEWORK,
         "port": int("{{ cookiecutter.port }}"),

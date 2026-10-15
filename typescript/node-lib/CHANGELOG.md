@@ -6,6 +6,10 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.7.3] - 2026-10-15
+- post-gen hook: quotes in description/author no longer crash generation; relative template paths record the real repo
+- dep floors: biome 2.5.15 (schema too), vitest 4.1.11 (security)
+
 ## [2.7.2] - 2026-10-15
 - update hook describes the 3-way merge instead of .upstream sidecars
 

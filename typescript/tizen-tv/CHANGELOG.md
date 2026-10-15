@@ -6,6 +6,13 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [1.1.2] - 2026-10-15
+- post-gen hook: quotes in description/author no longer crash generation; relative template paths record the real repo
+- dep floors: biome 2.5.15 (schema too), vitest 4.1.11 (security)
+- @sveltejs/kit 2.70.3 and svelte 5.57.2 (security)
+- String.prototype.replaceAll polyfill so Tizen 6.0 (Chrome 76) mounts
+- biome ignore globs without trailing /**
+
 ## [1.1.1] - 2026-10-15
 - update hook describes the 3-way merge instead of .upstream sidecars
 
