@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [3.5.1] - 2026-10-15
+- update hook describes the 3-way merge instead of .upstream sidecars
+
 ## [3.5.0] - 2026-10-14
 - just run builds and opens .build/<Module>.app instead of swift run: a bare SwiftPM binary gets activation policy prohibited (no Dock icon, no Cmd-Tab entry, no focus); new just bundle recipe
 

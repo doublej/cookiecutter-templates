@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [3.4.1] - 2026-10-15
+- update hook describes the 3-way merge instead of .upstream sidecars
+
 ## [3.4.0] - 2026-09-15
 - add en+nl i18n: Resources/{en,nl}.lproj/Localizable.strings + L10n.swift, defaultLocalization en, just i18n-check active
 - update-check hook tells agents to apply scaffold updates safely and ask only about conflicts

@@ -259,7 +259,7 @@ def _apply_merges(items: list, base: Path, dry: bool) -> list[str]:
     unresolved = []
     for rel, src, dst in items:
         outcome, content = merge_file(dst, base / rel, src)
-        print(f"  [{outcome}] {'would ' if dry else ''}{rel}")
+        print(f"  [{outcome}] {rel}")
         if outcome in ("conflict", "sidecar"):
             unresolved.append(rel + (".upstream" if content is None else ""))
         if dry:

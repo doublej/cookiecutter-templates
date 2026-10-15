@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.7.2] - 2026-10-15
+- update hook describes the 3-way merge instead of .upstream sidecars
+
 ## [2.7.1] - 2026-10-08
 - split_oversize reports project paths with forward slashes and writes utf-8 stdout on Windows
 

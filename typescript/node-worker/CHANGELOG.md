@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.3.1] - 2026-10-15
+- update hook describes the 3-way merge instead of .upstream sidecars
+
 ## [2.3.0] - 2026-09-15
 - ship dormant check_i18n.py + i18n-check recipe (opt in with an i18n block in .quality.json)
 - update-check hook tells agents to apply scaffold updates safely and ask only about conflicts

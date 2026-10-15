@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.9.1] - 2026-10-15
+- update hook describes the 3-way merge instead of .upstream sidecars
+
 ## [2.9.0] - 2026-10-11
 - preloader reveals from the root layout onMount (src/lib/preloader.ts) so the dev CSS swap no longer flashes the fallback font
 

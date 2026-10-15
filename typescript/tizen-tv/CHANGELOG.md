@@ -6,6 +6,9 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [1.1.1] - 2026-10-15
+- update hook describes the 3-way merge instead of .upstream sidecars
+
 ## [1.1.0] - 2026-09-15
 - add en+nl i18n: Paraglide JS 2 following the TV system language, localized tiles + config.xml name, just i18n-check active
 - update-check hook tells agents to apply scaffold updates safely and ask only about conflicts
