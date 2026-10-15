@@ -245,7 +245,7 @@ def merge_file(dst: Path, base_file: Path, src: Path) -> tuple[str, bytes | None
     if _same(dst, base_file):
         return "updated", src.read_bytes()
     result = subprocess.run(
-        ["git", "merge-file", "-p", "-L", "yours", "-L", "template (old)", "-L", "template (new)",
+        ["git", "merge-file", "-p", "--diff3", "-L", "yours", "-L", "template (old)", "-L", "template (new)",
          str(dst), str(base_file) if base_file.is_file() else os.devnull, str(src)],
         capture_output=True,
     )

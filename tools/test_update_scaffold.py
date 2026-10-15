@@ -48,7 +48,7 @@ def main() -> None:
 
         assert justfile.read_text().endswith("\n# local recipe\n"), "local edit kept"
         assert "i18n-check" in justfile.read_text(), "upstream recipe merged in"
-        assert "<<<<<<< yours" in claude_md.read_text() and "[conflict] CLAUDE.md" in out, out
+        assert "||||||| template (old)" in claude_md.read_text() and "[conflict] CLAUDE.md" in out, out
         assert not (project / ".quality.json").exists(), "a local deletion is respected"
         for rel in (".claude/agents/verify-runner.md", "src/my_cli_tool/i18n.py"):
             assert (project / rel).read_bytes() == (new / rel).read_bytes(), f"new {rel} is added"

@@ -28,6 +28,9 @@ python3 tools/update_projects.py [--root ~/dev] [--apply]
 # Local test for the batch updater (needs cookiecutter + full git history, so not in CI)
 python3 tools/test_update_projects.py
 
+# Local test for the 3-way scaffold merge (same constraints)
+python3 tools/test_update_scaffold.py
+
 # Aggregate phone-home diagnostics from deployed-template hooks
 uv run tools/review_diagnostics.py [--since 7d] [--errors-only]
 
@@ -47,7 +50,7 @@ Always run `sync_check.py` then `render_test.py` after changes. CI runs both on 
 
 ## Template versioning
 
-Every `cookiecutter.json` carries a private `_version` field (not prompted). Every render writes it into the project's `.template-meta.json` as `template_version`. Every generated project ships a `.claude/` SessionStart hook that compares local version against the upstream template on every Claude Code session and prints `[template-update] <tmpl> <local> -> <upstream> available ...` when upstream has advanced — prompting the agent to run the `/update-scaffold` skill, which applies non-destructively (tooling overwritten, other changes as `.upstream` sidecars), resolves sidecars itself and asks only about real conflicts. `update_scaffold.py` treats an unchanged `_version` as up to date: template edits are not an update until a bump releases them. It renders the template from the commit that released its current `_version` (`git archive`), so commits after a bump and uncommitted edits never reach a project. `tools/update_projects.py` applies the safe part of every pending update across `~/dev` in one pass (tooling overwritten, `.atlas` merged, one path-scoped commit per project) and bumps `template_version` only when nothing else differs, so the hook keeps prompting `/update-scaffold` for seeds and new files.
+Every `cookiecutter.json` carries a private `_version` field (not prompted). Every render writes it into the project's `.template-meta.json` as `template_version`. Every generated project ships a `.claude/` SessionStart hook that compares local version against the upstream template on every Claude Code session and prints `[template-update] <tmpl> <local> -> <upstream> available ...` when upstream has advanced — prompting the agent to run the `/update-scaffold` skill, which applies without asking (tooling overwritten, `.atlas` merged, everything else 3-way merged via `git merge-file` against a render of the project's own `template_version`, so files the template did not change are untouched and local edits survive), resolves conflict markers itself and asks only when both sides are mutually exclusive. Without a merge base (retrofit, unversioned) seeds fall back to `.upstream` sidecars. `update_scaffold.py` treats an unchanged `_version` as up to date: template edits are not an update until a bump releases them. It renders the template from the commit that released its current `_version` (`git archive`), so commits after a bump and uncommitted edits never reach a project. `tools/update_projects.py` applies the safe part of every pending update across `~/dev` in one pass (tooling overwritten, `.atlas` merged, one path-scoped commit per project) and bumps `template_version` only when nothing else differs, so the hook keeps prompting `/update-scaffold` for seeds and new files.
 
 **Semver semantics (strict `MAJOR.MINOR.PATCH`, no pre-release suffixes):**
 
