@@ -8,7 +8,7 @@ default:
 
 [group('setup')]
 install:
-    uv sync
+    uv sync --extra dev
 
 [group('develop')]
 run-cli *ARGS:

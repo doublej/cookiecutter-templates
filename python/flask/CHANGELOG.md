@@ -6,6 +6,12 @@ pinned version and the upstream version.
 
 Strict [semver]: `MAJOR.MINOR.PATCH`, no pre-release suffixes.
 
+## [2.3.2] - 2026-10-15
+- post-gen hook: quotes in description/author no longer crash generation; relative template paths record the real repo
+- just install syncs dev extras; ruff skips .claude; just check passes on a fresh render
+- dep floors: pytest 9.0.3 (security), ruff 0.17, mypy 2.4, click 8.5
+- flask >=3.1.3 (security); default port 5001 (5000 is macOS AirPlay)
+
 ## [2.3.1] - 2026-10-15
 - update hook describes the 3-way merge instead of .upstream sidecars
 

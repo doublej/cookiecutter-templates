@@ -17,7 +17,7 @@ src/{{ cookiecutter.project_slug.replace('-', '_') }}/
 pyproject.toml      # project config, dependencies
 ```
 
-The runtime path is `uvicorn → {{ cookiecutter.project_slug.replace('-', '_') }}.main:app → route handlers`. Handlers are `async def` functions decorated with `@app.get` / `@app.post` etc. When `main.py` outgrows itself, extract `APIRouter` modules and include them with `app.include_router(...)`.
+The runtime path is `uvicorn → {{ cookiecutter.project_slug.replace('-', '_') }}.main:app → route handlers`. Handlers are functions decorated with `@app.get` / `@app.post` etc. When `main.py` outgrows itself, extract `APIRouter` modules and include them with `app.include_router(...)`.
 
 ## API docs
 
@@ -27,13 +27,13 @@ The scaffold ships three OpenAPI UIs:
 - `/swagger` — Swagger UI (manually mounted; `docs_url=None` on `FastAPI(...)` frees `/docs` for Scalar)
 - `/redoc` — ReDoc (FastAPI default)
 
-Enrich docs by adding `summary` / `description` / `responses` to route decorators and `Field(..., description=..., examples=...)` to Pydantic models — all four UIs read from the same `/openapi.json`.
+Enrich docs by adding `summary` / `description` / `responses` to route decorators and `Field(..., description=..., examples=...)` to Pydantic models — all three UIs read from the same `/openapi.json`.
 
 ## Invariants
 
 - `src/` layout with hatchling — do not move code to a top-level package.
 - Module name is `{{ cookiecutter.project_slug.replace('-', '_') }}`; ASGI app reference is `{{ cookiecutter.project_slug.replace('-', '_') }}.main:app`.
-- Route handlers are `async def`. Use Pydantic `BaseModel` for request / response shapes.
+- Prefer `async def` for route handlers that await I/O; plain `def` is fine for sync work (FastAPI runs it in a threadpool). Use Pydantic `BaseModel` for request / response shapes.
 - Tests use `httpx.AsyncClient` with `ASGITransport` — do not spin up a real server in tests.
 - Functions stay small (5–10 lines target, 20 max).
 - Errors surface at the boundary; FastAPI's exception handlers translate domain errors to HTTP responses.
@@ -42,7 +42,7 @@ Enrich docs by adding `summary` / `description` / `responses` to route decorator
 
 ## Common change patterns
 
-- **Add a route** → `async def` with `@app.get` / `@app.post` / etc. in `main.py`.
+- **Add a route** → a handler (`async def` when it awaits I/O) with `@app.get` / `@app.post` / etc. in `main.py`.
 - **Add request / response models** → Pydantic `BaseModel` subclasses in `main.py` or a sibling `schemas.py`.
 - **Extract a router** → `APIRouter` in a new module; register with `app.include_router(...)`.
 - **Add middleware / lifespan** → `@app.middleware("http")` or the `lifespan=` parameter on `FastAPI()`.
